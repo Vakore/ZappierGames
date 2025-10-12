@@ -1,0 +1,284 @@
+package org.zappier.zappierGames;
+
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public final class ZappierGamesBackup extends JavaPlugin {
+
+    //private final Map<UUID, Inventory> savedInventories = new HashMap<>(); // Store player inventories
+    private final Map<UUID, Integer> playerScores = new HashMap<>();       // Store player scores
+    private BukkitRunnable gameTask;
+    private final Map<UUID, UUID> trackingPlayers = new HashMap<>();
+    private final Map<UUID, Location> lastPortalLocations = new HashMap<>();// Timer task
+
+    @Override
+    public void onEnable() {
+        // Register command
+        this.getCommand("zappiergame").setExecutor(new GameCommand());
+        getLogger().info("ZappierGames - Now running!");
+    }
+
+    @Override
+    public void onDisable() {
+        // Cleanup and stop any running tasks
+        if (gameTask != null) {
+            gameTask.cancel();
+        }
+        getLogger().info("ZappierGames - Now disabled :(");
+    }
+
+    private void giveCompass(Player player) {
+        ItemStack compass = new ItemStack(Material.RECOVERY_COMPASS);
+        player.getInventory().addItem(compass);
+        player.sendMessage(ChatColor.GREEN + "You have been given a recovery compass.");
+    }
+
+    private void trackPlayer(Player tracker, String targetName) {
+        Player target = Bukkit.getPlayer(targetName);
+
+        if (target == null || !target.isOnline()) {
+            tracker.sendMessage(ChatColor.RED + "Player not found or not online.");
+            return;
+        }
+
+        trackingPlayers.put(tracker.getUniqueId(), target.getUniqueId());
+        tracker.sendMessage(ChatColor.GREEN + "You are now tracking " + target.getName() + ".");
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!tracker.isOnline() || !trackingPlayers.containsKey(tracker.getUniqueId())) {
+                    this.cancel();
+                    return;
+                }
+
+                UUID targetUUID = trackingPlayers.get(tracker.getUniqueId());
+                Player targetPlayer = Bukkit.getPlayer(targetUUID);
+
+                if (targetPlayer == null || !targetPlayer.isOnline()) {
+                    tracker.sendMessage(ChatColor.RED + targetName + " is no longer online.");
+                    trackingPlayers.remove(tracker.getUniqueId());
+                    this.cancel();
+                    return;
+                }
+
+                Location targetLocation = targetPlayer.getLocation();
+                Location trackerLocation = tracker.getLocation();
+                boolean isHoldingCompass = tracker.getInventory().getItemInMainHand().getType() == Material.RECOVERY_COMPASS;
+
+                if (!isHoldingCompass) {
+                    return;
+                }
+
+                if (!tracker.getWorld().equals(targetPlayer.getWorld())) {
+                    tracker.sendActionBar(ChatColor.RED + "Target is in another dimension. Distance: " + (int) trackerLocation.distance(targetLocation));
+                } else {
+                    tracker.setLastDeathLocation(targetLocation);
+                    tracker.sendActionBar(ChatColor.GREEN + "Distance to target: " + (int) trackerLocation.distance(targetLocation));
+                }
+            }
+        }.runTaskTimer(ZappierGamesBackup.this, 0, 10);
+    }
+
+    public class GameCommand implements TabExecutor {
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(ChatColor.RED + "Only players can use this command!");
+                return true;
+            }
+
+            Player player = (Player) sender;
+
+            if (args.length < 1) {
+                player.sendMessage(ChatColor.RED + "Usage: /zappiergame <start|end|scores> [time in minutes] [team]");
+                return true;
+            }
+
+            switch (args[0].toLowerCase()) {
+                case "start":
+                    if (args.length < 2) {
+                        player.sendMessage(ChatColor.RED + "Please specify the game duration in minutes.");
+                        return true;
+                    }
+                    try {
+                        double minutes = Integer.parseInt(args[1]);
+                        startGame(player, minutes);
+                    } catch (NumberFormatException e) {
+                        player.sendMessage(ChatColor.RED + "Invalid number format for minutes.");
+                    }
+                    break;
+
+                case "end":
+                    endGame(player);
+                    break;
+
+                case "scores":
+                    if (args.length > 1 && args[1].equalsIgnoreCase("team")) {
+                        displayScores(player, true);
+                    } else {
+                        displayScores(player, false);
+                    }
+                    break;
+
+                case "getcompass":
+                    giveCompass(player);
+                    break;
+
+                case "trackplayer":
+                    if (args.length < 1) {
+                        player.sendMessage(ChatColor.RED + "Please specify a player to track.");
+                        return true;
+                    }
+                    trackPlayer(player, args[1]);
+                    break;
+
+                default:
+                    player.sendMessage(ChatColor.RED + "Unknown command. Use start, end, or scores.");
+            }
+
+            return true;
+        }
+
+        @Override
+        public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+
+            if (command.getName().equalsIgnoreCase("trackplayer") && args.length == 2) {
+                return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .collect(Collectors.toList());
+            } else if (args.length == 1) {
+                return Arrays.asList("start", "end", "scores", "trackplayer", "getcompass").stream()
+                        .filter(option -> option.startsWith(args[0].toLowerCase()))
+                        .collect(Collectors.toList());
+            }
+
+            return Collections.emptyList();
+        }
+
+        private void startGame(Player player, double minutes) {
+            if (gameTask != null && !gameTask.isCancelled()) {
+                player.sendMessage(ChatColor.RED + "A game is already in progress!");
+                return;
+            }
+
+            // Clear inventories and give starting items
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                //savedInventories.put(p.getUniqueId(), Bukkit.createInventory(null, 54));
+                //savedInventories.get(p.getUniqueId()).setContents(p.getInventory().getContents());
+                p.getInventory().clear();
+                giveStartingItems(p);
+            }
+
+            // Start the timer
+            gameTask = new BukkitRunnable() {
+                int timeLeft = (int)(minutes * 60.0);
+
+                @Override
+                public void run() {
+                    if (timeLeft <= 0) {
+                        endGame(null);
+                        cancel();
+                        return;
+                    }
+
+                    if (timeLeft % 60 == 0 || timeLeft <= 10) {
+                        Bukkit.broadcastMessage(ChatColor.YELLOW + "Time remaining: " + timeLeft / 60 + " minutes " + timeLeft % 60 + " seconds.");
+                    }
+
+                    timeLeft--;
+                }
+            };
+            gameTask.runTaskTimer(ZappierGamesBackup.this, 0, 20);
+            player.sendMessage(ChatColor.GREEN + "Game started for " + minutes + " minutes!");
+        }
+
+        private void endGame(Player endingPlayer) {
+            if (gameTask == null || gameTask.isCancelled()) {
+                if (endingPlayer != null) {
+                    endingPlayer.sendMessage(ChatColor.RED + "No game is currently running.");
+                }
+                return;
+            }
+
+            gameTask.cancel();
+            gameTask = null;
+
+            Map<Player, Map<String, Integer>> scores = new HashMap<>();
+
+            // Calculate scores
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                Map<String, Integer> playerScore = calculateInventoryScore(p);
+                scores.put(p, playerScore);
+
+                // Restore inventory
+                /*if (savedInventories.containsKey(p.getUniqueId())) {
+                    p.getInventory().setContents(savedInventories.get(p.getUniqueId()).getContents());
+                }*/
+            }
+
+            // Broadcast scores
+            Bukkit.broadcastMessage(ChatColor.GOLD + "Game Over! Here are the scores:");
+            for (Map.Entry<Player, Map<String, Integer>> entry : scores.entrySet()) {
+                Player p = entry.getKey();
+                Map<String, Integer> scoreMap = entry.getValue();
+                String scoreDetails = scoreMap.entrySet().stream()
+                        .map(e -> e.getKey() + ": " + e.getValue())
+                        .collect(Collectors.joining(", "));
+                Bukkit.broadcastMessage(ChatColor.YELLOW + p.getName() + " - " + scoreDetails);
+            }
+        }
+
+        private void displayScores(Player player, boolean byTeam) {
+            player.sendMessage(ChatColor.GREEN + "Displaying scores " + (byTeam ? "by team" : "by player") + ".");
+
+            // Placeholder implementation of sumScore function
+            player.sendMessage(ChatColor.RED + "sumScore function is not yet implemented.");
+        }
+
+        private Map<String, Integer> calculateInventoryScore(Player player) {
+            Map<String, Integer> scoreMap = new HashMap<>();
+
+            // Count items in inventory
+            for (ItemStack item : player.getInventory()) {
+                if (item == null || item.getType() == Material.AIR) continue;
+                String itemId = item.getType().toString();
+                scoreMap.put(itemId, scoreMap.getOrDefault(itemId, 0) + item.getAmount());
+            }
+
+            return scoreMap;
+        }
+
+        private void giveStartingItems(Player player) {
+            player.getInventory().addItem(new ItemStack(Material.STONE_PICKAXE));
+            player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
+            player.getInventory().addItem(new ItemStack(Material.STONE_SHOVEL));
+            player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
+            player.getInventory().addItem(new ItemStack(Material.STONE_HOE));
+
+            Material[] shulkerColors = {
+                    Material.BLACK_SHULKER_BOX, Material.BLUE_SHULKER_BOX,
+                    Material.RED_SHULKER_BOX, Material.GREEN_SHULKER_BOX,
+                    Material.YELLOW_SHULKER_BOX
+            };
+
+            for (Material shulker : shulkerColors) {
+                player.getInventory().addItem(new ItemStack(shulker));
+            }
+        }
+    }
+}

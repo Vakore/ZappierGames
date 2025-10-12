@@ -1,0 +1,34 @@
+name: ZappierGames
+version: '1.06-SNAPSHOT'
+main: org.zappier.zappierGames.ZappierGames
+api-version: '1.21'
+authors: [ Vakore ]
+description: A mod to run ZappierGames
+commands:
+  loothunt:
+    description: loothunt commands
+    usage: /loothunt <start|end|scores|jointeam|leaveteam> [time in minutes]
+  manhunt:
+    description: start game, WIP for more features
+    usage: /manhunt <start|jointeam|leaveteam> [worldborder size in blocks|team name]
+  getcompass:
+    description: get compass (shorthand is /gc)
+    usage: /getcompass
+  gc:
+    description: get compass (shorthand for /getcompass)
+    usage: /gc
+  trackplayer:
+    description: decide which player to track (shorthand is /trp)
+    usage: /trackplayer <Player>
+  trp:
+    description: decide which player to track (shorthand for /trackplayer)
+    usage: /trp <Player>
+  getscore:
+    description: get the score for an item id, used in loot hunt
+    usage: /getscore <item id>
+  globalkeepinventory:
+    description: Sets keepinventory in all dimensions, as for paper gamerules are world-specific.
+    usage: /globalkeepinventory <true/false>
+  gui:
+    description: Opens GUI
+    usage: /gui
