@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class ZappierGames extends JavaPlugin {
+    // Singleton instance
+    public static ZappierGames instance;
 
     public static final int LOOTHUNT = 0;
     public static final int MANHUNT = 1;
@@ -123,13 +125,21 @@ public final class ZappierGames extends JavaPlugin {
         }
     }
 
+    public static ZappierGames getInstance() {
+        return instance;
+    }
+
     @Override
     public void onEnable() {
+        // Set the singleton instance
+        instance = this;
+
         // Register command
         getLogger().info("ZappierGames - Now running!");
         saveDefaultConfig(); // Save default config if it doesn't exist
         loadItemValues();
         createVoidWorld("skybattle_world");
+        Skybattle.init(instance);
         this.getCommand("loothunt").setExecutor(new LoothuntCommand());
         this.getCommand("manhunt").setExecutor(new ManhuntCommand());
         this.getCommand("getcompass").setExecutor(new GetcompassCommand());
@@ -143,6 +153,7 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LootHuntKillListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
+        getServer().getPluginManager().registerEvents(new AutoTNTListener(this, "skybattle_world"), this);
         //getServer().getPluginManager().registerEvents(new DamageHandler(), this);//Let's not for now
 
 
@@ -248,6 +259,15 @@ public final class ZappierGames extends JavaPlugin {
                     if (gameMode == LOOTHUNT) {
                         LootHunt.run();
                     } else if (gameMode == MANHUNT) {
+                    }
+                }
+
+                if (gameMode == 10) {
+                    World skybattleWorld = Bukkit.getWorld("skybattle_world");
+                    if (skybattleWorld != null) {
+                        Skybattle.run(skybattleWorld);
+                    } else {
+                        getLogger().info("Sky battle not running!");
                     }
                 }
             }

@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class LoothuntCommand implements TabExecutor {
@@ -72,6 +73,22 @@ public class LoothuntCommand implements TabExecutor {
                         prefixInitial += prefixInitials[i].charAt(0);
                     }
 
+                    if (prefix.equals("AQUA")) {prefixInitial = "❄";}
+                    if (prefix.equals("BLACK")) {prefixInitial = "♣";}
+                    if (prefix.equals("BLUE")) {prefixInitial = "\uD83C\uDFA3";}
+                    if (prefix.equals("DARK_BLUE")) {prefixInitial = "\uD83D\uDEE1";}
+                    if (prefix.equals("DARK_GRAY")) {prefixInitial = "\uD83E\uDE93";}
+                    if (prefix.equals("DARK_GREEN")) {prefixInitial = "\uD83C\uDFF9";}
+                    if (prefix.equals("DARK_PURPLE")) {prefixInitial = "\uD83E\uDDEA";}
+                    if (prefix.equals("DARK_RED")) {prefixInitial = "⚗";}
+                    if (prefix.equals("GREEN")) {prefixInitial = "☣";}
+                    if (prefix.equals("YELLOW")) {prefixInitial = "☢";}
+                    if (prefix.equals("GOLD")) {prefixInitial = "☀";}
+                    if (prefix.equals("LIGHT_PURPLE")) {prefixInitial = "\uD83D\uDD31";}
+                    if (prefix.equals("RED")) {prefixInitial = "\uD83D\uDDE1";}
+                    if (prefix.equals("RED")) {prefixInitial = "\uD83D\uDDE1";}
+                    if (prefix.equals("WHITE")) {prefixInitial = "♜";}
+
                     TextComponent coloredPrefix = (teamColor != null)
                             ? Component.text("[" + prefixInitial + "] ", teamColor)
                             : Component.text("[" + prefix + "] ", NamedTextColor.GRAY);
@@ -82,6 +99,8 @@ public class LoothuntCommand implements TabExecutor {
                     Team team = scoreboard.getTeam(player.getName());
                     if (team == null) {
                         team = scoreboard.registerNewTeam(player.getName());
+                    } else if (teamColor != null) {
+                        team.color(teamColor);
                     }
 
                     // Set the prefix and assign the player to the team
