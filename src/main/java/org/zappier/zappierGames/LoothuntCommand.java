@@ -96,9 +96,9 @@ public class LoothuntCommand implements TabExecutor {
                     Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
                     Bukkit.broadcastMessage(player.getName().toUpperCase() + " has joined team " + prefix);
 
-                    Team team = scoreboard.getTeam(player.getName());
+                    Team team = scoreboard.getTeam(prefix);
                     if (team == null) {
-                        team = scoreboard.registerNewTeam(player.getName());
+                        team = scoreboard.registerNewTeam(prefix);
                     } else if (teamColor != null) {
                         team.color(teamColor);
                     }
@@ -110,7 +110,7 @@ public class LoothuntCommand implements TabExecutor {
 
 
                     Bukkit.broadcastMessage("LOOTHUNT: " + player.getName().toUpperCase() + " has joined team " + prefix);
-                    LootHunt.playerTeams.put(player.getName().toUpperCase(), prefix);
+                    //LootHunt.playerTeams.put(player.getName().toUpperCase(), prefix);
                 }
                 return true;
 
@@ -122,16 +122,16 @@ public class LoothuntCommand implements TabExecutor {
                     team.removeEntry(player.getName());
                     team.unregister();
                     Bukkit.broadcastMessage("LOOTHUNT: " + player.getName().toUpperCase() + " is no longer on a team");
-                    LootHunt.playerTeams.remove(player.getName().toUpperCase());
+                    //LootHunt.playerTeams.remove(player.getName().toUpperCase());
                 } else {
                     player.sendMessage(ChatColor.RED + "No team to leave, you are not currently on one!");
                 }
                 return true;
 
             case "debug":
-                for (Map.Entry<String, String> i : LootHunt.playerTeams.entrySet()) {
-                    player.sendMessage(i.getKey() + " " + i.getValue() + ", ");
-                }
+                //for (Map.Entry<String, String> i : LootHunt.playerTeams.entrySet()) {
+                //    player.sendMessage(i.getKey() + " " + i.getValue() + ", ");
+                //}
                 return true;
 
             default:

@@ -131,6 +131,8 @@ public final class ZappierGames extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
+        LootHunt.loadConfig(getConfig());
         // Set the singleton instance
         instance = this;
 
@@ -155,6 +157,7 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
         getServer().getPluginManager().registerEvents(new AutoTNTListener(this, "skybattle_world"), this);
         getServer().getPluginManager().registerEvents(new PlayerSpawnListener(this), this);
+        getServer().getPluginManager().registerEvents(new CustomPearlsListener(this), this);
         //getServer().getPluginManager().registerEvents(new DamageHandler(), this);//Let's not for now
 
 
@@ -256,15 +259,15 @@ public final class ZappierGames extends JavaPlugin {
                             }
                         }
                     }
-
-                    if (gameMode == LOOTHUNT) {
-                        LootHunt.run();
-                    } else if (gameMode == 1 || gameMode == 2 || gameMode == 3) {
-                        //run manhunt
-                    }
                 }
 
-                if (gameMode == 10) {
+
+
+                if (gameMode == LOOTHUNT) {
+                    LootHunt.run();
+                } else if (gameMode == 1 || gameMode == 2 || gameMode == 3) {
+                    //run manhunt
+                } else if (gameMode == 10) {
                     World skybattleWorld = Bukkit.getWorld("skybattle_world");
                     if (skybattleWorld != null) {
                         Skybattle.run(skybattleWorld);

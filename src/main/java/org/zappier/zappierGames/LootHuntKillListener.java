@@ -15,26 +15,30 @@ public class LootHuntKillListener implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player killed = event.getEntity();
-        if (killed == null) {return;}
+        if (killed == null) {
+            return;
+        }
         Player killer = killed.getKiller();
-        if (killer == null) {return;}
+        if (killer == null || !(killer instanceof Player)) {
+            return;
+        }
 
-        if (!(killed.getKiller() instanceof Player)) {} //return;
-
-        /*Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        String killedTeam = scoreboard.getEntryTeam(killed.getName()).getName();
-        Team killerTeam = scoreboard.getEntryTeam(killer.getName()).getName();*/
-        String killedTeam = LootHunt.playerTeams.getOrDefault(killed.getName().toUpperCase(), "_");
-        String killerTeam = LootHunt.playerTeams.getOrDefault(killer.getName().toUpperCase(), "-");
+        String killedTeam = killed.getScoreboard().getEntryTeam(killed.getName()) != null
+                ? killed.getScoreboard().getEntryTeam(killed.getName()).getName()
+                : null;
+        String killerTeam = killer.getScoreboard().getEntryTeam(killer.getName()) != null
+                ? killer.getScoreboard().getEntryTeam(killer.getName()).getName()
+                : null;
 
         if (killedTeam != null && killerTeam != null && killedTeam.equals(killerTeam)) {
-            //no reward
-            //Bukkit.broadcastMessage("Give this man no points");
+            // No reward for killing a teammate
+            // Bukkit.broadcastMessage("Give this man no points");
         } else {
-            //give points to killer
-            LootHunt.playerKillCounts.put(killer.getName().toUpperCase(), LootHunt.playerKillCounts.getOrDefault(killer.getName().toUpperCase(), 0) + 1);
-            //Bukkit.broadcastMessage("Give this man points");
-            //killer.setNoDamageTicks(0);
+            // Give points to killer
+            LootHunt.playerKillCounts.put(killer.getName().toUpperCase(),
+                    LootHunt.playerKillCounts.getOrDefault(killer.getName().toUpperCase(), 0) + 1);
+            // Bukkit.broadcastMessage("Give this man points");
+            // killer.setNoDamageTicks(0);
         }
     }
 }

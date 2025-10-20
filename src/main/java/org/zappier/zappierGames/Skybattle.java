@@ -313,20 +313,44 @@ public class Skybattle {
                         {"spawn3_1", "spawn3_2", "spawn3_3"},
                         {"ring1_1", "ring1_2", "ring1_3", "ring1_4", "ring1_5", "ring1_6", "ring1_7", "ring1_8", "ring1_9", "ring1_10"},
                         {"ring2_1", "ring2_2", "ring2_3"},
-                        {"ring3_1", "ring3_2", "ring3_3"},
                         {"ring4_1", "ring4_2", "ring4_3"},
+                        {"ring3_1", "ring3_2", "ring3_3"},
                         {"center1_1", "center1_2", "center1_3"},
                         {"center2_1", "center2_2", "center2_3"},
                         {"center3_1", "center3_2", "center3_3"},
                         {"center3_1", "center3_2", "center3_3"}
                 };
 
+                int[] tierVals = {
+                     0,
+                     0,
+                     0,
+                     -1,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0
+                };
+
+                for (int i = 0; i < tierVals.length; i++) {
+                    if (tierVals[i] == -1) {continue;}
+                    tierVals[i] = (int) (Math.random() * tierKeys[i].length);
+                }
+
                 Type lootType = new TypeToken<Map<String, List<Map<String, Object>>>>() {}.getType();
                 Map<String, List<Map<String, Object>>> lootData = gson.fromJson(lootReader, lootType);
 
                 // Fill spawn chests with items based on tier from skybattle_loot.txt
                 for (int i = 0; i < LOOT_SPAWNS.length; i++) {
-                    String tierKey = tierKeys[LOOT_SPAWNS[i][3]][(int)(Math.random() * tierKeys[LOOT_SPAWNS[i][3]].length)];
+                    String tierKey = "";
+                    if (tierVals[LOOT_SPAWNS[i][3]] == -1) {
+                        tierKey = tierKeys[LOOT_SPAWNS[i][3]][(int) (Math.random() * tierKeys[LOOT_SPAWNS[i][3]].length)];
+                    } else {
+                        tierKey = tierKeys[LOOT_SPAWNS[i][3]][tierVals[LOOT_SPAWNS[i][3]]];
+                    }
                     List<Map<String, Object>> items = lootData.get(tierKey);
 
                     Block block = world.getBlockAt(LOOT_SPAWNS[i][0], LOOT_SPAWNS[i][1], LOOT_SPAWNS[i][2]);
@@ -421,9 +445,9 @@ public class Skybattle {
             // Teleport players after map is loaded
             for (Player p : Bukkit.getOnlinePlayers()) {
                 int team = 0;
-                if (LootHunt.playerTeams.get(p.getName().toUpperCase()) != null) {
+                if (p.getScoreboard().getEntryTeam(p.getName()).getName() != null) {
                     for (int i = 1; i <= 10; i++) {
-                        if (LootHunt.playerTeams.get(p.getName().toUpperCase()).equals(teamNames[i])) {
+                        if (p.getScoreboard().getEntryTeam(p.getName()).getName().equals(teamNames[i])) {
                             team = i;
                         }
                     }
