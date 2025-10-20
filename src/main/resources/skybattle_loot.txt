@@ -1,0 +1,1364 @@
+{
+  "center1_1": [
+    {
+      "Slot": 2,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 4,
+      "id": "ender_pearl",
+      "Count": 1,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 6,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 11,
+      "id": "creeper_spawn_egg",
+      "Count": 2
+    },
+    {
+      "Slot": 13,
+      "id": "creeper_head",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "blast_protection",
+            "lvl": 5
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "creeper_spawn_egg",
+      "Count": 2
+    },
+    {
+      "Slot": 20,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "ender_pearl",
+      "Count": 1,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 24,
+      "id": "arrow",
+      "Count": 1
+    }
+  ],
+  "center1_2": [
+    {
+      "Slot": 2,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 4,
+      "id": "ender_pearl",
+      "Count": 1,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 6,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 11,
+      "id": "chainmail_helmet",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "chainmail_helmet",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "chainmail_helmet",
+      "Count": 1
+    },
+    {
+      "Slot": 20,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "ender_pearl",
+      "Count": 1,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 24,
+      "id": "arrow",
+      "Count": 1
+    }
+  ],
+  "center1_3": [
+    {
+      "Slot": 11,
+      "id": "tnt",
+      "Count": 2
+    },
+    {
+      "Slot": 12,
+      "id": "golden_chestplate",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "blast_protection",
+            "lvl": 4
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "tnt",
+      "Count": 2
+    },
+    {
+      "Slot": 14,
+      "id": "golden_chestplate",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "blast_protection",
+            "lvl": 4
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "tnt",
+      "Count": 2
+    }
+  ],
+  "center2_1": [
+    {
+      "Slot": 11,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "diamond_chestplate",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "diamond_sword",
+      "Count": 1
+    }
+  ],
+  "center2_2": [
+    {
+      "Slot": 11,
+      "id": "diamond_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "diamond_chestplate",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "iron_sword",
+      "Count": 1
+    }
+  ],
+  "center2_3": [
+    {
+      "Slot": 11,
+      "id": "diamond_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "golden_apple",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "diamond_sword",
+      "Count": 1
+    }
+  ],
+  "center3_1": [
+    {
+      "Slot": 3,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 4,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 5,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 12,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "crossbow",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "piercing",
+            "lvl": 5
+          },
+          {
+            "id": "quick_charge",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 14,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 21,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 23,
+      "id": "arrow",
+      "Count": 1
+    }
+  ],
+  "center3_2": [
+    {
+      "Slot": 3,
+      "id": "tnt",
+      "Count": 2
+    },
+    {
+      "Slot": 4,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 5,
+      "id": "fishing_rod",
+      "Count": 1
+    },
+    {
+      "Slot": 12,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "netherite_helmet",
+      "Count": 1
+    },
+    {
+      "Slot": 14,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 21,
+      "id": "fishing_rod",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 23,
+      "id": "tnt",
+      "Count": 2
+    }
+  ],
+  "center3_3": [
+    {
+      "Slot": 3,
+      "id": "iron_door",
+      "Count": 2
+    },
+    {
+      "Slot": 4,
+      "id": "ender_pearl",
+      "Count": 1
+    },
+    {
+      "Slot": 5,
+      "id": "iron_door",
+      "Count": 2
+    },
+    {
+      "Slot": 12,
+      "id": "wooden_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "shield",
+      "Count": 1,
+      "tag": {
+        "Damage": 306
+      }
+    },
+    {
+      "Slot": 14,
+      "id": "wooden_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 21,
+      "id": "iron_door",
+      "Count": 2
+    },
+    {
+      "Slot": 22,
+      "id": "ender_pearl",
+      "Count": 1
+    },
+    {
+      "Slot": 23,
+      "id": "iron_door",
+      "Count": 2
+    }
+  ],
+  "ring1_1": [
+    {
+      "Slot": 12,
+      "id": "iron_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 14,
+      "id": "arrow",
+      "Count": 2
+    }
+  ],
+  "ring1_2": [
+    {
+      "Slot": 12,
+      "id": "iron_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 14,
+      "id": "tnt",
+      "Count": 2
+    }
+  ],
+  "ring1_3": [
+    {
+      "Slot": 12,
+      "id": "golden_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 14,
+      "id": "creeper_spawn_egg",
+      "Count": 1
+    }
+  ],
+  "ring1_4": [
+    {
+      "Slot": 12,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 14,
+      "id": "ender_pearl",
+      "Count": 1,
+      "tag": {
+        "CustomModelData": 1160003,
+        "sbitem": 3,
+        "display": {
+          "Name": "{\"text\":\"Cup of Regeneration\",\"italic\":\"false\",\"color\":\"green\"}"
+        }
+      }
+    }
+  ],
+  "ring1_5": [
+    {
+      "Slot": 12,
+      "id": "arrow",
+      "Count": 2
+    },
+    {
+      "Slot": 14,
+      "id": "iron_sword",
+      "Count": 1
+    }
+  ],
+  "ring1_6": [
+    {
+      "Slot": 13,
+      "id": "diamond_sword",
+      "Count": 1
+    }
+  ],
+  "ring1_7": [
+    {
+      "Slot": 11,
+      "id": "oak_door",
+      "Count": 2
+    },
+    {
+      "Slot": 13,
+      "id": "suspicious_stew",
+      "Count": 1,
+      "tag": {
+        "Effects": [
+          {
+            "EffectId": "11b",
+            "EffectDuration": 120
+          },
+          {
+            "EffectId": "33",
+            "EffectDuration": 120
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "oak_door",
+      "Count": 2
+    }
+  ],
+  "ring1_8": [
+    {
+      "Slot": 11,
+      "id": "ender_pearl",
+      "Count": 1,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "stone_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "arrow",
+      "Count": 1
+    }
+  ],
+  "ring1_9": [
+    {
+      "Slot": 12,
+      "id": "tnt",
+      "Count": 2
+    },
+    {
+      "Slot": 14,
+      "id": "cobweb",
+      "Count": 2
+    }
+  ],
+  "ring1_10": [
+    {
+      "Slot": 12,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160002,
+        "sbitem": 2,
+        "display": {
+          "Name": "{\"text\":\"Cup of Speed\",\"italic\":\"false\",\"color\":\"aqua\"}"
+        }
+      }
+    },
+    {
+      "Slot": 14,
+      "id": "creeper_spawn_egg",
+      "Count": 2
+    }
+  ],
+  "ring2_1": [
+    {
+      "Slot": 2,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 4,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 6,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 11,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 20,
+      "id": "cobweb",
+      "Count": 2
+    },
+    {
+      "Slot": 22,
+      "id": "cobweb",
+      "Count": 2
+    },
+    {
+      "Slot": 24,
+      "id": "cobweb",
+      "Count": 2
+    }
+  ],
+  "ring2_2": [
+    {
+      "Slot": 2,
+      "id": "stone_sword",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "knockback",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 4,
+      "id": "stone_sword",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "knockback",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 6,
+      "id": "stone_sword",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "knockback",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "golden_apple",
+      "Count": 1
+    },
+    {
+      "Slot": 20,
+      "id": "creeper_spawn_egg",
+      "Count": 2
+    },
+    {
+      "Slot": 22,
+      "id": "creeper_spawn_egg",
+      "Count": 2
+    },
+    {
+      "Slot": 24,
+      "id": "creeper_spawn_egg",
+      "Count": 2
+    }
+  ],
+  "ring2_3": [
+    {
+      "Slot": 2,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 4,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 6,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 11,
+      "id": "diamond_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "diamond_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "diamond_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 20,
+      "id": "tnt",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "tnt",
+      "Count": 1
+    },
+    {
+      "Slot": 24,
+      "id": "tnt",
+      "Count": 1
+    }
+  ],
+  "ring3_1": [
+    {
+      "Slot": 10,
+      "id": "arrow",
+      "Count": 1
+    },
+    {
+      "Slot": 11,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 12,
+      "id": "cobweb",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "ender_pearl",
+      "Count": 3,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 14,
+      "id": "cobweb",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 16,
+      "id": "arrow",
+      "Count": 1
+    }
+  ],
+  "ring3_2": [
+    {
+      "Slot": 2,
+      "id": "arrow",
+      "Count": 3
+    },
+    {
+      "Slot": 4,
+      "id": "arrow",
+      "Count": 3
+    },
+    {
+      "Slot": 6,
+      "id": "arrow",
+      "Count": 3
+    },
+    {
+      "Slot": 11,
+      "id": "bow",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "punch",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "bow",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "punch",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "bow",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "punch",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 20,
+      "id": "cobweb",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "cobweb",
+      "Count": 1
+    },
+    {
+      "Slot": 24,
+      "id": "cobweb",
+      "Count": 1
+    }
+  ],
+  "ring3_3": [
+    {
+      "Slot": 2,
+      "id": "arrow",
+      "Count": 2
+    },
+    {
+      "Slot": 4,
+      "id": "arrow",
+      "Count": 2
+    },
+    {
+      "Slot": 6,
+      "id": "arrow",
+      "Count": 2
+    },
+    {
+      "Slot": 11,
+      "id": "diamond_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "diamond_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "diamond_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 20,
+      "id": "diamond_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "diamond_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 24,
+      "id": "diamond_leggings",
+      "Count": 1
+    }
+  ],
+  "ring4_1": [
+    {
+      "Slot": 2,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160002,
+        "sbitem": 2,
+        "display": {
+          "Name": "{\"text\":\"Cup of Speed\",\"italic\":\"false\",\"color\":\"aqua\"}"
+        }
+      }
+    },
+    {
+      "Slot": 4,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160003,
+        "sbitem": 3,
+        "display": {
+          "Name": "{\"text\":\"Cup of Regeneration\",\"italic\":\"false\",\"color\":\"green\"}"
+        }
+      }
+    },
+    {
+      "Slot": 6,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 11,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 20,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 24,
+      "id": "diamond_boots",
+      "Count": 1
+    }
+  ],
+  "ring4_2": [
+    {
+      "Slot": 2,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160002,
+        "sbitem": 2,
+        "display": {
+          "Name": "{\"text\":\"Cup of Speed\",\"italic\":\"false\",\"color\":\"aqua\"}"
+        }
+      }
+    },
+    {
+      "Slot": 4,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160003,
+        "sbitem": 3,
+        "display": {
+          "Name": "{\"text\":\"Cup of Regeneration\",\"italic\":\"false\",\"color\":\"green\"}"
+        }
+      }
+    },
+    {
+      "Slot": 6,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 11,
+      "id": "wooden_axe",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "knockback",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "wooden_axe",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "knockback",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "wooden_axe",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "knockback",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 20,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "diamond_boots",
+      "Count": 1
+    },
+    {
+      "Slot": 24,
+      "id": "diamond_boots",
+      "Count": 1
+    }
+  ],
+  "ring4_3": [
+    {
+      "Slot": 2,
+      "id": "golden_carrot",
+      "Count": 2
+    },
+    {
+      "Slot": 4,
+      "id": "golden_carrot",
+      "Count": 2
+    },
+    {
+      "Slot": 6,
+      "id": "golden_carrot",
+      "Count": 2
+    },
+    {
+      "Slot": 11,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 20,
+      "id": "diamond_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 22,
+      "id": "diamond_leggings",
+      "Count": 1
+    },
+    {
+      "Slot": 24,
+      "id": "diamond_leggings",
+      "Count": 1
+    }
+  ],
+  "spawn1_1": [
+    {
+      "Slot": 11,
+      "id": "golden_apple",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "iron_leggings",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "protection",
+            "lvl": 4
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn1_2": [
+    {
+      "Slot": 11,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160003,
+        "sbitem": 3,
+        "display": {
+          "Name": "{\"text\":\"Cup of Regeneration\",\"italic\":\"false\",\"color\":\"green\"}"
+        }
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "iron_chestplate",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "projectile_protection",
+            "lvl": 4
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn1_3": [
+    {
+      "Slot": 11,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "iron_boots",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "blast_protection",
+            "lvl": 4
+          },
+          {
+            "id": "feather_falling",
+            "lvl": 4
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn2_1": [
+    {
+      "Slot": 11,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160002,
+        "sbitem": 2,
+        "display": {
+          "Name": "{\"text\":\"Cup of Speed\",\"italic\":\"false\",\"color\":\"aqua\"}"
+        }
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "iron_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn2_2": [
+    {
+      "Slot": 11,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160001,
+        "sbitem": 1,
+        "display": {
+          "Name": "{\"text\":\"Cup of Levitation\",\"italic\":\"false\",\"color\":\"white\"}"
+        }
+      }
+    },
+    {
+      "Slot": 13,
+      "id": "iron_axe",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn2_3": [
+    {
+      "Slot": 11,
+      "id": "tnt",
+      "Count": 1
+    },
+    {
+      "Slot": 13,
+      "id": "diamond_sword",
+      "Count": 1
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn3_1": [
+    {
+      "Slot": 11,
+      "id": "arrow",
+      "Count": 4
+    },
+    {
+      "Slot": 13,
+      "id": "bow",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "punch",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn3_2": [
+    {
+      "Slot": 11,
+      "id": "arrow",
+      "Count": 3
+    },
+    {
+      "Slot": 13,
+      "id": "bow",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "power",
+            "lvl": 1
+          }
+        ]
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ],
+  "spawn3_3": [
+    {
+      "Slot": 11,
+      "id": "arrow",
+      "Count": 3
+    },
+    {
+      "Slot": 13,
+      "id": "bow",
+      "Count": 1,
+      "tag": {
+        "Enchantments": [
+          {
+            "id": "power",
+            "lvl": 3
+          }
+        ],
+        "Damage": 383,
+        "display": {
+          "Name": "{\"text\":\"Sniper Bow (Single Use)\",\"italic\":\"false\",\"color\":\"yellow\"}"
+        }
+      }
+    },
+    {
+      "Slot": 15,
+      "id": "ender_pearl",
+      "Count": 2,
+      "tag": {
+        "CustomModelData": 1160004,
+        "sbitem": 4,
+        "display": {
+          "Name": "{\"text\":\"Cup of Leaping\",\"italic\":\"false\",\"color\":\"gold\"}"
+        }
+      }
+    }
+  ]
+}

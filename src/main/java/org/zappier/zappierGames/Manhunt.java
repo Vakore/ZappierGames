@@ -40,6 +40,7 @@ public class Manhunt {
             p.setSaturation(20.0f);
             p.setExperienceLevelAndProgress(0);
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.5f);
+            p.getWorld().setTime(0);
         }
     }
 }

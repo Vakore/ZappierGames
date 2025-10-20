@@ -154,6 +154,7 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
         getServer().getPluginManager().registerEvents(new AutoTNTListener(this, "skybattle_world"), this);
+        getServer().getPluginManager().registerEvents(new PlayerSpawnListener(this), this);
         //getServer().getPluginManager().registerEvents(new DamageHandler(), this);//Let's not for now
 
 
@@ -258,7 +259,8 @@ public final class ZappierGames extends JavaPlugin {
 
                     if (gameMode == LOOTHUNT) {
                         LootHunt.run();
-                    } else if (gameMode == MANHUNT) {
+                    } else if (gameMode == 1 || gameMode == 2 || gameMode == 3) {
+                        //run manhunt
                     }
                 }
 

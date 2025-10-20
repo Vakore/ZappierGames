@@ -186,13 +186,13 @@ public class GUIListener implements Listener {
             switch (slot) {
                 case 10: // Announce on Track
                     ZappierGames.shoutHunterTarget = -ZappierGames.shoutHunterTarget;
-                    Bukkit.broadcastMessage(ChatColor.YELLOW + "shoutHunterTarget set to " + ZappierGames.shoutHunterTarget);
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "shoutHunterTarget set to " + ((ZappierGames.shoutHunterTarget == 1) ? "On" : "Off"));
                     gui = new GUI("Compass Settings");
                     gui.open(player);
                     break;
                 case 11: // Show Dimensions
                     ZappierGames.showTrackerDimension = -ZappierGames.showTrackerDimension;
-                    Bukkit.broadcastMessage(ChatColor.YELLOW + "showTrackerDimension set to " + ZappierGames.showTrackerDimension);
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "showTrackerDimension set to " + ((ZappierGames.showTrackerDimension == 1) ? "On" : "Off"));
                     gui = new GUI("Compass Settings");
                     gui.open(player);
                     break;

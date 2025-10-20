@@ -8,6 +8,7 @@ import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -19,6 +20,7 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.logging.Logger;
+import org.bukkit.enchantments.Enchantment;
 
 public class Skybattle {
     private static final Logger LOGGER = Logger.getLogger("Skybattle");
@@ -39,68 +41,105 @@ public class Skybattle {
         }
     }
 
-/*
-0 115.00 -105
--62 115.00 -85
--100 115.00 -32
--100 115.00 32
--62 115.00 85
-0 114.00 105
-62 114.00 85
-100 114.00 32
-100 115.00 -32
-62 115.00 -84
- */
-    //TODO: Make this all insertable inside of a file
     private static final int[][] POSSIBLE_SPAWNS = {
-        {0, 115, -105},
-        {-62, 115, -85},
-        {-100, 115, -32},
-        {-100, 115, 32},
-        {-62, 115, 85},
-        {0, 114, 105},
-        {62, 114, 85},
-        {100, 114, 32},
-        {100, 115, -32},
-        {62, 115, -84}
+            {0, 115, -105},
+            {-62, 115, -85},
+            {-100, 115, -32},
+            {-100, 115, 32},
+            {-62, 115, 85},
+            {0, 114, 105},
+            {62, 114, 85},
+            {100, 114, 32},
+            {100, 115, -32},
+            {62, 115, -84}
     };
 
-    private static final Map<Integer, List<int[]>> LOOT_SPAWNS = new HashMap<>();
-    static {
-        LOOT_SPAWNS.put(1, new ArrayList<>());
-        LOOT_SPAWNS.get(1).add(new int[]{-117, 235, -196});
-        LOOT_SPAWNS.get(1).add(new int[]{-8, 235, -216});
-        LOOT_SPAWNS.get(1).add(new int[]{102, 235, -196});
-        LOOT_SPAWNS.get(1).add(new int[]{-62, 101, -175});
-        LOOT_SPAWNS.get(1).add(new int[]{185, 235, -92});
-        LOOT_SPAWNS.get(1).add(new int[]{-59, 101, -12});
-        LOOT_SPAWNS.get(1).add(new int[]{185, 234, 67});
-        LOOT_SPAWNS.get(1).add(new int[]{-24, 101, 85});
-        LOOT_SPAWNS.get(1).add(new int[]{-13, 234, 185});
-        LOOT_SPAWNS.get(1).add(new int[]{96, 234, 165});
-        LOOT_SPAWNS.put(2, new ArrayList<>());
-        LOOT_SPAWNS.get(2).add(new int[]{-24, 101, -276});
-        LOOT_SPAWNS.get(2).add(new int[]{-11, 235, -219});
-        LOOT_SPAWNS.get(2).add(new int[]{96, 235, -196});
-        LOOT_SPAWNS.get(2).add(new int[]{-59, 101, -172});
-        LOOT_SPAWNS.get(2).add(new int[]{188, 235, -95});
-        LOOT_SPAWNS.get(2).add(new int[]{-62, 101, -15});
-        LOOT_SPAWNS.get(2).add(new int[]{188, 234, 64});
-        LOOT_SPAWNS.get(2).add(new int[]{-21, 101, 88});
-        LOOT_SPAWNS.get(2).add(new int[]{-11, 234, 188});
-        LOOT_SPAWNS.get(2).add(new int[]{99, 234, 168});
-        LOOT_SPAWNS.put(3, new ArrayList<>());
-        LOOT_SPAWNS.get(3).add(new int[]{-21, 101, -279});
-        LOOT_SPAWNS.get(3).add(new int[]{-13, 235, -216});
-        LOOT_SPAWNS.get(3).add(new int[]{99, 235, -199});
-        LOOT_SPAWNS.get(3).add(new int[]{-59, 101, -178});
-        LOOT_SPAWNS.get(3).add(new int[]{185, 235, -98});
-        LOOT_SPAWNS.get(3).add(new int[]{-59, 101, -66});
-        LOOT_SPAWNS.get(3).add(new int[]{185, 234, 13});
-        LOOT_SPAWNS.get(3).add(new int[]{-117, 235, 165});
-        LOOT_SPAWNS.get(3).add(new int[]{-8, 234, 185});
-        LOOT_SPAWNS.get(3).add(new int[]{102, 234, 165});
-    }
+    private static final int[][] LOOT_SPAWNS = {
+            {0, 114, 108, 0},
+            {-3, 114, 105, 1},
+            {3, 114, 105, 2},
+            {62, 114, 88, 0},
+            {59, 114, 85, 1},
+            {65, 114, 85, 2},
+            {103, 114, 32, 0},
+            {100, 114, 35, 1},
+            {100, 114, 29, 2},
+            {103, 115, -32, 0},
+            {100, 115, -29, 1},
+            {100, 115, -35, 2},
+            {62, 115, -88, 0},
+            {65, 115, -85, 1},
+            {59, 115, -85, 2},
+            {0, 115, -108, 0},
+            {3, 115, -105, 1},
+            {-3, 115, -105, 2},
+            {-62, 115, -88, 0},
+            {-59, 115, -85, 1},
+            {-65, 115, -85, 2},
+            {-103, 115, -32, 0},
+            {-100, 115, -35, 1},
+            {-100, 115, -29, 2},
+            {-103, 115, 32, 0},
+            {-100, 115, 29, 1},
+            {-100, 115, 35, 2},
+            {-62, 115, 88, 0},
+            {-65, 115, 85, 1},
+            {-59, 115, 85, 2},
+            //Candles
+            {1, 120, 74, 3},
+            {25, 120, 70, 3},
+            {50, 120, 53, 3},
+            {66, 120, 30, 3},
+            {73, 120, 0, 3},
+            {69, 120, -25, 3},
+            {59, 120, -44, 3},
+            {44, 120, -59, 3},
+            {24, 120, -69, 3},
+            {0, 120, -74, 3},
+            {-23, 120, -70, 3},
+            {-44, 120, -60, 3},
+            {-58, 120, -47, 3},
+            {-68, 120, -28, 3},
+            {-72, 120, -5, 3},
+            {-70, 120, 21, 3},
+            {-59, 120, 43, 3},
+            {-44, 120, 59, 3},
+            {-23, 120, 69, 3},
+            //cookies
+            {0, 117, 53, 4},
+            {31, 117, 43, 4},
+            {50, 117, 16, 4},
+            {50, 117, -16, 4},
+            {31, 117, -43, 4},
+            {0, 117, -53, 4},
+            {-31, 117, -43, 4},
+            {-50, 117, -16, 4},
+            {-50, 117, 16, 4},
+            {-31, 117, 43, 4},
+            //cake1
+            {0, 122, 36, 5},
+            {36, 122, -1, 5},
+            {0, 122, -36, 5},
+            {-36, 122, 0, 5},
+            //cake2
+            {15, 133, 21, 6},
+            {15, 133, -21, 6},
+            {-15, 133, -21, 6},
+            {-15, 133, 21, 6},
+            //cake inside
+            {-9, 132, 9, 7},
+            {10, 132, 10, 7},
+            {10, 132, -10, 7},
+            {-9, 132, -9, 7},
+            //cherry
+            {-1, 131, 0, 8},
+            {1, 131, 0, 8},
+            //topmid
+            {0, 147, 0, 9},
+            //in cherry
+            {0, 127, -1, 10}
+
+    };
 
     // Initialize the plugin instance (call from ZappierGames.onEnable)
     public static void init(JavaPlugin pluginInstance) {
@@ -121,7 +160,6 @@ public class Skybattle {
         world.getEntities().stream()
                 .filter(e -> !(e instanceof org.bukkit.entity.Player))
                 .forEach(org.bukkit.entity.Entity::remove);
-
 
         borderTime = 20;
         borderRadius = 150.0;
@@ -261,35 +299,130 @@ public class Skybattle {
                 }
             }
 
-            // Fill spawn chests with items based on tier (1: golden apple, 2: iron sword, 3: iron boots)
-            Material[] tierItems = {
-                    null,               // Tier 0 unused
-                    Material.GOLDEN_APPLE,  // Tier 1
-                    Material.IRON_SWORD,    // Tier 2
-                    Material.IRON_BOOTS     // Tier 3
-            };
+            // Load loot from skybattle_loot.txt
+            try (Reader lootReader = new InputStreamReader(Skybattle.class.getResourceAsStream("/skybattle_loot.txt"))) {
+                if (lootReader == null) {
+                    LOGGER.severe("skybattle_loot.txt not found in resources! Ensure it's bundled in the JAR.");
+                    return;
+                }
 
-            for (Map.Entry<Integer, List<int[]>> entry : LOOT_SPAWNS.entrySet()) {
-                int tier = entry.getKey();
-                Material item = tierItems[tier];
-                if (item == null) continue;
+                // Define tier mapping for loot spawns
+                String[][] tierKeys = {
+                        {"spawn1_1", "spawn1_2", "spawn1_3"},
+                        {"spawn2_1", "spawn2_2", "spawn2_3"},
+                        {"spawn3_1", "spawn3_2", "spawn3_3"},
+                        {"ring1_1", "ring1_2", "ring1_3", "ring1_4", "ring1_5", "ring1_6", "ring1_7", "ring1_8", "ring1_9", "ring1_10"},
+                        {"ring2_1", "ring2_2", "ring2_3"},
+                        {"ring3_1", "ring3_2", "ring3_3"},
+                        {"ring4_1", "ring4_2", "ring4_3"},
+                        {"center1_1", "center1_2", "center1_3"},
+                        {"center2_1", "center2_2", "center2_3"},
+                        {"center3_1", "center3_2", "center3_3"},
+                        {"center3_1", "center3_2", "center3_3"}
+                };
 
-                for (int[] pos : entry.getValue()) {
-                    Block block = world.getBlockAt(pos[0], pos[1], pos[2]);
+                Type lootType = new TypeToken<Map<String, List<Map<String, Object>>>>() {}.getType();
+                Map<String, List<Map<String, Object>>> lootData = gson.fromJson(lootReader, lootType);
+
+                // Fill spawn chests with items based on tier from skybattle_loot.txt
+                for (int i = 0; i < LOOT_SPAWNS.length; i++) {
+                    String tierKey = tierKeys[LOOT_SPAWNS[i][3]][(int)(Math.random() * tierKeys[LOOT_SPAWNS[i][3]].length)];
+                    List<Map<String, Object>> items = lootData.get(tierKey);
+
+                    Block block = world.getBlockAt(LOOT_SPAWNS[i][0], LOOT_SPAWNS[i][1], LOOT_SPAWNS[i][2]);
                     if (block.getType() == Material.CHEST) {
                         Chest chest = (Chest) block.getState();
-                        chest.getBlockInventory().addItem(new ItemStack(item));
+                        chest.getBlockInventory().clear();
+
+                        if (items != null) {
+                            for (Map<String, Object> itemData : items) {
+                                int slot = ((Number) itemData.get("Slot")).intValue();
+                                String itemId = (String) itemData.get("id");
+                                int count = ((Number) itemData.get("Count")).intValue();
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> tag = (Map<String, Object>) itemData.get("tag");
+
+                                Material material = Material.matchMaterial(itemId);
+                                if (material == null) {
+                                    LOGGER.warning("Invalid material ID: " + itemId + " at tier " + tierKey);
+                                    continue;
+                                }
+
+                                ItemStack item = new ItemStack(material, count);
+                                ItemMeta meta = item.getItemMeta();
+                                if (meta != null && tag != null) {
+                                    // Handle display name
+                                    @SuppressWarnings("unchecked")
+                                    Map<String, String> display = (Map<String, String>) tag.get("display");
+                                    if (display != null) {
+                                        String nameJson = display.get("Name");
+                                        if (nameJson != null) {
+                                            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', nameJson));
+                                        }
+                                    }
+
+                                    // Handle CustomModelData
+                                    if (tag.containsKey("CustomModelData")) {
+                                        meta.setCustomModelData(((Number) tag.get("CustomModelData")).intValue());
+                                    }
+
+                                    // Handle Enchantments
+                                    @SuppressWarnings("unchecked")
+                                    List<Map<String, Object>> enchantments = (List<Map<String, Object>>) tag.get("Enchantments");
+                                    if (enchantments != null) {
+                                        for (Map<String, Object> ench : enchantments) {
+                                            String enchId = (String) ench.get("id");
+                                            int level = ((Number) ench.get("lvl")).intValue();
+                                            Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft(enchId));
+                                            if (enchantment != null) {
+                                                meta.addEnchant(enchantment, level, true);
+                                            } else {
+                                                LOGGER.warning("Invalid enchantment ID: " + enchId + " for item " + itemId);
+                                            }
+                                        }
+                                    }
+
+                                    // Handle Damage (for items like shields)
+                                    if (tag.containsKey("Damage")) {
+                                        //meta.set (((Number) tag.get("Damage")).intValue());
+                                    }
+
+                                    // Handle Effects for suspicious stew
+                                    @SuppressWarnings("unchecked")
+                                    List<Map<String, Object>> effects = (List<Map<String, Object>>) tag.get("Effects");
+                                    if (effects != null && material == Material.SUSPICIOUS_STEW) {
+                                        for (Map<String, Object> effect : effects) {
+                                            String effectId = (String) effect.get("EffectId");
+                                            int duration = ((Number) effect.get("EffectDuration")).intValue();
+                                            // Note: Bukkit API does not directly support setting Suspicious Stew effects via ItemMeta
+                                            // You may need a custom solution or skip this for now
+                                            LOGGER.warning("Suspicious Stew effects not supported in this version: " + effectId);
+                                        }
+                                    }
+
+                                    item.setItemMeta(meta);
+                                }
+
+                                chest.getBlockInventory().setItem(slot, item);
+                            }
+                        } else {
+                            LOGGER.warning("No items found for tier: " + tierKey);
+                        }
+                    } else {
+                        Bukkit.broadcastMessage("POSITION AT " + LOOT_SPAWNS[i][0] + ", " + LOOT_SPAWNS[i][1] + ", " + LOOT_SPAWNS[i][2] + " IS NOT A CHEST!");
                     }
                 }
+            } catch (Exception e) {
+                LOGGER.severe("Failed to load Skybattle loot: " + e.getMessage());
+                e.printStackTrace();
+                return;
             }
 
             // Teleport players after map is loaded
             for (Player p : Bukkit.getOnlinePlayers()) {
                 int team = 0;
                 if (LootHunt.playerTeams.get(p.getName().toUpperCase()) != null) {
-                    Bukkit.broadcastMessage(LootHunt.playerTeams.get(p.getName().toUpperCase()));
                     for (int i = 1; i <= 10; i++) {
-                        Bukkit.broadcastMessage(teamNames[i]);
                         if (LootHunt.playerTeams.get(p.getName().toUpperCase()).equals(teamNames[i])) {
                             team = i;
                         }
@@ -330,7 +463,6 @@ public class Skybattle {
             // Loop through all players in the world
             Particle.DustOptions redDust = new Particle.DustOptions(Color.fromRGB(255, 20, 20), 1.8f);
             DamageSource voidSource = DamageSource.builder(DamageType.OUT_OF_WORLD).build();
-            // For each player in world, draw a column centered on the player's position:
             for (Player player : world.getPlayers()) {
                 Location center = player.getLocation();
                 double startY = center.getY() - 8.0; // 10 below
@@ -341,7 +473,6 @@ public class Skybattle {
                     player.damage(4.0, voidSource);
                 }
 
-                // iterate vertical layers first, then points (keeps cos/sin precomputed)
                 for (double prty = startY; prty <= endY; prty += Y_STEP) {
                     double x = center.x();
                     double z = center.z();
@@ -357,16 +488,12 @@ public class Skybattle {
                         sampleRate = 2;
                     }
                     for (int i = 0; i < POINTS; i += sampleRate) {
-                        //if ()
                         double prtx = 0.5 + cosCache[i] * borderRadius;
                         double prtz = 0.5 + sinCache[i] * borderRadius;
                         if (Math.abs(prtx - x) + Math.abs(prtz - z) > 24) {
                             continue;
                         }
 
-                        // Use the overload that passes data (DustOptions).
-                        // count = 1, offsets = 0, extra = 0, data = redDust
-                        // Player.spawnParticle has overload: spawnParticle(Particle, Location, int count, double offX, offY, offZ, double extra, T data)
                         player.spawnParticle(Particle.DUST, new Location(world, prtx, prty, prtz), 1, 0.0, 0.0, 0.0, 0.0, redDust);
                     }
                 }
@@ -374,10 +501,7 @@ public class Skybattle {
         }
     }
 
-
-
     private static void clearArea(World world, int width, int minY, int maxY) {
-        // Clear a rectangular area (~240x240)
         for (int x = -width; x <= width; x++) {
             for (int z = -width; z <= width; z++) {
                 for (int y = minY; y <= maxY; y++) {
