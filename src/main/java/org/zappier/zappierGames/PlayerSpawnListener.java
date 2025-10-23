@@ -1,7 +1,9 @@
 package org.zappier.zappierGames;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player; // Not strictly needed here, but fine to keep
 import org.bukkit.event.EventHandler;
@@ -33,6 +35,11 @@ public class PlayerSpawnListener implements Listener {
             compass.addEnchantment(Enchantment.VANISHING_CURSE, 1);
 
             player.getInventory().addItem(compass);
+        } else if (ZappierGames.gameMode == 10) {
+            World skybattleWorld = Bukkit.getWorld("skybattle_world");
+            if (skybattleWorld != null) {
+                event.setRespawnLocation(new Location(skybattleWorld, 0.5, 150, 0.5));
+            }
         }
     }
 

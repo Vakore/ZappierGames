@@ -99,22 +99,55 @@ public class GUI {
                     "§7Current: " + (ZappierGames.showTrackerDimension == 1 ? "On" : "Off"), "§aClick to toggle."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to Manhunt menu."));
+            // Add this to the Skybattle submenu case in initializeSubmenu:
         } else if (submenuType.equals("Skybattle")) {
-            inv.setItem(10, createGuiItem(Material.MAP, 1, "§bSet Border Size",
-                    "§7Current: " + ZappierGames.borderSize, "§aClick to select size."));
-            inv.setItem(11, createGuiItem(Material.EMERALD, 1, "§2Start Skybattle",
+            inv.setItem(10, createGuiItem(Material.GREEN_BANNER, 1, "§aJoin Team",
+                    "§7Join a team for Skybattle.", "§aClick to select."));
+            inv.setItem(11, createGuiItem(Material.BLAZE_POWDER, 1, "§eTwists",
+                    "§7Enable/disable game twists.", "§aClick to configure."));
+            inv.setItem(12, createGuiItem(Material.MAP, 1, "§bSelect Map",
+                    "§7Choose your battlefield.", "§aClick to select."));
+            inv.setItem(13, createGuiItem(Material.EMERALD, 1, "§2Start Skybattle",
                     "§7Start the game in the void world!", "§aClick to begin."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));
-        } else if (submenuType.equals("Skybattle Border Size")) {
-            inv.setItem(10, createGuiItem(Material.PAPER, 1, "§b100 Blocks",
-                    "§7Small arena.", "§aClick to set."));
-            inv.setItem(11, createGuiItem(Material.PAPER, 1, "§b200 Blocks",
-                    "§7Medium arena.", "§aClick to set."));
-            inv.setItem(12, createGuiItem(Material.PAPER, 1, "§b500 Blocks",
-                    "§7Large arena.", "§aClick to set."));
-            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
-                    "§7Return to Skybattle menu."));
+        } else if (submenuType.equals("Skybattle Team Selection")) {
+        String[] teamNames = {"RED", "BLUE", "GREEN", "DARK_GREEN", "GOLD", "WHITE", "AQUA", "LIGHT_PURPLE", "DARK_PURPLE", "YELLOW"};
+        Material[] teamWools = {
+                Material.RED_WOOL, Material.BLUE_WOOL, Material.LIME_WOOL, Material.GREEN_WOOL,
+                Material.ORANGE_WOOL, Material.WHITE_WOOL, Material.LIGHT_BLUE_WOOL,
+                Material.MAGENTA_WOOL, Material.PURPLE_WOOL, Material.YELLOW_WOOL
+        };
+
+        for (int i = 0; i < teamNames.length; i++) {
+            inv.setItem(10 + i, createGuiItem(teamWools[i], 1, "§a" + teamNames[i],
+                    "§7Join " + teamNames[i] + " team.", "§aClick to join."));
+        }
+        inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                "§7Return to Skybattle menu."));
+
+    } else if (submenuType.equals("Skybattle Twists")) {
+        for (int i = 0; i < 8; i++) { // Assuming 8 twists
+            String status = (Skybattle.TWISTS[i] > 0) ? "§aON" : "§cOFF";
+            inv.setItem(10 + i, createGuiItem(Material.BLAZE_POWDER, 1, "§eTwist " + i,
+                    "§7Current: " + status, "§aClick to toggle."));
+        }
+        inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                "§7Return to Skybattle menu."));
+
+    } else if (submenuType.equals("Skybattle Map Selection")) {
+        inv.setItem(10, createGuiItem(Material.MAP, 1, "§bSlushly's Cake",
+                "§7The classic."));
+        inv.setItem(11, createGuiItem(Material.MAP, 1, "§bWIP",
+                "§7WIP", "§7§oWIP"));
+        inv.setItem(12, createGuiItem(Material.MAP, 1, "§bWIP",
+                "§7WIP.", "§7§o(WIP)"));
+        inv.setItem(13, createGuiItem(Material.MAP, 1, "§bWIP",
+                "§7WIP.", "§7§o(WIP)"));
+        inv.setItem(14, createGuiItem(Material.MAP, 1, "§bWIP",
+                "§7WIP", "§7§o(WIP)"));
+        inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                "§7Return to Skybattle menu."));
         } else {
             inv.setItem(13, createGuiItem(Material.BOOK, 1, "§e" + submenuType + " Settings",
                     "§7Placeholder for configuration.", "§aWork in progress!"));

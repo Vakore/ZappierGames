@@ -3,6 +3,7 @@ package org.zappier.zappierGames;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -30,44 +31,17 @@ public class DamageHandler implements Listener {
 
     @EventHandler
     public void onPlayerDamage(EntityDamageEvent event) {
+        if (ZappierGames.gameMode != 10) {return;}
         if (!(event.getEntity() instanceof Player player)) return;
 
-        // Check if damage would "kill" the player
-        double finalHealth = player.getHealth() - event.getFinalDamage();
-        if (finalHealth > 0) return; // Player survives
-
-        // Cancel the "death"
-        event.setCancelled(true);
-
-        // Handle item dropping
-        if (!keepItemsPlayers.contains(player.getUniqueId())) {
-            for (ItemStack item : player.getInventory().getContents()) {
-                if (item != null) {
-                    player.getWorld().dropItemNaturally(player.getLocation(), item);
-                }
+        if (event.getDamageSource().getCausingEntity() instanceof Creeper creeper) {
+            //Bukkit.broadcastMessage("Creeper! " + event.getEntity().getName() + ", " + event.getDamageSource().getCausingEntity().getName());
+            Player attacker = Bukkit.getPlayer(event.getDamageSource().getCausingEntity().getName());
+            if (attacker != null && attacker.isOnline()) {
+                event.setCancelled(true);
+                ((Player)(event.getEntity())).damage(event.getDamage(), attacker);
             }
-            player.getInventory().clear();
         }
 
-        // Transition the player to spectator mode
-        player.setGameMode(GameMode.SPECTATOR);
-        player.sendMessage("You have been defeated and are now in spectator mode.");
-
-        // Optional: Broadcast a message to the server
-        Bukkit.broadcastMessage(player.getName() + " has fallen and entered spectator mode.");
-        respawnPlayer(player);
-    }
-
-    public void respawnPlayer(Player player) {
-        // Respawn the player manually
-        if (player.getGameMode() == GameMode.SPECTATOR) {
-            player.teleport(player.getWorld().getSpawnLocation()); // Teleport to spawn or a set location
-            player.setGameMode(GameMode.SURVIVAL); // Reset game mode
-            player.setHealth(20.0);
-            player.setFoodLevel(20);
-            player.setSaturation(5.0f);
-            player.setExperienceLevelAndProgress(0);
-            player.sendMessage("You have respawned!");
-        }
     }
 }

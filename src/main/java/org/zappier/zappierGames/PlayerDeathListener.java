@@ -1,10 +1,9 @@
 package org.zappier.zappierGames;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
+import net.kyori.adventure.text.Component;
+import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -71,6 +70,72 @@ public class PlayerDeathListener implements Listener {
                     }
                 }
                 break;
+
+            case 10:
+                player.getInventory().remove(Material.BLACK_CONCRETE);
+                player.getInventory().remove(Material.BLUE_CONCRETE);
+                player.getInventory().remove(Material.BROWN_CONCRETE);
+                player.getInventory().remove(Material.CYAN_CONCRETE);
+                player.getInventory().remove(Material.GRAY_CONCRETE);
+                player.getInventory().remove(Material.GREEN_CONCRETE);
+                player.getInventory().remove(Material.LIGHT_BLUE_CONCRETE);
+                player.getInventory().remove(Material.LIGHT_GRAY_CONCRETE);
+                player.getInventory().remove(Material.LIME_CONCRETE);
+                player.getInventory().remove(Material.MAGENTA_CONCRETE);
+                player.getInventory().remove(Material.ORANGE_CONCRETE);
+                player.getInventory().remove(Material.PINK_CONCRETE);
+                player.getInventory().remove(Material.PURPLE_CONCRETE);
+                player.getInventory().remove(Material.RED_CONCRETE);
+                player.getInventory().remove(Material.WHITE_CONCRETE);
+                player.getInventory().remove(Material.YELLOW_CONCRETE);
+                for (ItemStack item : player.getInventory().getContents()) {
+                    if (item != null) {
+                        player.getWorld().dropItemNaturally(player.getLocation(), item);
+                    }
+                }
+                player.getInventory().clear();
+                player.setGameMode(GameMode.SPECTATOR);
+                player.playSound(player.getLocation(), Sound.BLOCK_CONDUIT_DEACTIVATE, 1.0f, 0.8f);
+                player.setHealth(20.0);
+                player.setFoodLevel(20);
+                player.setSaturation(5.0f);
+                player.setExperienceLevelAndProgress(0);
+                if (player.getY() < 80) {
+                    player.teleport(new Location(player.getWorld(), 0, 150, 0));
+                }
+
+
+                Team diedTeam = player.getScoreboard().getEntryTeam(player.getName());
+                Component diedPrefixComponent = Component.empty();
+                if (diedTeam != null) {
+                    diedPrefixComponent = diedTeam.prefix();
+                }
+
+                if (player.getKiller() == null) {
+                    Entity killer = event.getDamageSource().getCausingEntity();
+                    if (killer != null) {
+
+                        Team killerTeam = getTeamOfEntity(killer);
+                        Component killerPrefixComponent = Component.empty();
+                        if (killerTeam != null) {
+                            killerPrefixComponent = killerTeam.prefix();
+                        }
+                        Bukkit.broadcast(diedPrefixComponent.append(player.displayName()).append(Component.text(" died to ")).append(killerPrefixComponent.append(Component.text(killer.getName() + ""))));
+                    } else {
+                        Bukkit.broadcast(diedPrefixComponent.append(player.displayName()).append(Component.text(" died of natural causes").color(null)));
+                    }
+                } else {
+                    Team killerTeam = player.getScoreboard().getEntryTeam(player.getName());
+                    Component killerPrefixComponent = Component.empty();
+                    if (killerTeam != null) {
+                        killerPrefixComponent = killerTeam.prefix();
+                    }
+                    Bukkit.broadcast(diedPrefixComponent.append(player.displayName()).append(Component.text(" was killed by ").color(null)).append(killerPrefixComponent.append(player.getKiller().displayName())).append(Component.text("").color(null)));
+                }
+                //Bukkit.broadcastMessage("DEBUG: GIVE ALL SURVIVING PLAYERS +3 POINTS!");
+
+                event.setCancelled(true);
+                break;
         }
     }
 
@@ -98,6 +163,16 @@ public class PlayerDeathListener implements Listener {
         if (newTeam != null) {
             newTeam.addEntry(player.getName());
         }
+    }
+
+    public static Team getTeamOfEntity(Entity entity) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        for (Team team : scoreboard.getTeams()) {
+            if (team.hasEntry(entity.getUniqueId().toString())) {
+                return team;
+            }
+        }
+        return null; // Player not found in any team
     }
 
     // Helper method to respawn the player after a delay

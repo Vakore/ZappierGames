@@ -158,7 +158,8 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AutoTNTListener(this, "skybattle_world"), this);
         getServer().getPluginManager().registerEvents(new PlayerSpawnListener(this), this);
         getServer().getPluginManager().registerEvents(new CustomPearlsListener(this), this);
-        //getServer().getPluginManager().registerEvents(new DamageHandler(), this);//Let's not for now
+        getServer().getPluginManager().registerEvents(new CreeperSpawnListener(), this);
+        getServer().getPluginManager().registerEvents(new DamageHandler(), this);
 
 
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
