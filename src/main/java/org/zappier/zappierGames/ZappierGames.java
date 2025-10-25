@@ -142,6 +142,7 @@ public final class ZappierGames extends JavaPlugin {
         loadItemValues();
         createVoidWorld("skybattle_world");
         Skybattle.init(instance);
+        ParkourRace.init(instance);
         this.getCommand("loothunt").setExecutor(new LoothuntCommand());
         this.getCommand("manhunt").setExecutor(new ManhuntCommand());
         this.getCommand("getcompass").setExecutor(new GetcompassCommand());
@@ -275,6 +276,13 @@ public final class ZappierGames extends JavaPlugin {
                     } else {
                         getLogger().info("Sky battle not running!");
                     }
+                } else if (gameMode == 20) {
+                    World skybattleWorld = Bukkit.getWorld("skybattle_world");
+                    if (skybattleWorld != null) {
+                        ParkourRace.run(skybattleWorld);
+                    } else {
+                        getLogger().info("Parkour Race not running!");
+                    }
                 }
             }
         };
@@ -313,7 +321,7 @@ public final class ZappierGames extends JavaPlugin {
             // Set world border
             WorldBorder border = world.getWorldBorder();
             border.setCenter(0, 0);
-            border.setSize(borderSize);
+            //border.setSize(borderSize);
 
             getLogger().info("Void world '" + worldName + "' created successfully!");
         } else {

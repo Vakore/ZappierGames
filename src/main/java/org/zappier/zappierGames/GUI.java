@@ -127,9 +127,27 @@ public class GUI {
                 "§7Return to Skybattle menu."));
 
     } else if (submenuType.equals("Skybattle Twists")) {
+            String[] twistNames = {
+                    "§eFast TNT",
+                    "§eWIP 1",
+                    "§eWIP 2",
+                    "§eWIP 3",
+                    "§eWIP 4",
+                    "§eWIP 5",
+                    "§eWIP 6",
+                    "§eWIP 7",
+                    "§eWIP 8",
+                    "§eWIP 9",
+                    "§eWIP 10",
+                    "WIP 11",
+                    "WIP 12",
+                    "WIP 13",
+                    "WIP 14",
+                    "WIP 15"
+            };
         for (int i = 0; i < 8; i++) { // Assuming 8 twists
             String status = (Skybattle.TWISTS[i] > 0) ? "§aON" : "§cOFF";
-            inv.setItem(10 + i, createGuiItem(Material.BLAZE_POWDER, 1, "§eTwist " + i,
+            inv.setItem(10 + i, createGuiItem(Material.BLAZE_POWDER, 1, twistNames[i],
                     "§7Current: " + status, "§aClick to toggle."));
         }
         inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
@@ -148,6 +166,13 @@ public class GUI {
                 "§7WIP", "§7§o(WIP)"));
         inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                 "§7Return to Skybattle menu."));
+        } else if (submenuType.equals("Parkour Race")) {
+            inv.setItem(13, createGuiItem(Material.GOLD_BLOCK, 1, "§e" + submenuType + " Settings",
+                    "§7Resume Parkour Race", "§a(Only activates block switch functionality)"));
+            inv.setItem(14, createGuiItem(Material.EMERALD, 1, "§2Start Parkour Race",
+                    "§7Start the game with current settings!", "§aClick to begin."));
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to the main menu."));
         } else {
             inv.setItem(13, createGuiItem(Material.BOOK, 1, "§e" + submenuType + " Settings",
                     "§7Placeholder for configuration.", "§aWork in progress!"));

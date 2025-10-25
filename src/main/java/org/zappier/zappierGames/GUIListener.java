@@ -227,7 +227,7 @@ public class GUIListener implements Listener {
                     ZappierGames.gameMode = 10; // Skybattle gameMode (matches your code)
                     World skybattleWorld = Bukkit.getWorld("skybattle_world");
                     if (skybattleWorld != null) {
-                        Skybattle.start(skybattleWorld, 200); // Fixed border size
+                        Skybattle.start(skybattleWorld, 5000); // Fixed border size
                         player.closeInventory();
                         player.sendMessage(ChatColor.GREEN + "Skybattle started!");
                         validClick = true;
@@ -293,9 +293,27 @@ public class GUIListener implements Listener {
                 validClick = true;
             } else if (slot >= 10 && slot <= 17) { // 8 twist slots
                 int twistIndex = slot - 10;
+                String[] twistNames = {
+                        "§eFast TNT",
+                        "§eWIP 1",
+                        "§eWIP 2",
+                        "§eWIP 3",
+                        "§eWIP 4",
+                        "§eWIP 5",
+                        "§eWIP 6",
+                        "§eWIP 7",
+                        "§eWIP 8",
+                        "§eWIP 9",
+                        "§eWIP 10",
+                        "WIP 11",
+                        "WIP 12",
+                        "WIP 13",
+                        "WIP 14",
+                        "WIP 15"
+                };
                 Skybattle.TWISTS[twistIndex] = -Skybattle.TWISTS[twistIndex];
                 String status = (Skybattle.TWISTS[twistIndex] > 0) ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF";
-                player.sendMessage(ChatColor.YELLOW + "Twist " + twistIndex + " set to " + status + "!");
+                player.sendMessage(ChatColor.YELLOW + "Twist " + twistNames[twistIndex] + " set to " + status + "!");
                 gui = new GUI("Skybattle Twists");
                 gui.open(player);
                 validClick = true;
@@ -311,6 +329,39 @@ public class GUIListener implements Listener {
             }
         } else if (title.equals("Skybattle Border Size Menu")) {
             // Removed - no longer needed
+        } else if (title.equals("Parkour Race Menu")) {
+            switch (slot) {
+                case 10: // Join Team
+                    //gui = new GUI("Skybattle Team Selection");
+                    //gui.open(player);
+                    //validClick = true;
+                    break;
+                case 11: // Twists
+                    break;
+                case 12: // Select Map
+                    break;
+                case 13: // Resume Parkour Race
+                    ZappierGames.gameMode = 20;
+                    ParkourRace.startTime = -1;
+                    break;
+                case 14: // Start Parkour Race
+                    ZappierGames.gameMode = 20; // Parkour Race gameMode (matches your code)
+                    World skybattleWorld = Bukkit.getWorld("skybattle_world");
+                    if (skybattleWorld != null) {
+                        ParkourRace.start(skybattleWorld); // Fixed border size
+                        player.closeInventory();
+                        player.sendMessage(ChatColor.GREEN + "Parkour Race started!");
+                        validClick = true;
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Skybattle world not found!");
+                    }
+                    break;
+                case 26: // Back
+                    gui = new GUI();
+                    gui.open(player);
+                    validClick = true;
+                    break;
+            }
         } else if (title.endsWith(" Menu")) {
             // Handle placeholder submenus
             if (slot == 26) { // Back

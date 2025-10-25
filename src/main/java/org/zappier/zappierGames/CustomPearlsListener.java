@@ -113,27 +113,27 @@ public class CustomPearlsListener implements Listener {
         String effectName = "";
         switch (sbitem) {
             case 1:
-                effect = new PotionEffect(PotionEffectType.LEVITATION, 3 * 20, 4); // 3 seconds, amplifier 4 (level 5)
+                effect = new PotionEffect(PotionEffectType.LEVITATION, 3 * 20, 3); // 3 seconds, amplifier 4 (level 5)
                 effectName = "Levitation";
                 //plugin.getLogger().info("Applying Levitation effect");
                 break;
             case 2:
-                effect = new PotionEffect(PotionEffectType.SPEED, 3 * 20, 3); // 3 seconds, amplifier 3 (level 4)
+                effect = new PotionEffect(PotionEffectType.SPEED, 3 * 20, 2); // 3 seconds, amplifier 3 (level 4)
                 effectName = "Speed (3)";
                 //plugin.getLogger().info("Applying Speed (3) effect");
                 break;
             case 20:
-                effect = new PotionEffect(PotionEffectType.SPEED, 3 * 20, 20); // 3 seconds, amplifier 20 (level 21)
+                effect = new PotionEffect(PotionEffectType.SPEED, 3 * 20, 19); // 3 seconds, amplifier 20 (level 21)
                 effectName = "Speed (20)";
                 //plugin.getLogger().info("Applying Speed (20) effect");
                 break;
             case 3:
-                effect = new PotionEffect(PotionEffectType.REGENERATION, 4 * 20, 2); // 4 seconds, amplifier 2 (level 3)
+                effect = new PotionEffect(PotionEffectType.REGENERATION, 4 * 20, 1); // 4 seconds, amplifier 2 (level 3)
                 effectName = "Regeneration";
                 //plugin.getLogger().info("Applying Regeneration effect");
                 break;
             case 4:
-                effect = new PotionEffect(PotionEffectType.JUMP_BOOST, 7 * 20, 6); // 7 seconds, amplifier 6 (level 7)
+                effect = new PotionEffect(PotionEffectType.JUMP_BOOST, 7 * 20, 5); // 7 seconds, amplifier 6 (level 7)
                 effectName = "Jump Boost";
                 //plugin.getLogger().info("Applying Jump Boost effect");
                 break;

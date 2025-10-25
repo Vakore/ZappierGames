@@ -36,7 +36,7 @@ public class AutoTNTListener implements Listener {
 
             // Spawn primed TNT instantly
             TNTPrimed tnt = (TNTPrimed) world.spawnEntity(loc, EntityType.TNT);
-            tnt.setFuseTicks(40); // default 4 seconds; set lower if you want instant detonation
+            tnt.setFuseTicks((Skybattle.TWISTS[0] == 1) ? 40 : 80); // default 4 seconds; set lower if you want instant detonation
             tnt.setSource(player); // sets player as cause
 
             // Optional: remove one TNT from the player's hand

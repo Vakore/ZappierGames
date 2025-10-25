@@ -1,17 +1,16 @@
 package org.zappier.zappierGames;
 
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -120,9 +119,9 @@ public class Skybattle {
         border.setCenter(0, 0);
         border.setSize(borderSize);
 
-        try (Reader reader = new InputStreamReader(Skybattle.class.getResourceAsStream("/skybattle_map.txt"))) {
+        try (Reader reader = new InputStreamReader(Skybattle.class.getResourceAsStream("/skybattle_maps/skybattle_map.txt"))) {
             if (reader == null) {
-                LOGGER.severe("skybattle_map.txt not found in resources!");
+                LOGGER.severe("skybattle_maps/skybattle_map.txt not found in resources!");
                 return;
             }
 
@@ -233,9 +232,9 @@ public class Skybattle {
                 }
             }
 
-            try (Reader lootReader = new InputStreamReader(Skybattle.class.getResourceAsStream("/skybattle_loot.txt"))) {
+            try (Reader lootReader = new InputStreamReader(Skybattle.class.getResourceAsStream("/skybattle_maps/skybattle_loot.txt"))) {
                 if (lootReader == null) {
-                    LOGGER.severe("skybattle_loot.txt not found in resources!");
+                    LOGGER.severe("skybattle_maps/skybattle_loot.txt not found in resources!");
                     return;
                 }
 
@@ -433,6 +432,7 @@ public class Skybattle {
 
                 // Equip iron pickaxe
                 ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
+                pickaxe.addEnchantment(Enchantment.EFFICIENCY, 3);
                 if (slots[3] >= 1 && slots[3] <= 36) p.getInventory().setItem(slots[3] - 1, pickaxe);
                 else p.getInventory().addItem(pickaxe);
 
@@ -712,11 +712,12 @@ public class Skybattle {
 
         if (borderTime < 0) {
             borderTime = 20;
-            borderRadius -= 0.5;
+            if (startTime != -100) {borderRadius -= 0.5;}
             if (borderRadius < 0) borderRadius = 0;
 
             Particle.DustOptions redDust = new Particle.DustOptions(Color.fromRGB(255, 20, 20), 1.8f);
             for (Player player : world.getPlayers()) {
+                if (startTime == -100) {continue;}
                 Location center = player.getLocation();
                 double startY = center.getY() - 8.0;
                 double endY = center.getY() + 8.0;
@@ -758,6 +759,7 @@ public class Skybattle {
 
         if (aliveTeams.size() == 1 && startTime != -100) {
             startTime = -100;
+            borderRadius = 200;
 
             String winningTeam = aliveTeams.iterator().next();
             String coloredTeamName = getColoredTeamName(winningTeam); // Get colorized team name

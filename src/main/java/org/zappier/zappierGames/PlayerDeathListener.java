@@ -125,7 +125,7 @@ public class PlayerDeathListener implements Listener {
                         Bukkit.broadcast(diedPrefixComponent.append(player.displayName()).append(Component.text(" died of natural causes").color(null)));
                     }
                 } else {
-                    Team killerTeam = player.getScoreboard().getEntryTeam(player.getName());
+                    Team killerTeam = player.getScoreboard().getEntryTeam(player.getKiller().getName());
                     Component killerPrefixComponent = Component.empty();
                     if (killerTeam != null) {
                         killerPrefixComponent = killerTeam.prefix();
