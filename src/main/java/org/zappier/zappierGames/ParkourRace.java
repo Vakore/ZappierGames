@@ -49,11 +49,25 @@ public class ParkourRace {
     record Offset(int dx, int dy, int dz) {}
     record LoadAction(String nbtName, Offset structOffset, Offset redstoneOffset) {}
     record FillAction(int x1, int y1, int z1, int x2, int y2, int z2, Material material, BlockData data) {}
-    record ParkourSegment(String displayName, LoadAction[] loads, FillAction fill) {}
+    record ParkourSegment(String displayName, LoadAction[] loads, FillAction[] fills) {}
 
+    private static class SegDifficulty {
+        String name;
+        int cap;
+        List<String> segments;
+
+        public SegDifficulty(String str, int num) {
+            this.name = str;
+            cap = num;
+            segments = new ArrayList<>();
+        }
+    }
     private static final List<ParkourSegment> SEGMENTS = new ArrayList<>();
+    private static List<SegDifficulty> difficultyMap = new ArrayList<>();
 
     private static void loadSegmentsFromFile() {
+        difficultyMap.clear();
+
         InputStream is = ParkourRace.class.getClassLoader().getResourceAsStream("parkourrace/segmentLoads.txt");
         if (is == null) {
             LOGGER.severe("segmentLoads.txt NOT FOUND in resources/parkourrace/!");
@@ -72,14 +86,23 @@ public class ParkourRace {
                 if (line.isEmpty() || line.startsWith("#")) {
                     LOGGER.info("  [Line " + lineNum + "] Skipped: " + rawLine);
                     continue;
+                } else if (line.startsWith("@")) {
+                    LOGGER.info("  [Line " + lineNum + "] DIFFICULTY: " + line.substring(1) + ", Skipped: " + rawLine);
+                    String name = line.substring(1).split(" ")[0];
+                    int num = Integer.parseInt(line.substring(1).split(" ")[1]);
+                    difficultyMap.add(new SegDifficulty(name, num));
+                    continue;
                 }
 
                 LOGGER.info("  [Line " + lineNum + "] Raw: " + rawLine);
 
-                // === SPLIT ON " ... fills:" TO SEPARATE EXTRA & FILL ===
-                String[] mainAndFill = line.split(" \\.\\.\\. fills: ", 2);
-                String mainPart = mainAndFill[0];
-                String fillPart = mainAndFill.length > 1 ? mainAndFill[1] : null;
+                // === SPLIT ON " ... fills: " TO GET ALL FILL SECTIONS ===
+                String[] fillSplits = line.split(" \\.\\.\\. fills: ");
+                String mainPart = fillSplits[0];
+                List<String> fillParts = new ArrayList<>();
+                for (int i = 1; i < fillSplits.length; i++) {
+                    fillParts.add(fillSplits[i]);
+                }
 
                 String[] parts = mainPart.split("\\|", -1);
                 LOGGER.info("    → Split main into " + parts.length + " parts");
@@ -109,9 +132,10 @@ public class ParkourRace {
                     LOGGER.info("      + Extra: " + eNbt + " @ " + eStruct + " | redstone @ " + eRed);
                 }
 
-                // === FILL ACTION: only if fillPart exists ===
-                FillAction fill = null;
-                if (fillPart != null && !fillPart.trim().isEmpty()) {
+                // === MULTIPLE FILL ACTIONS ===
+                List<FillAction> fills = new ArrayList<>();
+                for (String fillPart : fillParts) {
+                    if (fillPart.trim().isEmpty()) continue;
                     String[] fillRaw = fillPart.split("\\|", -1);
                     LOGGER.info("    → Fill raw: " + Arrays.toString(fillRaw));
                     if (fillRaw.length >= 4) {
@@ -121,18 +145,17 @@ public class ParkourRace {
                         BlockData data = Bukkit.createBlockData(fillRaw[3].trim());
 
                         if (from.length == 3 && to.length == 3 && mat != null && data != null) {
-                            fill = new FillAction(from[0], from[1], from[2], to[0], to[1], to[2], mat, data);
+                            fills.add(new FillAction(from[0], from[1], from[2], to[0], to[1], to[2], mat, data));
                             LOGGER.info("      + Fill: " + mat + " from " + Arrays.toString(from) + " to " + Arrays.toString(to));
                         } else {
                             LOGGER.warning("      Fill parse failed");
                         }
                     }
-                } else {
-                    LOGGER.info("    → No fill");
                 }
 
-                SEGMENTS.add(new ParkourSegment(displayName, loads.toArray(new LoadAction[0]), fill));
-                LOGGER.info("    → SEGMENT LOADED: " + displayName + " | " + loads.size() + " loads | fill=" + (fill != null));
+                difficultyMap.getLast().segments.add(displayName);
+                SEGMENTS.add(new ParkourSegment(displayName, loads.toArray(new LoadAction[0]), fills.isEmpty() ? null : fills.toArray(new FillAction[0])));
+                LOGGER.info("    → SEGMENT LOADED: " + displayName + " | " + loads.size() + " loads | fills=" + fills.size());
             }
         } catch (Exception e) {
             LOGGER.severe("PARSE ERROR: " + e.getMessage());
@@ -270,16 +293,10 @@ public class ParkourRace {
         return Math.sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) + (z2 - z1)*(z2 - z1));
     };
 
+
+    private static int currentDifficulty = 0;
+    private static int currentCap = 0;
     public static void run(World world) {
-        /*
-execute as @a[tag=mapeater] at @s run kill @e[type=marker,distance=..400]
-execute as @a[tag=mapeater] at @s run tp @s ~ 140 ~
-execute as @a[tag=mapeater] at @s run fill ~-12 97 ~-20 ~-20 ~ ~20 air
-execute as @a[tag=mapeater] at @s run fill ~-5 97 ~-20 ~12 ~ ~20 air
-execute as @a[tag=mapeater] at @s run fill ~-17 97 ~-20 ~-5 ~ ~20 air
-execute as @a[tag=mapeater] at @s run tp @s ~11 140 ~
-execute as @a[tag=mapeater] at @s run kill @e[type=arrow]
-         */
         if (startTime == 1000) {
             BlockData air = Bukkit.createBlockData(Material.AIR);
             for (int i = -2; i < 200; i++) {
@@ -334,17 +351,39 @@ execute as @a[tag=mapeater] at @s run kill @e[type=arrow]
             return;
         }
         if (startTime > 0) {
-            if (startTime >= 4 && startTime % 5 == 0) {
+            if (startTime >= 4 && startTime % 3 == 0) {
                 if (SEGMENTS.isEmpty()) {
                     LOGGER.warning("No segments loaded! Cannot place structure.");
                     return;
                 }
-                int segIndex = (int) (Math.random() * SEGMENTS.size());
-                try {
-                    placeStructure(world, genPos.getBlockX(), genPos.getBlockY()-1, genPos.getBlockZ(), segIndex);
-                } catch (Exception e) {
-                    LOGGER.severe("Failed to place structure: " + e.getMessage());
-                    e.printStackTrace();
+
+
+                if (currentDifficulty >= difficultyMap.size()) {
+                    startTime = 1;
+                } else {
+                    startTime += 3;
+                    //int segIndex = (int) (Math.random() * SEGMENTS.size());
+                    int segIndex = 0;
+                    String leStr = difficultyMap.get(currentDifficulty).segments.get(currentCap);
+                        for (ParkourSegment s: SEGMENTS) {
+                            if (s.displayName().equals(leStr)) {
+                                segIndex = SEGMENTS.indexOf(s);
+                                LOGGER.info("Set segIndex to " + segIndex + ", " + s.displayName + " : " + leStr);
+                            }
+                        }
+                    LOGGER.info("Seg index of " + difficultyMap.get(currentDifficulty).segments.get(currentCap) + ", " + currentDifficulty + ", " + currentCap + " : " + segIndex + " - " + SEGMENTS.get(segIndex).displayName);
+                    try {
+                        placeStructure(world, genPos.getBlockX(), genPos.getBlockY() - 1, genPos.getBlockZ(), segIndex);
+                    } catch (Exception e) {
+                        LOGGER.severe("Failed to place structure: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+
+                currentCap++;
+                if (currentCap >= difficultyMap.get(currentDifficulty).cap) {
+                    currentDifficulty++;
+                    currentCap = 0;
                 }
             }
             startTime--;
@@ -628,16 +667,14 @@ execute as @a[tag=mapeater] at @s run kill @e[type=arrow]
         ParkourSegment seg = SEGMENTS.get(segIndex);
         StructureManager sm = plugin.getServer().getStructureManager();
 
-        // 1. Update marker name (original logic)
+        // 1. Update marker name
         List<Entity> someMarkers = world.getEntities().stream()
                 .filter(e -> e.getType() == EntityType.MARKER)
                 .collect(Collectors.toList());
 
         for (Entity marker : someMarkers) {
             if (marker.getX() != genPos.getX()) continue;
-
-            Set<String> tags = getVanillaEntityTags(marker);
-            if (tags.contains("pr_checkpoint")) {
+            if (getVanillaEntityTags(marker).contains("pr_checkpoint")) {
                 marker.customName(Component.text(ChatColor.YELLOW + seg.displayName));
             }
         }
@@ -647,32 +684,30 @@ execute as @a[tag=mapeater] at @s run kill @e[type=arrow]
             int sx = x + load.structOffset.dx;
             int sy = y + load.structOffset.dy;
             int sz = z + load.structOffset.dz;
-
             loadAndPlace(world, load.nbtName, sx, sy, sz, sm);
         }
 
-        // 3. Apply fill action (if any)
-        if (seg.fill != null) {
-            FillAction f = seg.fill;
-            for (int fx = Math.min(f.x1, f.x2); fx <= Math.max(f.x1, f.x2); fx++) {
-                for (int fy = Math.min(f.y1, f.y2); fy <= Math.max(f.y1, f.y2); fy++) {
-                    for (int fz = Math.min(f.z1, f.z2); fz <= Math.max(f.z1, f.z2); fz++) {
-                        world.getBlockAt(x + fx, y + fy, z + fz).setBlockData(f.data, true);
+        // 3. Apply ALL fill actions
+        if (seg.fills != null) {
+            for (FillAction f : seg.fills) {
+                for (int fx = Math.min(f.x1, f.x2); fx <= Math.max(f.x1, f.x2); fx++) {
+                    for (int fy = Math.min(f.y1, f.y2); fy <= Math.max(f.y1, f.y2); fy++) {
+                        for (int fz = Math.min(f.z1, f.z2); fz <= Math.max(f.z1, f.z2); fz++) {
+                            world.getBlockAt(x + fx, y + fy, z + fz).setBlockData(f.data, true);
+                        }
                     }
                 }
             }
         }
 
-        // 4. Update genPos from the *last* pr_checkpoint marker
+        // 4. Update genPos from last pr_checkpoint
         List<Entity> markers = world.getEntities().stream()
                 .filter(e -> e.getType() == EntityType.MARKER)
                 .collect(Collectors.toList());
 
         for (Entity marker : markers) {
             if (marker.getX() <= genPos.getX()) continue;
-
-            Set<String> tags = getVanillaEntityTags(marker);
-            if (tags.contains("pr_checkpoint")) {
+            if (getVanillaEntityTags(marker).contains("pr_checkpoint")) {
                 genPos = marker.getLocation();
             }
         }
