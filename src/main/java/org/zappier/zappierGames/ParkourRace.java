@@ -39,10 +39,15 @@ public class ParkourRace {
     private static final PotionEffect invincibleEffect = new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 10, true, false, false);
     private static List<String> checkpointNames = new ArrayList<>();
     private static Map<String, Location> playerCheckpoints = new HashMap<>();
+    private static Map<String, Integer> playerScores = new HashMap<>();
     public static int startTime = -1;
     private static int loopTimer = 0;
     private static int loopTimer2 = 0;
+    private static int timeLeft = 0;
+    private static int timeToStart = 0;
     private static Location genPos;
+
+    private static PotionEffect fireResEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 20*5, 4);
 
     private static int mapEaterX = 0;
 
@@ -58,15 +63,28 @@ public class ParkourRace {
 
         public SegDifficulty(String str, int num) {
             this.name = str;
-            cap = num;
-            segments = new ArrayList<>();
+            this.cap = num;
+            this.segments = new ArrayList<>();
+        }
+
+        public SegDifficulty(SegDifficulty other) {
+            this.name = other.name;
+            this.cap = other.cap;
+            this.segments = new ArrayList<>(other.segments);   // deep copy of the list
+        }
+
+        @Override
+        public String toString() {
+            return "SegDifficulty{name='" + name + "', cap=" + cap + ", segments=" + segments + '}';
         }
     }
     private static final List<ParkourSegment> SEGMENTS = new ArrayList<>();
+    private static List<SegDifficulty> realDifficultyMap = new ArrayList<>();
     private static List<SegDifficulty> difficultyMap = new ArrayList<>();
 
     private static void loadSegmentsFromFile() {
         difficultyMap.clear();
+        realDifficultyMap.clear();
 
         InputStream is = ParkourRace.class.getClassLoader().getResourceAsStream("parkourrace/segmentLoads.txt");
         if (is == null) {
@@ -90,7 +108,7 @@ public class ParkourRace {
                     LOGGER.info("  [Line " + lineNum + "] DIFFICULTY: " + line.substring(1) + ", Skipped: " + rawLine);
                     String name = line.substring(1).split(" ")[0];
                     int num = Integer.parseInt(line.substring(1).split(" ")[1]);
-                    difficultyMap.add(new SegDifficulty(name, num));
+                    realDifficultyMap.add(new SegDifficulty(name, num));
                     continue;
                 }
 
@@ -153,7 +171,7 @@ public class ParkourRace {
                     }
                 }
 
-                difficultyMap.getLast().segments.add(displayName);
+                realDifficultyMap.getLast().segments.add(displayName);
                 SEGMENTS.add(new ParkourSegment(displayName, loads.toArray(new LoadAction[0]), fills.isEmpty() ? null : fills.toArray(new FillAction[0])));
                 LOGGER.info("    → SEGMENT LOADED: " + displayName + " | " + loads.size() + " loads | fills=" + fills.size());
             }
@@ -259,8 +277,28 @@ public class ParkourRace {
         loadSegmentsFromFile();
     }
 
+
+    private static int currentDifficulty = 0;
+    private static int currentCap = 0;
+
     public static void start(World world) {
-        startTime = 1100;
+        currentDifficulty = 0;
+        currentCap = 0;
+        difficultyMap.clear();
+        difficultyMap = realDifficultyMap.stream()
+                .map(SegDifficulty::new)
+                .collect(Collectors.toList());
+        Random rnd = new Random();
+        for (SegDifficulty diff : difficultyMap) {
+            Collections.shuffle(diff.segments, rnd);
+        }
+
+
+
+        startTime = 1200;
+        timeLeft = 20 * 60 * 11 + (20 * 10);
+        //timeLeft = 20 * 60 * 1 + (20 * 10);
+        timeToStart = (20 * 9);
         if (plugin == null) {
             LOGGER.severe("ParkourRace plugin instance not initialized! Call ParkourRace.init(plugin) in onEnable.");
             return;
@@ -268,6 +306,7 @@ public class ParkourRace {
         mapEaterX = 0;
         genPos = new Location(world, 0, 100, -10000);
         playerCheckpoints.clear();
+        playerScores.clear();
         checkpointNames.clear();
         world.getEntities().stream()
                 .filter(e -> !(e instanceof org.bukkit.entity.Player))
@@ -279,13 +318,16 @@ public class ParkourRace {
         border.setSize(2000000);
 
         for (Player p : Bukkit.getOnlinePlayers()) {
+            p.setCollidable(false);
+            p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+            p.clearActivePotionEffects();
             p.addPotionEffect(invincibleEffect);
             p.teleport(new Location(world, 0.5, 100, -9999.5, -90.0f, 0.0f));
             p.setGameMode(GameMode.ADVENTURE);
         }
 
         world.setDifficulty(Difficulty.PEACEFUL);
-        startTime = 1100;
+        startTime = 1200;
     }
 
 
@@ -293,9 +335,6 @@ public class ParkourRace {
         return Math.sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) + (z2 - z1)*(z2 - z1));
     };
 
-
-    private static int currentDifficulty = 0;
-    private static int currentCap = 0;
     public static void run(World world) {
         if (startTime == 1000) {
             BlockData air = Bukkit.createBlockData(Material.AIR);
@@ -331,7 +370,7 @@ public class ParkourRace {
             }
             startTime = 80;
             for (Player p : Bukkit.getOnlinePlayers()) {
-                p.teleport(new Location(world, 0, 101, -10000));
+                p.teleport(new Location(world, 0.5, 100, -9999.5, -90.0f, 0.0f));
                 p.setAllowFlight(false);
             }
 
@@ -365,12 +404,12 @@ public class ParkourRace {
                     //int segIndex = (int) (Math.random() * SEGMENTS.size());
                     int segIndex = 0;
                     String leStr = difficultyMap.get(currentDifficulty).segments.get(currentCap);
-                        for (ParkourSegment s: SEGMENTS) {
-                            if (s.displayName().equals(leStr)) {
-                                segIndex = SEGMENTS.indexOf(s);
-                                LOGGER.info("Set segIndex to " + segIndex + ", " + s.displayName + " : " + leStr);
-                            }
+                    for (ParkourSegment s: SEGMENTS) {
+                        if (s.displayName().equals(leStr)) {
+                            segIndex = SEGMENTS.indexOf(s);
+                            LOGGER.info("Set segIndex to " + segIndex + ", " + s.displayName + " : " + leStr);
                         }
+                    }
                     LOGGER.info("Seg index of " + difficultyMap.get(currentDifficulty).segments.get(currentCap) + ", " + currentDifficulty + ", " + currentCap + " : " + segIndex + " - " + SEGMENTS.get(segIndex).displayName);
                     try {
                         placeStructure(world, genPos.getBlockX(), genPos.getBlockY() - 1, genPos.getBlockZ(), segIndex);
@@ -389,8 +428,10 @@ public class ParkourRace {
             startTime--;
             if (startTime == 0) {
                 for (Player p : Bukkit.getOnlinePlayers()) {
-                    p.teleport(new Location(world, 0, 101, -10000));
+                    p.teleport(new Location(world, 0.5, 101, -10000 + 0.5, -90.0f, 0.0f));
                 }
+                fill(world, Material.BARRIER, -2, 101, -10000 -2, 2, 107, -10000 + 2);
+                fill(world, Material.AIR, -1, 101, -10000  -1, 1, 106, -10000 + 1);
                 startTime--;
             }
         }
@@ -602,19 +643,92 @@ public class ParkourRace {
             }
         }
 
+        List<Map.Entry<String, Integer>> topScores = playerScores.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        if (startTime < 0) {
+            if (timeLeft > -10) {timeLeft--;}
+            if (timeToStart > -10) {timeToStart--;}
+            if (timeToStart == 0) {
+                fill(world, Material.AIR, -2, 101, -10000 -2, 2, 107, -10000 + 2);
+                world.playSound(new Location(world, 0.5, 101.0, -10000 + 0.5), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.5f);
+            }
+        }
+        int rTimeLeft = timeLeft - (20 * 60);
+        if (rTimeLeft < 0) {
+            if (rTimeLeft == -1 && timeLeft > 0) {
+                for (Player p : world.getPlayers()) {
+                    p.playSound(
+                        p.getLocation(),
+                        "minecraft:custom.hurrymusic",
+                        SoundCategory.MASTER,
+                        1.0f,
+                        1.0f
+                    );
+                }
+            }
+            rTimeLeft = timeLeft;
+        }
+        int totalSeconds = rTimeLeft / 20;
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        String timeString = String.format("%02d:%02d", minutes, seconds);
+        if (timeLeft > 20 * 60) {
+            timeString = ChatColor.GREEN + "" + ChatColor.BOLD + "Time Left: " + timeString;
+        } else {
+            timeString = ChatColor.RED + "" + ChatColor.BOLD + "OVERTIME: " + timeString;
+        }
+        if (timeLeft < 0) {
+            timeString = "";
+        }
 
         for (Player p : world.getPlayers()) {
+            p.sendActionBar(timeString);
             if (playerCheckpoints.get(p.getName()) == null) {
                 playerCheckpoints.put(p.getName(), new Location(world, 0.5, 100, -9999.5, -90.0f, 0.0f));
             }
+            if (playerScores.get(p.getName()) == null) {
+                playerScores.put(p.getName(), 0);
+            }
+
+            if (loopTimer % 39 == 0) {
+                CustomSidebar parkourRaceBoard = new CustomSidebar("SCORES");
+                int iop = 0;
+                boolean pInTop = false;
+                for (Map.Entry<String, Integer> entry : topScores) {
+                    parkourRaceBoard.setLine(6 - iop, entry.getKey() + " " + entry.getValue());
+                    if (entry.getKey().equals(p.getName())) {
+                        pInTop = true;
+                    }
+                    iop++;
+                }
+                parkourRaceBoard.setLine(1, "------------");
+                if (!pInTop) {
+                    parkourRaceBoard.setLine(0, p.getName() + " " + playerScores.get(p.getName()));
+                }
+                p.setScoreboard(parkourRaceBoard.board);
+            }
+
+            //p.sendActionBar(ChatColor.GREEN + "Score: " + playerScores.get(p.getName()));
+
             Location checkpoint = playerCheckpoints.get(p.getName());
-            if (p.getGameMode() == GameMode.ADVENTURE && p.getLocation().getY() < 95) {
+
+            if (p.getGameMode() == GameMode.ADVENTURE && p.getY() > 80 && p.getY() < 255 && p.getLocation().getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getType() == Material.ORANGE_CONCRETE_POWDER) {
+                p.addPotionEffect(fireResEffect);
+            }
+            if (p.getGameMode() == GameMode.ADVENTURE && (p.getLocation().getY() < 95 || p.getFireTicks() > 0 && !p.hasPotionEffect(PotionEffectType.FIRE_RESISTANCE))) {
                 p.setFallDistance(0);
                 p.addPotionEffect(slowFallEffect);
                 p.teleport(checkpoint);
+                p.setFireTicks(0);
             }
 
             if (p.isOnGround() && startTime < 0) {
+                if (timeLeft > 0) {
+                    playerScores.put(p.getName(), Math.max((int) Math.floor(p.getX()), playerScores.get(p.getName())));
+                }
                 for (Entity marker : markers) {
                     if (marker.getX() <= checkpoint.getX() || dist3d(p.getX(), p.getY(), p.getZ(), marker.getX(), marker.getY(), marker.getZ()) > 3) {
                         continue;
@@ -638,24 +752,26 @@ public class ParkourRace {
                         }
                     }
                 }
-                /*for (int i = 0; i < checkpoints.size(); i += 3) {
-                    Integer currentIndex = playerCheckpointIndices.get(p.getName());
-                    if (currentIndex != null && currentIndex == i) {
-                        continue;
-                    }
-                    int cx = 0;
-                    int cy = 101;
-                    int cz = -10000;
-                    if (dist3d(p.getX(), p.getY(), p.getZ(), cx + 0.5, cy, cz + 0.5) < 5.0) {
-                        playerCheckpoints.get(p.getName()).setX(cx + 0.5);
-                        playerCheckpoints.get(p.getName()).setY(cy);
-                        playerCheckpoints.get(p.getName()).setZ(cz + 0.5);
-                        p.playSound(p.getLocation(), "minecraft:custom.killget", 1.0f, 1.0f);
-                        p.sendTitle(checkpointNames.get(i / 3), "");
-                    }
-                }*/
             }
         }
+
+        if (timeLeft == 0) {
+
+            List<Map.Entry<String, Integer>> topScoree = playerScores.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                    .limit(1)
+                    .collect(Collectors.toList());
+            String topScorer = "NOBODY";
+            if (topScoree.getFirst() != null) {
+                topScorer = topScoree.getFirst().getKey();
+            }
+            for (Player p : world.getPlayers()) {
+                p.teleport(new Location(world, 0.5, 101, -10000 + 0.5, -90.0f, 0.0f));
+                p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.5f);
+                p.sendTitle(ChatColor.GREEN + "" + ChatColor.BOLD + "Game Finished!", topScorer + " won!");
+            }
+        }
+
 
     }
 
@@ -676,6 +792,16 @@ public class ParkourRace {
             if (marker.getX() != genPos.getX()) continue;
             if (getVanillaEntityTags(marker).contains("pr_checkpoint")) {
                 marker.customName(Component.text(ChatColor.YELLOW + seg.displayName));
+                Material leMaterial = Material.COPPER_BLOCK;
+                String difficultyName = difficultyMap.get(currentDifficulty).name;
+                if (difficultyName.contains("Normal") || difficultyName.contains("Medium")) {
+                    leMaterial = Material.GOLD_BLOCK;
+                } else if (difficultyName.contains("Hard")) {
+                    leMaterial = Material.REDSTONE_BLOCK;
+                } else if (difficultyName.contains("Bedrock")) {
+                    leMaterial = Material.BEDROCK;
+                }
+                fill(world, leMaterial, (int)Math.floor(marker.getX()), (int)Math.floor(marker.getY()) - 1, (int)Math.floor(marker.getZ()), (int)Math.floor(marker.getX()), (int)Math.floor(marker.getY()) - 1, (int)Math.floor(marker.getZ()));
             }
         }
 

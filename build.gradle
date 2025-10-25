@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'org.zappier'
-version = '1.09-SNAPSHOT'
+version = '1.10-SNAPSHOT'
 
 repositories {
     mavenCentral()

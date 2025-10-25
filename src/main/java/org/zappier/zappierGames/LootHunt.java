@@ -198,6 +198,9 @@ public class LootHunt {
         ZappierGames.globalBossBar.setProgress(1.0);
 
         for (Player p : Bukkit.getOnlinePlayers()) {
+            p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+            p.clearActivePotionEffects();
+            p.setCollidable(true);
             ZappierGames.globalBossBar.addPlayer(p);
             p.getInventory().clear();
             giveStartingItems(p);

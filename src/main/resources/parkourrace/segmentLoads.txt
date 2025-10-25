@@ -9,7 +9,7 @@ easysegment7.nbt|Snowier Snow|3,-2,-3|3,-3,-3
 easysegment8.nbt|Zappier's Challenge|3,-2,-6|3,-3,-6
 easysegment9.nbt|Cactus Jumps|3,-2,-4|3,-3,-4
 easysegment10.nbt|Purple Collab|3,-2,-2|3,-3,-2
-easysegment11.nbt|Zappier's Bastion|3,-2,-6|3,-3,-6| ... fills: 6,-2,-3|18,-2,3|CRIMSON_FENCE_GATE|minecraft:crimson_fence_gate[open=true]
+easysegment11.nbt|Zappier's Bastion|3,-2,-6|3,-3,-6| ... fills: 6,-2,-3|18,-2,3|BARRIER|minecraft:barrier| ... fills: 19,9,0|19,9,0|ORANGE_CONCRETE_POWDER|minecraft:orange_concrete_powder
 easysegment13.nbt|Easy 13|3,-2,-3|3,-3,-3
 easysegment14.nbt|Vakore's Slime Bounce|3,-2,-4|3,-3,-4
 easysegment15.nbt|Not so Paneful|3,-2,-3|3,-3,-3
@@ -44,7 +44,7 @@ hardsegment3.nbt|Dobule Door Neo|3,-2,-2|3,-3,-2
 hardsegment4.nbt|Moderate Pane|3,-2,-2|3,-3,-2
 hardsegment5.nbt|Paneful Ascent|3,-2,-2|3,-3,-2
 hardsegment6.nbt|Disappearing Neos|3,-2,-2|3,-3,-2
-hardsegment7.nbt|Snowy Slime|3,-2,-2|3,-3,-2
+hardsegment7.nbt|Snowy Slime|3,-2,-2|3,-3,-2 ... fills: 27,0,-1|26,0,1|SNOW|minecraft:snow[layers=1]| ... fills: 27,0,0|27,0,0|AIR|minecraft:air| ... fills: 32,0,-2|32,0,2|IRON_TRAPDOOR|minecraft:iron_trapdoor[open=true,facing=west]
 hardsegment8.nbt|Burning Panes|3,-2,-3|3,-3,-3
 hardsegment9.nbt|Door Prison|3,-2,-4|3,-3,-4
 hardsegment10.nbt|Loonac's Snowy Course|3,-2,-2|3,-3,-2
@@ -61,5 +61,5 @@ bedrocksegment1.nbt|Double Double Disappearing Neo|3,-2,-2|3,-3,-2
 bedrocksegment2.nbt|Triple Neo|3,-2,-2|3,-3,-2
 bedrocksegment5.nbt|Dodie's Head Neo|3,-2,-2|3,-3,-2
 
-@Finale 1
+@BedrockFinale 1
 bedrocksegment3.nbt|Pains of Pane|3,-2,-2|3,-3,-2

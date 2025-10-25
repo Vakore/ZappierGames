@@ -20,6 +20,9 @@ public class Manhunt {
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.getInventory().clear();
+            p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+            p.clearActivePotionEffects();
+            p.setCollidable(true);
 
             switch (ZappierGames.gameMode) {
                 case 1:

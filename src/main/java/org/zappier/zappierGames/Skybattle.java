@@ -159,6 +159,10 @@ public class Skybattle {
 
             // Clear all concrete
             for (Player p : Bukkit.getOnlinePlayers()) {
+                p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+                p.clearActivePotionEffects();
+                p.setCollidable(true);
+
                 p.getInventory().remove(Material.BLACK_CONCRETE);
                 p.getInventory().remove(Material.BLUE_CONCRETE);
                 p.getInventory().remove(Material.BROWN_CONCRETE);
