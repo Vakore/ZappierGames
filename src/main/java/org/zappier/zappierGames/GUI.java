@@ -6,8 +6,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class GUI {
     private final Inventory inv;
@@ -63,6 +66,57 @@ public class GUI {
                     "§7Start the game with current settings!", "§aClick to begin."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));
+        } else if (submenuType.equals("Loothunt")) {
+            inv.setItem(10, createGuiItem(Material.GREEN_BANNER, 1, "§aJoin Team",
+                    "§7Join a team for Loothunt.", "§aClick to select."));
+            inv.setItem(11, createGuiItem(Material.CLOCK, 1, "§bSet Duration",
+                    "§7Set the game duration.", "§aClick to select."));
+            inv.setItem(12, createGuiItem(Material.EMERALD, 1, "§2Start Loothunt",
+                    "§7Start the game with current settings!", "§aClick to begin."));
+            inv.setItem(13, createGuiItem(Material.PLAYER_HEAD, 1, "§eView Endgame Scores",
+                    "§7View scores from the last game.", "§aClick to view."));
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to the main menu."));
+        } else if (submenuType.equals("Loothunt Team Selection")) {
+            String[] teamNames = {"RED", "BLUE", "GREEN", "DARK_GREEN", "GOLD", "WHITE", "AQUA", "LIGHT_PURPLE", "DARK_PURPLE", "YELLOW"};
+            Material[] teamWools = {
+                    Material.RED_WOOL, Material.BLUE_WOOL, Material.LIME_WOOL, Material.GREEN_WOOL,
+                    Material.ORANGE_WOOL, Material.WHITE_WOOL, Material.LIGHT_BLUE_WOOL,
+                    Material.MAGENTA_WOOL, Material.PURPLE_WOOL, Material.YELLOW_WOOL
+            };
+
+            for (int i = 0; i < teamNames.length; i++) {
+                inv.setItem(10 + i, createGuiItem(teamWools[i], 1, "§a" + teamNames[i],
+                        "§7Join " + teamNames[i] + " team.", "§aClick to join."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Loothunt menu."));
+        } else if (submenuType.equals("Loothunt Duration")) {
+            inv.setItem(10, createGuiItem(Material.CLOCK, 1, "§b10 Minutes",
+                    "§7Short game.", "§aClick to set."));
+            inv.setItem(11, createGuiItem(Material.CLOCK, 1, "§b20 Minutes",
+                    "§7Medium game.", "§aClick to set."));
+            inv.setItem(12, createGuiItem(Material.CLOCK, 1, "§b30 Minutes",
+                    "§7Long game.", "§aClick to set."));
+            inv.setItem(13, createGuiItem(Material.CLOCK, 1, "§b60 Minutes",
+                    "§7Epic game.", "§aClick to set."));
+            inv.setItem(14, createGuiItem(Material.CLOCK, 1, "§b90 Minutes",
+                    "§WLegendary game.", "§aClick to set."));
+            inv.setItem(15, createGuiItem(Material.CLOCK, 1, "§b120 Minutes",
+                    "§LWell-Done game.", "§aClick to set."));
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Loothunt menu."));
+        } else if (submenuType.equals("Loothunt Endgame Scores")) {
+            // Add player heads for participants
+            List<String> participants = LootHunt.playerItemCounts.keySet().stream()
+                    .filter(name -> Bukkit.getPlayer(name) != null)
+                    .collect(Collectors.toList());
+            for (int i = 0; i < participants.size() && i < 17; i++) { // Limit to slots 10-26
+                String playerName = participants.get(i);
+                inv.setItem(10 + i, createPlayerHead(playerName));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Loothunt menu."));
         } else if (submenuType.equals("Game Mode")) {
             inv.setItem(10, createGuiItem(Material.BOOK, 1, "§6Standard",
                     "§7Beat the game, or die trying.", "§aClick to select."));
@@ -99,7 +153,6 @@ public class GUI {
                     "§7Current: " + (ZappierGames.showTrackerDimension == 1 ? "On" : "Off"), "§aClick to toggle."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to Manhunt menu."));
-            // Add this to the Skybattle submenu case in initializeSubmenu:
         } else if (submenuType.equals("Skybattle")) {
             inv.setItem(10, createGuiItem(Material.GREEN_BANNER, 1, "§aJoin Team",
                     "§7Join a team for Skybattle.", "§aClick to select."));
@@ -112,60 +165,45 @@ public class GUI {
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));
         } else if (submenuType.equals("Skybattle Team Selection")) {
-        String[] teamNames = {"RED", "BLUE", "GREEN", "DARK_GREEN", "GOLD", "WHITE", "AQUA", "LIGHT_PURPLE", "DARK_PURPLE", "YELLOW"};
-        Material[] teamWools = {
-                Material.RED_WOOL, Material.BLUE_WOOL, Material.LIME_WOOL, Material.GREEN_WOOL,
-                Material.ORANGE_WOOL, Material.WHITE_WOOL, Material.LIGHT_BLUE_WOOL,
-                Material.MAGENTA_WOOL, Material.PURPLE_WOOL, Material.YELLOW_WOOL
-        };
-
-        for (int i = 0; i < teamNames.length; i++) {
-            inv.setItem(10 + i, createGuiItem(teamWools[i], 1, "§a" + teamNames[i],
-                    "§7Join " + teamNames[i] + " team.", "§aClick to join."));
-        }
-        inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
-                "§7Return to Skybattle menu."));
-
-    } else if (submenuType.equals("Skybattle Twists")) {
-            String[] twistNames = {
-                    "§eFast TNT",
-                    "§eWIP 1",
-                    "§eWIP 2",
-                    "§eWIP 3",
-                    "§eWIP 4",
-                    "§eWIP 5",
-                    "§eWIP 6",
-                    "§eWIP 7",
-                    "§eWIP 8",
-                    "§eWIP 9",
-                    "§eWIP 10",
-                    "WIP 11",
-                    "WIP 12",
-                    "WIP 13",
-                    "WIP 14",
-                    "WIP 15"
+            String[] teamNames = {"RED", "BLUE", "GREEN", "DARK_GREEN", "GOLD", "WHITE", "AQUA", "LIGHT_PURPLE", "DARK_PURPLE", "YELLOW"};
+            Material[] teamWools = {
+                    Material.RED_WOOL, Material.BLUE_WOOL, Material.LIME_WOOL, Material.GREEN_WOOL,
+                    Material.ORANGE_WOOL, Material.WHITE_WOOL, Material.LIGHT_BLUE_WOOL,
+                    Material.MAGENTA_WOOL, Material.PURPLE_WOOL, Material.YELLOW_WOOL
             };
-        for (int i = 0; i < 8; i++) { // Assuming 8 twists
-            String status = (Skybattle.TWISTS[i] > 0) ? "§aON" : "§cOFF";
-            inv.setItem(10 + i, createGuiItem(Material.BLAZE_POWDER, 1, twistNames[i],
-                    "§7Current: " + status, "§aClick to toggle."));
-        }
-        inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
-                "§7Return to Skybattle menu."));
 
-    } else if (submenuType.equals("Skybattle Map Selection")) {
-        inv.setItem(10, createGuiItem(Material.MAP, 1, "§bSlushly's Cake",
-                "§7The classic."));
-        inv.setItem(11, createGuiItem(Material.MAP, 1, "§bWIP",
-                "§7WIP", "§7§oWIP"));
-        inv.setItem(12, createGuiItem(Material.MAP, 1, "§bWIP",
-                "§7WIP.", "§7§o(WIP)"));
-        inv.setItem(13, createGuiItem(Material.MAP, 1, "§bWIP",
-                "§7WIP.", "§7§o(WIP)"));
-        inv.setItem(14, createGuiItem(Material.MAP, 1, "§bWIP",
-                "§7WIP", "§7§o(WIP)"));
-        inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
-                "§7Return to Skybattle menu."));
+            for (int i = 0; i < teamNames.length; i++) {
+                inv.setItem(10 + i, createGuiItem(teamWools[i], 1, "§a" + teamNames[i],
+                        "§7Join " + teamNames[i] + " team.", "§aClick to join."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Skybattle menu."));
+        } else if (submenuType.equals("Skybattle Twists")) {
+            String[] twistNames = {
+                    "§eFast TNT", "§eWIP 1", "§eWIP 2", "§eWIP 3", "§eWIP 4",
+                    "§eWIP 5", "§eWIP 6", "§eWIP 7", "§eWIP 8", "§eWIP 9",
+                    "§eWIP 10", "WIP 11", "WIP 12", "WIP 13", "WIP 14", "WIP 15"
+            };
+            for (int i = 0; i < 8; i++) { // Assuming 8 twists
+                String status = (Skybattle.TWISTS[i] > 0) ? "§aON" : "§cOFF";
+                inv.setItem(10 + i, createGuiItem(Material.BLAZE_POWDER, 1, twistNames[i],
+                        "§7Current: " + status, "§aClick to toggle."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Skybattle menu."));
+        } else if (submenuType.equals("Skybattle Map Selection")) {
+            inv.setItem(10, createGuiItem(Material.MAP, 1, "§bSlushly's Cake",
+                    "§7The classic."));
+            inv.setItem(11, createGuiItem(Material.MAP, 1, "§bWIP",
+                    "§7WIP", "§7§oWIP"));
+            inv.setItem(12, createGuiItem(Material.MAP, 1, "§bWIP",
+                    "§7WIP.", "§7§o(WIP)"));
+            inv.setItem(13, createGuiItem(Material.MAP, 1, "§bWIP",
+                    "§7WIP.", "§7§o(WIP)"));
+            inv.setItem(14, createGuiItem(Material.MAP, 1, "§bWIP",
+                    "§7WIP", "§7§o(WIP)"));
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Skybattle menu."));
         } else if (submenuType.equals("Parkour Race")) {
             inv.setItem(13, createGuiItem(Material.GOLD_BLOCK, 1, "§e" + submenuType + " Settings",
                     "§7Resume Parkour Race", "§a(Only activates block switch functionality)"));
@@ -204,6 +242,16 @@ public class GUI {
         meta.setLore(Arrays.asList(lore));
         item.setItemMeta(meta);
         return item;
+    }
+
+    private ItemStack createPlayerHead(String playerName) {
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD, 1);
+        SkullMeta meta = (SkullMeta) head.getItemMeta();
+        meta.setDisplayName("§e" + playerName);
+        meta.setLore(Arrays.asList("§7View endgame scores for " + playerName, "§aClick to view."));
+        meta.setOwner(playerName); // Set the head's skin to the player's
+        head.setItemMeta(meta);
+        return head;
     }
 
     private ItemStack createFillerItem() {

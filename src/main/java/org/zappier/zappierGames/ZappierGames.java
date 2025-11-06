@@ -35,6 +35,8 @@ public final class ZappierGames extends JavaPlugin {
     // Singleton instance
     public static ZappierGames instance;
 
+
+    public static double loothuntDuration = 0; // Default to 0, must be set before starting
     public static final int LOOTHUNT = 0;
     public static final int MANHUNT = 1;
 
@@ -48,7 +50,7 @@ public final class ZappierGames extends JavaPlugin {
 
     //COMPASS TRACKING
     //who tracks who
-    private final Map<String, String> trackingPairs = new HashMap<>();
+    public final Map<String, String> trackingPairs = new HashMap<>();
     //where each player is in each dimension
     private final Map<String, int[]> playerPositions = new HashMap<>();
     public static int showTrackerDimension = 1;
@@ -161,6 +163,10 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CustomPearlsListener(this), this);
         getServer().getPluginManager().registerEvents(new CreeperSpawnListener(), this);
         getServer().getPluginManager().registerEvents(new DamageHandler(), this);
+
+        //!!!
+        getServer().getPluginManager().registerEvents(new CompassTrackerListener(this), this);
+        getServer().getPluginManager().registerEvents(new TrackerGUIListener(this), this);
 
 
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();

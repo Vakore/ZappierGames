@@ -9,17 +9,14 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Team;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class LoothuntCommand implements TabExecutor {
+    @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "Only players can use this command!");
@@ -56,12 +53,54 @@ public class LoothuntCommand implements TabExecutor {
                 player.sendMessage(ChatColor.RED + "loothunt scores WIP");
                 return true;
 
+            case "endscore":
+                if (args.length < 3) {
+                    player.sendMessage(ChatColor.RED + "Usage: /loothunt endscore <all|item_id> <player_name>");
+                    return true;
+                }
+                String itemFilter = args[1].toUpperCase();
+                String targetPlayer = args[2].toUpperCase();
+
+                Map<String, List<LootHunt.ItemEntry>> playerItems = LootHunt.playerItemCounts.get(targetPlayer);
+                if (playerItems == null || playerItems.isEmpty()) {
+                    player.sendMessage(ChatColor.RED + "No items found for player " + targetPlayer + ". They may not have participated.");
+                    return true;
+                }
+
+                player.sendMessage(ChatColor.GREEN + "=== Endgame Items for " + targetPlayer + " ===");
+                if (itemFilter.equals("ALL")) {
+                    for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : playerItems.entrySet()) {
+                        String itemId = entry.getKey();
+                        List<LootHunt.ItemEntry> items = entry.getValue();
+                        for (LootHunt.ItemEntry item : items) {
+                            player.sendMessage(ChatColor.YELLOW + itemId + ": " +
+                                    ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
+                                    "Points: " + String.format("%.1f", item.points) + ", " +
+                                    "Source: " + item.source);
+                        }
+                    }
+                } else {
+                    List<LootHunt.ItemEntry> items = playerItems.get(itemFilter);
+                    if (items == null || items.isEmpty()) {
+                        player.sendMessage(ChatColor.RED + "No items of type " + itemFilter + " found for " + targetPlayer);
+                        return true;
+                    }
+                    for (LootHunt.ItemEntry item : items) {
+                        player.sendMessage(ChatColor.YELLOW + itemFilter + ": " +
+                                ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
+                                "Points: " + String.format("%.1f", item.points) + ", " +
+                                "Source: " + item.source);
+                    }
+                }
+                player.sendMessage(ChatColor.GREEN + "=================================");
+                return true;
+
             case "jointeam":
                 if (args.length < 2) {
                     player.sendMessage(ChatColor.RED + "Not enough arguments.");
                 } else {
                     if (args[1].length() < 3 || args[1].length() > 16) {
-                        player.sendMessage(ChatColor.RED + "Team name must be between 3-16 charcaters in length");
+                        player.sendMessage(ChatColor.RED + "Team name must be between 3-16 characters in length");
                     }
                     String prefix = args[1].toUpperCase();
 
@@ -86,7 +125,6 @@ public class LoothuntCommand implements TabExecutor {
                     if (prefix.equals("GOLD")) {prefixInitial = "☀";}
                     if (prefix.equals("LIGHT_PURPLE")) {prefixInitial = "\uD83D\uDD31";}
                     if (prefix.equals("RED")) {prefixInitial = "\uD83D\uDDE1";}
-                    if (prefix.equals("RED")) {prefixInitial = "\uD83D\uDDE1";}
                     if (prefix.equals("WHITE")) {prefixInitial = "♜";}
 
                     TextComponent coloredPrefix = (teamColor != null)
@@ -103,14 +141,10 @@ public class LoothuntCommand implements TabExecutor {
                         team.color(teamColor);
                     }
 
-                    // Set the prefix and assign the player to the team
                     team.prefix(coloredPrefix);
                     team.addEntry(player.getName());
 
-
-
                     Bukkit.broadcastMessage("LOOTHUNT: " + player.getName().toUpperCase() + " has joined team " + prefix);
-                    //LootHunt.playerTeams.put(player.getName().toUpperCase(), prefix);
                 }
                 return true;
 
@@ -122,16 +156,12 @@ public class LoothuntCommand implements TabExecutor {
                     team.removeEntry(player.getName());
                     team.unregister();
                     Bukkit.broadcastMessage("LOOTHUNT: " + player.getName().toUpperCase() + " is no longer on a team");
-                    //LootHunt.playerTeams.remove(player.getName().toUpperCase());
                 } else {
                     player.sendMessage(ChatColor.RED + "No team to leave, you are not currently on one!");
                 }
                 return true;
 
             case "debug":
-                //for (Map.Entry<String, String> i : LootHunt.playerTeams.entrySet()) {
-                //    player.sendMessage(i.getKey() + " " + i.getValue() + ", ");
-                //}
                 return true;
 
             default:
@@ -143,12 +173,23 @@ public class LoothuntCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("start", "end", "scores", "jointeam", "leaveteam").stream()
+            return Arrays.asList("start", "end", "scores", "endscore", "jointeam", "leaveteam").stream()
                     .filter(option -> option.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
-        } else if (args.length == 2 && args[0].equals("jointeam")) {
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("jointeam")) {
             return Arrays.asList("BLACK", "DARK_BLUE", "DARK_GREEN", "DARK_RED", "DARK_PURPLE", "GOLD", "GRAY", "DARK_GRAY", "BLUE", "GREEN", "AQUA", "RED", "LIGHT_PURPLE", "YELLOW", "WHITE").stream()
                     .filter(option -> option.startsWith(args[1].toUpperCase()))
+                    .collect(Collectors.toList());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("endscore")) {
+            List<String> options = new ArrayList<>(LootHunt.itemValues.keySet());
+            options.add("ALL");
+            return options.stream()
+                    .filter(option -> option.startsWith(args[1].toUpperCase()))
+                    .collect(Collectors.toList());
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("endscore")) {
+            return Bukkit.getOnlinePlayers().stream()
+                    .map(Player::getName)
+                    .filter(name -> name.toUpperCase().startsWith(args[2].toUpperCase()))
                     .collect(Collectors.toList());
         }
         return Collections.emptyList();

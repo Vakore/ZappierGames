@@ -14,11 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.Damageable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class LootHunt {
     public static double startTimer;
@@ -27,7 +23,8 @@ public class LootHunt {
     public static String[] workStationNames;
     public static String[] dyeNames;
     public static Map<String, Double> itemValues = new HashMap<>();
-    public static Map<String, Map<String, Double>> teamItemCounts = new HashMap<>();
+    // New structure to track per-player item counts with source
+    public static Map<String, Map<String, List<ItemEntry>>> playerItemCounts = new HashMap<>();
     public static Map<String, Integer> playerKillCounts = new HashMap<>();
     public static Map<String, Integer> playerDeathCounts = new HashMap<>();
     private static int workstationBonus;
@@ -39,6 +36,21 @@ public class LootHunt {
     private static Map<String, Integer> specialEnchantments = new HashMap<>();
     private static List<Map<String, Object>> customPearls = new ArrayList<>();
     private static Material[] shulkerColors;
+
+    // New class to store item details
+    public static class ItemEntry {
+        String itemId;
+        int quantity;
+        double points;
+        String source; // "Inventory" or "Shulker Box"
+
+        public ItemEntry(String itemId, int quantity, double points, String source) {
+            this.itemId = itemId;
+            this.quantity = quantity;
+            this.points = points;
+            this.source = source;
+        }
+    }
 
     public static void loadConfig(FileConfiguration config) {
         ZappierGames plugin = ZappierGames.getInstance();
@@ -187,7 +199,7 @@ public class LootHunt {
         }
 
         Bukkit.broadcastMessage(ChatColor.YELLOW + "Keep inventory set to " + true + " across all dimensions");
-        teamItemCounts.clear();
+        playerItemCounts.clear();
         playerKillCounts.clear();
         playerDeathCounts.clear();
         startTimer = duration * 60 * 20; // Convert minutes to ticks (20 ticks per second)
@@ -222,29 +234,27 @@ public class LootHunt {
         ZappierGames.globalBossBar.removeAll();
         ZappierGames.gameMode = -1;
 
+        // Aggregate team scores for display
+        Map<String, Map<String, Double>> teamItemCounts = new HashMap<>();
+
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.sendTitle(ChatColor.YELLOW + "Game Finished!", ChatColor.YELLOW + "");
             p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.5f);
 
-            Map<String, Double> inventoryCounts = calculateInventoryCounts(p);
-
-            String scoreDetails = inventoryCounts.entrySet().stream()
-                    .map(e -> e.getKey() + ": " + String.format("%.1f", e.getValue()))
-                    .collect(Collectors.joining(", "));
-            //Bukkit.broadcastMessage(ChatColor.YELLOW + p.getName() + " - " + scoreDetails);
+            Map<String, List<ItemEntry>> inventoryCounts = calculateInventoryCounts(p);
 
             String teamName = p.getScoreboard().getEntryTeam(p.getName()) != null
                     ? p.getScoreboard().getEntryTeam(p.getName()).getName()
                     : "(Solo) " + p.getName();
 
-            Map<String, Double> disTeam = teamItemCounts.get(teamName);
-            if (disTeam == null) {
-                teamItemCounts.put(teamName, new HashMap<>());
-                disTeam = teamItemCounts.get(teamName);
-            }
+            // Store player item counts
+            playerItemCounts.put(p.getName().toUpperCase(), inventoryCounts);
 
-            for (Map.Entry<String, Double> e : inventoryCounts.entrySet()) {
-                disTeam.put(e.getKey(), disTeam.getOrDefault(e.getKey(), 0.0) + e.getValue());
+            // Aggregate to team scores
+            Map<String, Double> teamScores = teamItemCounts.computeIfAbsent(teamName, k -> new HashMap<>());
+            for (Map.Entry<String, List<ItemEntry>> entry : inventoryCounts.entrySet()) {
+                double totalPoints = entry.getValue().stream().mapToDouble(e -> e.points).sum();
+                teamScores.put(entry.getKey(), teamScores.getOrDefault(entry.getKey(), 0.0) + totalPoints);
             }
 
             p.getInventory().clear();
@@ -365,12 +375,13 @@ public class LootHunt {
         }
         Bukkit.broadcastMessage(ChatColor.GREEN + "=======================");
 
-        teamItemCounts.clear();
+        // Do not clear playerItemCounts here to allow endscore queries
     }
 
-    public static Map<String, Double> calculateInventoryCounts(Player player) {
-        Map<String, Double> scoreMap = new HashMap<>();
+    public static Map<String, List<ItemEntry>> calculateInventoryCounts(Player player) {
+        Map<String, List<ItemEntry>> scoreMap = new HashMap<>();
 
+        // Process main inventory
         for (ItemStack item : player.getInventory()) {
             if (item == null || item.getType() == Material.AIR) {
                 continue;
@@ -385,20 +396,21 @@ public class LootHunt {
             }
 
             // Handle damaged items (half points for base value)
-            if (item.getItemMeta() instanceof Damageable damageable && damageable.hasDamage()) {
+            // Removed as we decided this is kinda stupid for things like tridents
+            /*if (item.getItemMeta() instanceof Damageable damageable && damageable.hasDamage()) {
                 itemValue /= 2.0;
-            }
+            }*/
 
             // Handle enchantments
             if (item.hasItemMeta() && item.getItemMeta().hasEnchants()) {
                 itemValue += getTotalEnchantmentPoints(item);
             }
 
-            // Store total points for this item type
-            scoreMap.put(itemId, scoreMap.getOrDefault(itemId, 0.0) + (itemValue * amount));
+            // Add to scoreMap
+            scoreMap.computeIfAbsent(itemId, k -> new ArrayList<>())
+                    .add(new ItemEntry(itemId, amount, itemValue * amount, "Inventory"));
 
             if (item.getType().name().endsWith("SHULKER_BOX")) {
-                player.sendMessage("Shulker box found");
                 if (item.hasItemMeta() && item.getItemMeta() instanceof BlockStateMeta meta) {
                     BlockState state = meta.getBlockState();
                     if (state instanceof ShulkerBox shulkerBox) {
@@ -425,8 +437,9 @@ public class LootHunt {
                                 sItemValue += getTotalEnchantmentPoints(sItem);
                             }
 
-                            // Store total points for this item type
-                            scoreMap.put(sItemId, scoreMap.getOrDefault(sItemId, 0.0) + (sItemValue * sAmount));
+                            // Add to scoreMap
+                            scoreMap.computeIfAbsent(sItemId, k -> new ArrayList<>())
+                                    .add(new ItemEntry(sItemId, sAmount, sItemValue * sAmount, "Shulker Box"));
                         }
                     }
                 }
@@ -452,85 +465,81 @@ public class LootHunt {
     }
 
     private static double getCraftingCost(String itemId) {
-        // Define material costs based on Minecraft 1.21.3 crafting recipes
         Map<String, Integer> materialCosts = new HashMap<>();
-        // Armor
-        materialCosts.put("LEATHER_HELMET", 5); // 5 leather
-        materialCosts.put("LEATHER_CHESTPLATE", 8); // 8 leather
-        materialCosts.put("LEATHER_LEGGINGS", 7); // 7 leather
-        materialCosts.put("LEATHER_BOOTS", 4); // 4 leather
-        materialCosts.put("IRON_HELMET", 5); // 5 iron ingots
-        materialCosts.put("IRON_CHESTPLATE", 8); // 8 iron ingots
-        materialCosts.put("IRON_LEGGINGS", 7); // 7 iron ingots
-        materialCosts.put("IRON_BOOTS", 4); // 4 iron ingots
-        materialCosts.put("GOLDEN_HELMET", 5); // 5 gold ingots
-        materialCosts.put("GOLDEN_CHESTPLATE", 8); // 8 gold ingots
-        materialCosts.put("GOLDEN_LEGGINGS", 7); // 7 gold ingots
-        materialCosts.put("GOLDEN_BOOTS", 4); // 4 gold ingots
-        materialCosts.put("DIAMOND_HELMET", 5); // 5 diamonds
-        materialCosts.put("DIAMOND_CHESTPLATE", 8); // 8 diamonds
-        materialCosts.put("DIAMOND_LEGGINGS", 7); // 7 diamonds
-        materialCosts.put("DIAMOND_BOOTS", 4); // 4 diamonds
-        materialCosts.put("NETHERITE_HELMET", 4); // 4 netherite ingots (from smithing)
-        materialCosts.put("NETHERITE_CHESTPLATE", 4); // 4 netherite ingots
-        materialCosts.put("NETHERITE_LEGGINGS", 4); // 4 netherite ingots
-        materialCosts.put("NETHERITE_BOOTS", 4); // 4 netherite ingots
-        // Tools and Weapons
-        materialCosts.put("WOODEN_SWORD", 2); // 2 planks
-        materialCosts.put("WOODEN_AXE", 3); // 3 planks
-        materialCosts.put("WOODEN_PICKAXE", 3); // 3 planks
-        materialCosts.put("WOODEN_SHOVEL", 1); // 1 plank
-        materialCosts.put("WOODEN_HOE", 2); // 2 planks
-        materialCosts.put("IRON_SWORD", 2); // 2 iron ingots
-        materialCosts.put("IRON_AXE", 3); // 3 iron ingots
-        materialCosts.put("IRON_PICKAXE", 3); // 3 iron ingots
-        materialCosts.put("IRON_SHOVEL", 1); // 1 iron ingot
-        materialCosts.put("IRON_HOE", 2); // 2 iron ingots
-        materialCosts.put("GOLDEN_SWORD", 2); // 2 gold ingots
-        materialCosts.put("GOLDEN_AXE", 3); // 3 gold ingots
-        materialCosts.put("GOLDEN_PICKAXE", 3); // 3 gold ingots
-        materialCosts.put("GOLDEN_SHOVEL", 1); // 1 gold ingot
-        materialCosts.put("GOLDEN_HOE", 2); // 2 gold ingots
-        materialCosts.put("DIAMOND_SWORD", 2); // 2 diamonds
-        materialCosts.put("DIAMOND_AXE", 3); // 3 diamonds
-        materialCosts.put("DIAMOND_PICKAXE", 3); // 3 diamonds
-        materialCosts.put("DIAMOND_SHOVEL", 1); // 1 diamond
-        materialCosts.put("DIAMOND_HOE", 2); // 2 diamonds
-        materialCosts.put("NETHERITE_SWORD", 4); // 4 netherite ingots (from smithing)
-        materialCosts.put("NETHERITE_AXE", 4); // 4 netherite ingots
-        materialCosts.put("NETHERITE_PICKAXE", 4); // 4 netherite ingots
-        materialCosts.put("NETHERITE_SHOVEL", 4); // 4 netherite ingots
-        materialCosts.put("NETHERITE_HOE", 4); // 4 netherite ingots
-        materialCosts.put("BOW", 3); // 3 sticks (no clear material value, approximate)
-        materialCosts.put("CROSSBOW", 3); // 3 sticks + 2 iron ingots (approximate)
-        materialCosts.put("FISHING_ROD", 2); // 3 sticks (approximate)
-        materialCosts.put("SHEARS", 2); // 2 iron ingots
-        materialCosts.put("FLINT_AND_STEEL", 1); // 1 iron ingot
-        materialCosts.put("CLOCK", 4); // 4 gold ingots
-        materialCosts.put("COMPASS", 4); // 4 iron ingots
+        materialCosts.put("LEATHER_HELMET", 5);
+        materialCosts.put("LEATHER_CHESTPLATE", 8);
+        materialCosts.put("LEATHER_LEGGINGS", 7);
+        materialCosts.put("LEATHER_BOOTS", 4);
+        materialCosts.put("IRON_HELMET", 5);
+        materialCosts.put("IRON_CHESTPLATE", 8);
+        materialCosts.put("IRON_LEGGINGS", 7);
+        materialCosts.put("IRON_BOOTS", 4);
+        materialCosts.put("GOLDEN_HELMET", 5);
+        materialCosts.put("GOLDEN_CHESTPLATE", 8);
+        materialCosts.put("GOLDEN_LEGGINGS", 7);
+        materialCosts.put("GOLDEN_BOOTS", 4);
+        materialCosts.put("DIAMOND_HELMET", 5);
+        materialCosts.put("DIAMOND_CHESTPLATE", 8);
+        materialCosts.put("DIAMOND_LEGGINGS", 7);
+        materialCosts.put("DIAMOND_BOOTS", 4);
+        materialCosts.put("NETHERITE_HELMET", 4);
+        materialCosts.put("NETHERITE_CHESTPLATE", 4);
+        materialCosts.put("NETHERITE_LEGGINGS", 4);
+        materialCosts.put("NETHERITE_BOOTS", 4);
+        materialCosts.put("WOODEN_SWORD", 2);
+        materialCosts.put("WOODEN_AXE", 3);
+        materialCosts.put("WOODEN_PICKAXE", 3);
+        materialCosts.put("WOODEN_SHOVEL", 1);
+        materialCosts.put("WOODEN_HOE", 2);
+        materialCosts.put("IRON_SWORD", 2);
+        materialCosts.put("IRON_AXE", 3);
+        materialCosts.put("IRON_PICKAXE", 3);
+        materialCosts.put("IRON_SHOVEL", 1);
+        materialCosts.put("IRON_HOE", 2);
+        materialCosts.put("GOLDEN_SWORD", 2);
+        materialCosts.put("GOLDEN_AXE", 3);
+        materialCosts.put("GOLDEN_PICKAXE", 3);
+        materialCosts.put("GOLDEN_SHOVEL", 1);
+        materialCosts.put("GOLDEN_HOE", 2);
+        materialCosts.put("DIAMOND_SWORD", 2);
+        materialCosts.put("DIAMOND_AXE", 3);
+        materialCosts.put("DIAMOND_PICKAXE", 3);
+        materialCosts.put("DIAMOND_SHOVEL", 1);
+        materialCosts.put("DIAMOND_HOE", 2);
+        materialCosts.put("NETHERITE_SWORD", 4);
+        materialCosts.put("NETHERITE_AXE", 4);
+        materialCosts.put("NETHERITE_PICKAXE", 4);
+        materialCosts.put("NETHERITE_SHOVEL", 4);
+        materialCosts.put("NETHERITE_HOE", 4);
+        materialCosts.put("BOW", 3);
+        materialCosts.put("CROSSBOW", 3);
+        materialCosts.put("FISHING_ROD", 2);
+        materialCosts.put("SHEARS", 2);
+        materialCosts.put("FLINT_AND_STEEL", 1);
+        materialCosts.put("CLOCK", 4);
+        materialCosts.put("COMPASS", 4);
 
         int materialCount = materialCosts.getOrDefault(itemId, 0);
-        // Convert material count to points based on material type
         if (itemId.startsWith("LEATHER_")) {
-            return materialCount * getItemValue("LEATHER"); // Leather = 2
+            return materialCount * getItemValue("LEATHER");
         } else if (itemId.startsWith("IRON_")) {
-            return materialCount * getItemValue("IRON_INGOT"); // Iron ingot = 1
+            return materialCount * getItemValue("IRON_INGOT");
         } else if (itemId.startsWith("GOLDEN_")) {
-            return materialCount * getItemValue("GOLD_INGOT"); // Gold ingot = 1
+            return materialCount * getItemValue("GOLD_INGOT");
         } else if (itemId.startsWith("DIAMOND_")) {
-            return materialCount * getItemValue("DIAMOND"); // Diamond = 10
+            return materialCount * getItemValue("DIAMOND");
         } else if (itemId.startsWith("NETHERITE_")) {
-            return materialCount * getItemValue("NETHERITE_INGOT"); // Netherite ingot = 100
+            return materialCount * getItemValue("NETHERITE_INGOT");
         } else if (itemId.equals("CLOCK")) {
-            return materialCount * getItemValue("GOLD_INGOT"); // Gold ingot = 1
+            return materialCount * getItemValue("GOLD_INGOT");
         } else if (itemId.equals("COMPASS")) {
-            return materialCount * getItemValue("IRON_INGOT"); // Iron ingot = 1
+            return materialCount * getItemValue("IRON_INGOT");
         } else if (itemId.equals("SHEARS") || itemId.equals("FLINT_AND_STEEL")) {
-            return materialCount * getItemValue("IRON_INGOT"); // Iron ingot = 1
+            return materialCount * getItemValue("IRON_INGOT");
         } else if (itemId.equals("BOW") || itemId.equals("CROSSBOW") || itemId.equals("FISHING_ROD")) {
-            return materialCount; // Approximate, as sticks have no defined value
+            return materialCount;
         } else if (itemId.startsWith("WOODEN_")) {
-            return materialCount; // Approximate, as planks have no defined value
+            return materialCount;
         }
         return 0.0;
     }
@@ -546,7 +555,6 @@ public class LootHunt {
             ZappierGames.globalBossBar.addPlayer(p);
         }
 
-        // Calculate time from ticks
         double secondsTotal = ZappierGames.timer / 20.0;
         int hours = (int) (secondsTotal / 3600);
         int minutes = (int) ((secondsTotal % 3600) / 60);
@@ -557,7 +565,7 @@ public class LootHunt {
 
         ZappierGames.globalBossBar.setProgress(ZappierGames.timer / startTimer);
 
-        ZappierGames.timer--; // Decrement timer (integer, but startTimer is double)
+        ZappierGames.timer--;
     }
 
     public static void giveStartingItems(Player player) {
@@ -567,7 +575,6 @@ public class LootHunt {
         player.getInventory().addItem(new ItemStack(Material.STONE_SHOVEL));
         player.getInventory().addItem(new ItemStack(Material.STONE_HOE));
 
-        // Add shulker boxes only if shulkerColors is not empty
         if (shulkerColors != null && shulkerColors.length > 0) {
             int pos = 8;
             for (Material shulker : shulkerColors) {
@@ -577,8 +584,9 @@ public class LootHunt {
             ZappierGames.getInstance().getLogger().warning("No shulker boxes given to " + player.getName() + ": shulkerColors is empty or null");
         }
 
-        // Add custom ender pearls
-        /*for (Map<String, Object> pearl : customPearls) {
+        // Custom pearls (commented out as in original)
+        /*
+        for (Map<String, Object> pearl : customPearls) {
             int sbitem = ((Number) pearl.get("sbitem")).intValue();
             int customModelData = ((Number) pearl.get("custom-model-data")).intValue();
             String displayName = (String) pearl.get("display-name");
@@ -590,7 +598,8 @@ public class LootHunt {
             } else {
                 ZappierGames.getInstance().getLogger().warning("Failed to create custom pearl: " + displayName);
             }
-        }*/
+        }
+        */
     }
 
     public static double getItemValue(String itemName) {

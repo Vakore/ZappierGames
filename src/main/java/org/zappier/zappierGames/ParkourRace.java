@@ -21,6 +21,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.structure.Structure;
 import org.bukkit.structure.StructureManager;
+import org.bukkit.util.BoundingBox;
 
 import javax.naming.Name;
 import java.io.IOException;
@@ -37,6 +38,8 @@ public class ParkourRace {
 
     private static final PotionEffect slowFallEffect = new PotionEffect(PotionEffectType.SLOW_FALLING, 5, 1, true, false, false);
     private static final PotionEffect invincibleEffect = new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 10, true, false, false);
+    private static final PotionEffect invisibleEffect = new PotionEffect(PotionEffectType.INVISIBILITY, PotionEffect.INFINITE_DURATION, 10, true, false, false);
+    private static final PotionEffect weaknessEffect = new PotionEffect(PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION, 10, true, false, false);
     private static List<String> checkpointNames = new ArrayList<>();
     private static Map<String, Location> playerCheckpoints = new HashMap<>();
     private static Map<String, Integer> playerScores = new HashMap<>();
@@ -46,6 +49,8 @@ public class ParkourRace {
     private static int timeLeft = 0;
     private static int timeToStart = 0;
     private static Location genPos;
+    private static final Set<Long> forceLoadedChunks = new HashSet<>();
+    private static final int UNLOAD_DISTANCE = 256;
 
     private static PotionEffect fireResEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 20*5, 4);
 
@@ -290,7 +295,20 @@ public class ParkourRace {
                 .collect(Collectors.toList());
         Random rnd = new Random();
         for (SegDifficulty diff : difficultyMap) {
-            Collections.shuffle(diff.segments, rnd);
+            //Collections.shuffle(diff.segments, rnd);
+
+            List<String> dupSegments = new ArrayList<>();
+            for (String str : diff.segments) {
+                dupSegments.add(str);
+            }
+
+            diff.segments.clear();
+
+            while(dupSegments.size() > 0) {
+                int dupIndex = (int)Math.floor(Math.random() * dupSegments.size());
+                diff.segments.add(dupSegments.get(dupIndex));
+                dupSegments.remove(dupIndex);
+            }
         }
 
 
@@ -322,8 +340,13 @@ public class ParkourRace {
             p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
             p.clearActivePotionEffects();
             p.addPotionEffect(invincibleEffect);
+            p.addPotionEffect(invisibleEffect);
+            p.addPotionEffect(weaknessEffect);
+
+            p.getInventory().clear();
             p.teleport(new Location(world, 0.5, 100, -9999.5, -90.0f, 0.0f));
-            p.setGameMode(GameMode.ADVENTURE);
+            p.setGameMode(GameMode.SPECTATOR);
+            p.sendTitle("", "Unloading previous map...");
         }
 
         world.setDifficulty(Difficulty.PEACEFUL);
@@ -370,23 +393,43 @@ public class ParkourRace {
             }
             startTime = 80;
             for (Player p : Bukkit.getOnlinePlayers()) {
-                p.teleport(new Location(world, 0.5, 100, -9999.5, -90.0f, 0.0f));
-                p.setAllowFlight(false);
+                p.sendTitle("", "Loading new map...");
+                //p.teleport(new Location(world, 0.5, 100, -9999.5, -90.0f, 0.0f));
+                //p.setAllowFlight(false);
             }
 
         }
         if (startTime > 1000) {
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                p.setAllowFlight(true);
-                p.teleport(new Location(world, mapEaterX, 140, -10000));
-            }
-            fillNoUpdate(world, Material.AIR, mapEaterX - 17, 90, -10000 - 48, mapEaterX + 12, 140, -10000 + 48);
+            // Define the area bounds (adjust Y if needed; using your fill bounds)
+            int minX = mapEaterX - 17;
+            int maxX = mapEaterX + 12;
+            int minZ = -10000 - 48;
+            int maxZ = -10000 + 48;
+            int minY = 90; // For entity bounding box
+            int maxY = 140;
+
+            // Force-load chunks for this area
+            forceLoadChunksInArea(world, minX, minZ, maxX, maxZ);
+
+            // Do the fill (your existing function; assumes it handles loading implicitly)
+            fillNoUpdate(world, Material.AIR, minX, minY, minZ, maxX, maxY, maxZ);
+
             mapEaterX += 11;
             startTime--;
 
+            // Optimized entity removal (non-players in this area only)
+            /*BoundingBox areaBox = new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+            world.getNearbyEntities(areaBox).stream()
+                    .filter(e -> !(e instanceof Player))
+                    .forEach(Entity::remove);*/
+            //Just to be safe tho...
             world.getEntities().stream()
                     .filter(e -> (!(e instanceof org.bukkit.entity.Player)))
                     .forEach(org.bukkit.entity.Entity::remove);
+
+            // Unload old chunks (call every step or conditionally to save CPU)
+            unloadOldChunks(world, mapEaterX);
+
             return;
         }
         if (startTime > 0) {
@@ -428,7 +471,9 @@ public class ParkourRace {
             startTime--;
             if (startTime == 0) {
                 for (Player p : Bukkit.getOnlinePlayers()) {
-                    p.teleport(new Location(world, 0.5, 101, -10000 + 0.5, -90.0f, 0.0f));
+                    p.teleport(new Location(world, 0.5, 100.5, -10000 + 0.5, -90.0f, 0.0f));
+                    p.setGameMode(GameMode.ADVENTURE);
+                    p.sendTitle("", "Get ready...");
                 }
                 fill(world, Material.BARRIER, -2, 101, -10000 -2, 2, 107, -10000 + 2);
                 fill(world, Material.AIR, -1, 101, -10000  -1, 1, 106, -10000 + 1);
@@ -541,6 +586,29 @@ public class ParkourRace {
                 int y = (int) Math.floor(m.getY());
                 int z = (int) Math.floor(m.getZ());
 
+
+
+
+
+                // ---- powdered snow ----
+                if (m.getScoreboardTags().contains("powder1")) {
+                    Block b = m.getWorld().getBlockAt(x, y, z);
+                    if (loopTimer == 39) {
+                        b.setType(Material.SNOW_BLOCK, true);
+                    } else {
+                        b.setType(Material.POWDER_SNOW, false);
+                    }
+                }
+                // ---- powdered snow ----
+                if (m.getScoreboardTags().contains("powder2")) {
+                    Block b = m.getWorld().getBlockAt(x, y, z);
+                    if (loopTimer == 79) {
+                        b.setType(Material.SNOW_BLOCK, true);
+                    } else {
+                        b.setType(Material.POWDER_SNOW, false);
+                    }
+                }
+
                 // ---- red 1*3*1 (cobble2d) ----
                 if (m.getScoreboardTags().contains("cobble2d")) {
                     if (loopTimer == 39) {
@@ -577,6 +645,18 @@ public class ParkourRace {
                     }
                 }
 
+
+                if (m.getScoreboardTags().contains("warped2c")) {
+                    if (loopTimer == 39) {
+                        fill(m.getWorld(), Material.CRIMSON_PLANKS,
+                                x - 1, y, z - 1, x + 1, y, z + 1);
+                    } else { // 79
+                        breakEffect(m.getWorld(), x, y, z, Material.CRIMSON_PLANKS, Sound.BLOCK_STEM_BREAK);
+                        fill(m.getWorld(), Material.AIR,
+                                x - 1, y, z - 1, x + 1, y, z + 1);
+                    }
+                }
+
                 // ---- light-blue 3*1*3 (cobble1c) ----
                 if (m.getScoreboardTags().contains("cobble1c")) {
                     if (loopTimer == 79) {
@@ -584,6 +664,17 @@ public class ParkourRace {
                                 x - 1, y, z - 1, x + 1, y, z + 1);
                     } else { // 39
                         breakEffect(m.getWorld(), x, y, z, Material.LIGHT_BLUE_WOOL, Sound.BLOCK_WOOL_BREAK);
+                        fill(m.getWorld(), Material.AIR,
+                                x - 1, y, z - 1, x + 1, y, z + 1);
+                    }
+                }
+
+                if (m.getScoreboardTags().contains("warped1c")) {
+                    if (loopTimer == 79) {
+                        fill(m.getWorld(), Material.WARPED_PLANKS,
+                                x - 1, y, z - 1, x + 1, y, z + 1);
+                    } else { // 39
+                        breakEffect(m.getWorld(), x, y, z, Material.WARPED_PLANKS, Sound.BLOCK_STEM_BREAK);
                         fill(m.getWorld(), Material.AIR,
                                 x - 1, y, z - 1, x + 1, y, z + 1);
                     }
@@ -730,7 +821,7 @@ public class ParkourRace {
                     playerScores.put(p.getName(), Math.max((int) Math.floor(p.getX()), playerScores.get(p.getName())));
                 }
                 for (Entity marker : markers) {
-                    if (marker.getX() <= checkpoint.getX() || dist3d(p.getX(), p.getY(), p.getZ(), marker.getX(), marker.getY(), marker.getZ()) > 3) {
+                    if (marker.getX() == checkpoint.getX() || dist3d(p.getX(), p.getY(), p.getZ(), marker.getX(), marker.getY(), marker.getZ()) > 3) {
                         continue;
                     } else {
                         Set<String> myTags = getVanillaEntityTags(marker);
@@ -772,7 +863,6 @@ public class ParkourRace {
             }
         }
 
-
     }
 
     private static void placeStructure(World world, int x, int y, int z, int segIndex) throws Exception {
@@ -783,8 +873,20 @@ public class ParkourRace {
         ParkourSegment seg = SEGMENTS.get(segIndex);
         StructureManager sm = plugin.getServer().getStructureManager();
 
-        // 1. Update marker name
-        List<Entity> someMarkers = world.getEntities().stream()
+        // Estimate bounds for the entire segment (adjust based on your max offsets/segment size; e.g., +100 for safety)
+        int segMinX = x - 50; // Tune these
+        int segMaxX = x + 100; // Add seg-specific max if available
+        int segMinZ = z - 50;
+        int segMaxZ = z + 50;
+        int segMinY = y - 10;
+        int segMaxY = y + 100;
+
+        // Force-load chunks for the whole segment
+        forceLoadChunksInArea(world, segMinX, segMinZ, segMaxX, segMaxZ);
+
+        // 1. Update marker name (targeted to area)
+        BoundingBox markerBox = new BoundingBox(segMinX, segMinY, segMinZ, segMaxX, segMaxY, segMaxZ);
+        List<Entity> someMarkers = world.getNearbyEntities(markerBox).stream()
                 .filter(e -> e.getType() == EntityType.MARKER)
                 .collect(Collectors.toList());
 
@@ -801,11 +903,12 @@ public class ParkourRace {
                 } else if (difficultyName.contains("Bedrock")) {
                     leMaterial = Material.BEDROCK;
                 }
-                fill(world, leMaterial, (int)Math.floor(marker.getX()), (int)Math.floor(marker.getY()) - 1, (int)Math.floor(marker.getZ()), (int)Math.floor(marker.getX()), (int)Math.floor(marker.getY()) - 1, (int)Math.floor(marker.getZ()));
+                fill(world, leMaterial, (int) Math.floor(marker.getX()), (int) Math.floor(marker.getY()) - 1, (int) Math.floor(marker.getZ()),
+                        (int) Math.floor(marker.getX()), (int) Math.floor(marker.getY()) - 1, (int) Math.floor(marker.getZ()));
             }
         }
 
-        // 2. Place all structures
+        // 2. Place all structures (your loadAndPlace will handle sub-areas)
         for (LoadAction load : seg.loads) {
             int sx = x + load.structOffset.dx;
             int sy = y + load.structOffset.dy;
@@ -813,7 +916,7 @@ public class ParkourRace {
             loadAndPlace(world, load.nbtName, sx, sy, sz, sm);
         }
 
-        // 3. Apply ALL fill actions
+        // 3. Apply ALL fill actions (fills are within seg bounds)
         if (seg.fills != null) {
             for (FillAction f : seg.fills) {
                 for (int fx = Math.min(f.x1, f.x2); fx <= Math.max(f.x1, f.x2); fx++) {
@@ -826,8 +929,8 @@ public class ParkourRace {
             }
         }
 
-        // 4. Update genPos from last pr_checkpoint
-        List<Entity> markers = world.getEntities().stream()
+        // 4. Update genPos from last pr_checkpoint (targeted to area)
+        List<Entity> markers = world.getNearbyEntities(markerBox).stream()
                 .filter(e -> e.getType() == EntityType.MARKER)
                 .collect(Collectors.toList());
 
@@ -838,15 +941,15 @@ public class ParkourRace {
             }
         }
 
-        // 5. Remove old entities
-        world.getEntities().stream()
+        // 5. Remove old entities (targeted to area; adjust filter if needed)
+        world.getNearbyEntities(markerBox).stream()
                 .filter(e -> !(e instanceof Player) && e.getX() > genPos.getX())
                 .forEach(Entity::remove);
 
-        // 6. Teleport players
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.teleport(genPos);
-        }
+        // 6. NO TELEPORT HERE
+
+        // Unload old chunks if this is progressive
+        unloadOldChunks(world, (int) genPos.getX());
     }
 
     /* -------------------------------------------------------------
@@ -884,7 +987,7 @@ public class ParkourRace {
                 for (int j = y - 5; j <= y + 5; j++) {
                     Block b = world.getBlockAt(i, j, k);
                     if (b.getBlockData().matches(structBlock)) {
-                        fill(world, Material.AIR, i, j, k, i, j, k);
+                        fillNoUpdate(world, Material.AIR, i, j, k, i, j, k);
                     }
                 }
             }
@@ -934,6 +1037,45 @@ public class ParkourRace {
         world.spawnParticle(Particle.BLOCK, center, 40,
                 0.3, 0.3, 0.3, Bukkit.createBlockData(wool));
         world.playSound(center, sound, 1.0f, 1.0f);
+    }
+
+    private static long getChunkKey(int chunkX, int chunkZ) {
+        return ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
+    }
+
+    // Force-load all chunks in a bounding box (minX/minZ/maxX/maxZ are block coords)
+    private static void forceLoadChunksInArea(World world, int minX, int minZ, int maxX, int maxZ) {
+        int minChunkX = minX >> 4;
+        int minChunkZ = minZ >> 4;
+        int maxChunkX = maxX >> 4;
+        int maxChunkZ = maxZ >> 4;
+
+        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+                Chunk chunk = world.getChunkAt(cx, cz); // Loads/generates if needed
+                long key = getChunkKey(cx, cz);
+                if (!forceLoadedChunks.contains(key)) {
+                    chunk.setForceLoaded(true);
+                    forceLoadedChunks.add(key);
+                }
+            }
+        }
+    }
+
+    // Unload chunks behind the current generation X (call periodically, e.g., every few ticks/steps)
+    private static void unloadOldChunks(World world, int currentGenX) {
+        Set<Long> toRemove = new HashSet<>();
+        for (long key : forceLoadedChunks) {
+            int cx = (int) (key >> 32);
+            int cz = (int) key;
+            int chunkMinX = cx << 4; // Left edge of chunk
+            if (chunkMinX + 16 < currentGenX - UNLOAD_DISTANCE) { // +16 for right edge; unload if fully behind
+                Chunk chunk = world.getChunkAt(cx, cz);
+                chunk.setForceLoaded(false);
+                toRemove.add(key);
+            }
+        }
+        forceLoadedChunks.removeAll(toRemove);
     }
 
 }
