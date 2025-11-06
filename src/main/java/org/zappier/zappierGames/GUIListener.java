@@ -132,7 +132,7 @@ public class GUIListener implements Listener {
                         Bukkit.broadcastMessage(player.getName().toUpperCase() + " has joined team " + teamName);
                         player.sendMessage(ChatColor.YELLOW + "Created and joined team §c" + teamName + ChatColor.YELLOW + "!");
                     }
-                    gui = new GUI("Skybattle");
+                    gui = new GUI("Loothunt");
                     gui.open(player);
                 } else {
                     validClick = false;
@@ -193,10 +193,11 @@ public class GUIListener implements Listener {
                                 String itemId = entry.getKey();
                                 List<LootHunt.ItemEntry> items = entry.getValue();
                                 for (LootHunt.ItemEntry itemEntry : items) {
+                                    if (itemEntry.points == 0) {continue;}
                                     player.sendMessage(ChatColor.YELLOW + itemId + ": " +
                                             ChatColor.GRAY + "Quantity: " + itemEntry.quantity + ", " +
-                                            "Points: " + String.format("%.1f", itemEntry.points) + ", " +
-                                            "Source: " + itemEntry.source);
+                                            "Points: " + String.format("%.1f", itemEntry.points) +
+                                            ", Source: " + itemEntry.source);
                                 }
                             }
                             player.sendMessage(ChatColor.GREEN + "=================================");

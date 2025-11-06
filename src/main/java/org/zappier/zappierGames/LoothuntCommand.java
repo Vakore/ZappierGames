@@ -59,20 +59,22 @@ public class LoothuntCommand implements TabExecutor {
                     return true;
                 }
                 String itemFilter = args[1].toUpperCase();
-                String targetPlayer = args[2].toUpperCase();
+                String targetPlayerName = args[2].toUpperCase();
 
-                Map<String, List<LootHunt.ItemEntry>> playerItems = LootHunt.playerItemCounts.get(targetPlayer);
+                // Check if player exists in playerItemCounts
+                Map<String, List<LootHunt.ItemEntry>> playerItems = LootHunt.playerItemCounts.get(targetPlayerName);
                 if (playerItems == null || playerItems.isEmpty()) {
-                    player.sendMessage(ChatColor.RED + "No items found for player " + targetPlayer + ". They may not have participated.");
+                    player.sendMessage(ChatColor.RED + "No items found for player " + targetPlayerName + ". They may not have participated.");
                     return true;
                 }
 
-                player.sendMessage(ChatColor.GREEN + "=== Endgame Items for " + targetPlayer + " ===");
+                player.sendMessage(ChatColor.GREEN + "=== Endgame Items for " + targetPlayerName + " ===");
                 if (itemFilter.equals("ALL")) {
                     for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : playerItems.entrySet()) {
                         String itemId = entry.getKey();
                         List<LootHunt.ItemEntry> items = entry.getValue();
                         for (LootHunt.ItemEntry item : items) {
+                            if (item.points == 0) {continue;}
                             player.sendMessage(ChatColor.YELLOW + itemId + ": " +
                                     ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
                                     "Points: " + String.format("%.1f", item.points) + ", " +
@@ -82,10 +84,11 @@ public class LoothuntCommand implements TabExecutor {
                 } else {
                     List<LootHunt.ItemEntry> items = playerItems.get(itemFilter);
                     if (items == null || items.isEmpty()) {
-                        player.sendMessage(ChatColor.RED + "No items of type " + itemFilter + " found for " + targetPlayer);
+                        player.sendMessage(ChatColor.RED + "No items of type " + itemFilter + " found for " + targetPlayerName);
                         return true;
                     }
                     for (LootHunt.ItemEntry item : items) {
+                        if (item.points == 0) {continue;}
                         player.sendMessage(ChatColor.YELLOW + itemFilter + ": " +
                                 ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
                                 "Points: " + String.format("%.1f", item.points) + ", " +
@@ -150,11 +153,13 @@ public class LoothuntCommand implements TabExecutor {
 
             case "leaveteam":
                 Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-                Team team = scoreboard.getTeam(player.getName());
+                Team team = scoreboard.getEntryTeam(player.getName());
 
                 if (team != null) {
                     team.removeEntry(player.getName());
-                    team.unregister();
+                    if (team.getEntries().isEmpty()) {
+                        team.unregister();
+                    }
                     Bukkit.broadcastMessage("LOOTHUNT: " + player.getName().toUpperCase() + " is no longer on a team");
                 } else {
                     player.sendMessage(ChatColor.RED + "No team to leave, you are not currently on one!");

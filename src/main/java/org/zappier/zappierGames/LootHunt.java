@@ -1,6 +1,7 @@
 package org.zappier.zappierGames;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.ShulkerBox;
@@ -23,7 +24,6 @@ public class LootHunt {
     public static String[] workStationNames;
     public static String[] dyeNames;
     public static Map<String, Double> itemValues = new HashMap<>();
-    // New structure to track per-player item counts with source
     public static Map<String, Map<String, List<ItemEntry>>> playerItemCounts = new HashMap<>();
     public static Map<String, Integer> playerKillCounts = new HashMap<>();
     public static Map<String, Integer> playerDeathCounts = new HashMap<>();
@@ -37,7 +37,6 @@ public class LootHunt {
     private static List<Map<String, Object>> customPearls = new ArrayList<>();
     private static Material[] shulkerColors;
 
-    // New class to store item details
     public static class ItemEntry {
         String itemId;
         int quantity;
@@ -50,15 +49,17 @@ public class LootHunt {
             this.points = points;
             this.source = source;
         }
+
+        @Override
+        public String toString() {
+            return "{itemId=" + itemId + ", quantity=" + quantity + ", points=" + points + ", source=" + source + "}";
+        }
     }
 
     public static void loadConfig(FileConfiguration config) {
         ZappierGames plugin = ZappierGames.getInstance();
-
-        // Load start timer
         startTimer = config.getDouble("start-timer", 240.0);
 
-        // Load door names and scores
         List<String> doorNamesList = config.getStringList("door-names");
         if (doorNamesList.isEmpty()) {
             doorNamesList = List.of(
@@ -77,7 +78,6 @@ public class LootHunt {
         }
         doorScores = doorScoresList.stream().mapToInt(Integer::intValue).toArray();
 
-        // Load workstation names
         List<String> workStationNamesList = config.getStringList("workstation-names");
         if (workStationNamesList.isEmpty()) {
             workStationNamesList = List.of(
@@ -89,7 +89,6 @@ public class LootHunt {
         }
         workStationNames = workStationNamesList.toArray(new String[0]);
 
-        // Load dye names
         List<String> dyeNamesList = config.getStringList("dye-names");
         if (dyeNamesList.isEmpty()) {
             dyeNamesList = List.of(
@@ -102,7 +101,6 @@ public class LootHunt {
         }
         dyeNames = dyeNamesList.toArray(new String[0]);
 
-        // Load shulker colors with default if not present
         List<String> shulkerColorNames = config.getStringList("shulker-colors");
         if (shulkerColorNames.isEmpty()) {
             shulkerColorNames = List.of(
@@ -122,7 +120,6 @@ public class LootHunt {
         }
         shulkerColors = validShulkerColors.toArray(new Material[0]);
 
-        // Load item values
         ConfigurationSection itemSection = config.getConfigurationSection("item-values");
         if (itemSection != null) {
             itemValues.clear();
@@ -133,7 +130,6 @@ public class LootHunt {
             plugin.getLogger().warning("item-values not found in config.yml, no item scoring available");
         }
 
-        // Load collection bonuses
         ConfigurationSection collectionSection = config.getConfigurationSection("collection-bonuses");
         if (collectionSection != null) {
             workstationBonus = collectionSection.getInt("workstations", 250);
@@ -144,7 +140,6 @@ public class LootHunt {
             plugin.getLogger().warning("collection-bonuses not found in config.yml, using defaults");
         }
 
-        // Load PVP settings
         ConfigurationSection pvpSection = config.getConfigurationSection("pvp");
         if (pvpSection != null) {
             baseKillPoints = pvpSection.getInt("base-kill-points", 50);
@@ -157,7 +152,6 @@ public class LootHunt {
             plugin.getLogger().warning("pvp settings not found in config.yml, using defaults");
         }
 
-        // Load enchantment settings
         ConfigurationSection enchantSection = config.getConfigurationSection("enchantments");
         if (enchantSection != null) {
             enchantmentPointsPerTier = enchantSection.getInt("points-per-tier", 4);
@@ -176,7 +170,6 @@ public class LootHunt {
             plugin.getLogger().warning("enchantments not found in config.yml, using defaults");
         }
 
-        // Load custom pearls
         customPearls.clear();
         List<Map<?, ?>> pearlList = config.getMapList("custom-pearls");
         if (pearlList.isEmpty()) {
@@ -197,12 +190,11 @@ public class LootHunt {
         for (World world : Bukkit.getWorlds()) {
             world.setGameRule(GameRule.KEEP_INVENTORY, true);
         }
-
-        Bukkit.broadcastMessage(ChatColor.YELLOW + "Keep inventory set to " + true + " across all dimensions");
+        Bukkit.broadcast(Component.text("Keep inventory set to true across all dimensions", NamedTextColor.YELLOW));
         playerItemCounts.clear();
         playerKillCounts.clear();
         playerDeathCounts.clear();
-        startTimer = duration * 60 * 20; // Convert minutes to ticks (20 ticks per second)
+        startTimer = duration * 60 * 20;
         ZappierGames.globalBossBar.removeAll();
         ZappierGames.globalBossBar.setVisible(true);
         ZappierGames.globalBossBar.setStyle(BarStyle.SOLID);
@@ -216,29 +208,28 @@ public class LootHunt {
             ZappierGames.globalBossBar.addPlayer(p);
             p.getInventory().clear();
             giveStartingItems(p);
-            p.sendTitle(ChatColor.GREEN + "Loot Hunt", ChatColor.GREEN + "Collect items, score points!");
-            p.sendActionBar(ChatColor.GREEN + "Use /getscore <item> to find how much it's worth!");
-            p.sendMessage(ChatColor.GREEN + "Use /getscore <item> to find how much it's worth!");
+            p.sendTitle(ChatColor.GREEN + "Loot Hunt", ChatColor.GREEN + "Collect items, score points!", 10, 70, 20);
+            p.sendActionBar(Component.text("Use /getscore <item> to find how much it's worth!", NamedTextColor.GREEN));
+            p.sendMessage(Component.text("Use /getscore <item> to find how much it's worth!", NamedTextColor.GREEN));
             p.setHealth(20.0);
             p.setFoodLevel(20);
             p.setSaturation(20.0f);
-            p.setExperienceLevelAndProgress(0);
+            p.setLevel(0);
+            p.setExp(0.0f);
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
         ZappierGames.gameMode = ZappierGames.LOOTHUNT;
-
-        ZappierGames.timer = (int) Math.ceil(startTimer); // Initialize timer as ceiling of startTimer
+        ZappierGames.timer = (int) Math.ceil(startTimer);
     }
 
     public static void endGame() {
         ZappierGames.globalBossBar.removeAll();
         ZappierGames.gameMode = -1;
 
-        // Aggregate team scores for display
         Map<String, Map<String, Double>> teamItemCounts = new HashMap<>();
 
         for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendTitle(ChatColor.YELLOW + "Game Finished!", ChatColor.YELLOW + "");
+            p.sendTitle(ChatColor.YELLOW + "Game Finished!", "", 10, 70, 20);
             p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.5f);
 
             Map<String, List<ItemEntry>> inventoryCounts = calculateInventoryCounts(p);
@@ -247,22 +238,20 @@ public class LootHunt {
                     ? p.getScoreboard().getEntryTeam(p.getName()).getName()
                     : "(Solo) " + p.getName();
 
-            // Store player item counts
             playerItemCounts.put(p.getName().toUpperCase(), inventoryCounts);
 
-            // Aggregate to team scores
             Map<String, Double> teamScores = teamItemCounts.computeIfAbsent(teamName, k -> new HashMap<>());
             for (Map.Entry<String, List<ItemEntry>> entry : inventoryCounts.entrySet()) {
                 double totalPoints = entry.getValue().stream().mapToDouble(e -> e.points).sum();
-                teamScores.put(entry.getKey(), teamScores.getOrDefault(entry.getKey(), 0.0) + totalPoints);
+                teamScores.merge(entry.getKey(), totalPoints, Double::sum);
             }
 
-            p.getInventory().clear();
+            //p.getInventory().clear();
         }
 
-        Bukkit.broadcastMessage(ChatColor.GREEN + "=======================");
-        Bukkit.broadcastMessage(ChatColor.GREEN + "        RESULTS        ");
-        Bukkit.broadcastMessage(ChatColor.GREEN + "=======================");
+        Bukkit.broadcast(Component.text("=======================", NamedTextColor.GREEN));
+        Bukkit.broadcast(Component.text("        RESULTS        ", NamedTextColor.GREEN));
+        Bukkit.broadcast(Component.text("=======================", NamedTextColor.GREEN));
 
         for (Map.Entry<String, Map<String, Double>> d : teamItemCounts.entrySet()) {
             double disScore = 0;
@@ -300,18 +289,18 @@ public class LootHunt {
 
             if (workStationNames != null && workStationCount >= workStationNames.length) {
                 disScore += workstationBonus;
+                ZappierGames.getInstance().getLogger().info("Applied workstation bonus (" + workstationBonus + ") for team " + d.getKey());
             }
 
             if (dyeNames != null && dyeCount >= dyeNames.length) {
                 disScore += dyeBonus;
+                ZappierGames.getInstance().getLogger().info("Applied dye bonus (" + dyeBonus + ") for team " + d.getKey());
             }
 
             if (doorScores != null && doorNames != null && doorsCount > 0) {
-                if (doorsCount <= doorScores.length) {
-                    disScore += doorScores[doorsCount - 1];
-                } else {
-                    disScore += doorScores[doorScores.length - 1];
-                }
+                int doorBonus = doorsCount <= doorScores.length ? doorScores[doorsCount - 1] : doorScores[doorScores.length - 1];
+                disScore += doorBonus;
+                ZappierGames.getInstance().getLogger().info("Applied door bonus (" + doorBonus + ") for team " + d.getKey() + " with " + doorsCount + " doors");
             }
 
             for (Map.Entry<String, Integer> e : playerKillCounts.entrySet()) {
@@ -330,7 +319,7 @@ public class LootHunt {
                         killCount--;
                         killValue /= pointsReductionFactor;
                     }
-                    Bukkit.broadcastMessage(killerName + " got " + oldKillCount + " kills, earning " + addScore + " points for team " + d.getKey());
+                    Bukkit.broadcast(Component.text(killerName + " got " + oldKillCount + " kills, earning " + addScore + " points for team " + d.getKey(), NamedTextColor.YELLOW));
                     disScore += addScore;
                 }
             }
@@ -351,38 +340,39 @@ public class LootHunt {
                         deathCount--;
                         deathValue /= pointsReductionFactor;
                     }
-                    Bukkit.broadcastMessage(killedName + " died " + oldDeathCount + " times, losing " + addScore + " points for team " + d.getKey());
+                    Bukkit.broadcast(Component.text(killedName + " died " + oldDeathCount + " times, losing " + addScore + " points for team " + d.getKey(), NamedTextColor.YELLOW));
                     disScore -= addScore;
                 }
             }
 
-            Bukkit.broadcastMessage(ChatColor.YELLOW + d.getKey() + ": " + String.format("%.1f", disScore));
+            Bukkit.broadcast(Component.text(d.getKey() + ": " + String.format("%.1f", disScore), NamedTextColor.YELLOW));
             if (doorNames != null) {
-                Bukkit.broadcastMessage(ChatColor.GRAY + "  Doors: " + doorsCount + "/" + doorNames.length);
+                Bukkit.broadcast(Component.text("  Doors: " + doorsCount + "/" + doorNames.length, NamedTextColor.GRAY));
             } else {
-                Bukkit.broadcastMessage(ChatColor.GRAY + "  Doors: " + doorsCount + "/0 (config missing)");
+                Bukkit.broadcast(Component.text("  Doors: " + doorsCount + "/0 (config missing)", NamedTextColor.GRAY));
             }
             if (workStationNames != null) {
-                Bukkit.broadcastMessage(ChatColor.GRAY + "  Workstations: " + workStationCount + "/" + workStationNames.length);
+                Bukkit.broadcast(Component.text("  Workstations: " + workStationCount + "/" + workStationNames.length, NamedTextColor.GRAY));
             } else {
-                Bukkit.broadcastMessage(ChatColor.GRAY + "  Workstations: " + workStationCount + "/0 (config missing)");
+                Bukkit.broadcast(Component.text("  Workstations: " + workStationCount + "/0 (config missing)", NamedTextColor.GRAY));
             }
             if (dyeNames != null) {
-                Bukkit.broadcastMessage(ChatColor.GRAY + "  Dyes: " + dyeCount + "/" + dyeNames.length);
+                Bukkit.broadcast(Component.text("  Dyes: " + dyeCount + "/" + dyeNames.length, NamedTextColor.GRAY));
             } else {
-                Bukkit.broadcastMessage(ChatColor.GRAY + "  Dyes: " + dyeCount + "/0 (config missing)");
+                Bukkit.broadcast(Component.text("  Dyes: " + dyeCount + "/0 (config missing)", NamedTextColor.GRAY));
             }
         }
-        Bukkit.broadcastMessage(ChatColor.GREEN + "=======================");
-
-        // Do not clear playerItemCounts here to allow endscore queries
+        Bukkit.broadcast(Component.text("=======================", NamedTextColor.GREEN));
     }
 
     public static Map<String, List<ItemEntry>> calculateInventoryCounts(Player player) {
         Map<String, List<ItemEntry>> scoreMap = new HashMap<>();
 
+        // Log start of inventory processing
+        ZappierGames.getInstance().getLogger().info("Processing inventory for " + player.getName());
+
         // Process main inventory
-        for (ItemStack item : player.getInventory()) {
+        for (ItemStack item : player.getInventory().getContents()) {
             if (item == null || item.getType() == Material.AIR) {
                 continue;
             }
@@ -390,61 +380,105 @@ public class LootHunt {
             double itemValue = getItemValue(itemId);
             int amount = item.getAmount();
 
-            // Handle crafted armor, tools, weapons, clocks, and compasses
+            // Handle crafted armor, tools, etc.
             if (isCraftedArmorOrTool(itemId)) {
                 itemValue = getCraftingCost(itemId);
             }
-
-            // Handle damaged items (half points for base value)
-            // Removed as we decided this is kinda stupid for things like tridents
-            /*if (item.getItemMeta() instanceof Damageable damageable && damageable.hasDamage()) {
-                itemValue /= 2.0;
-            }*/
 
             // Handle enchantments
             if (item.hasItemMeta() && item.getItemMeta().hasEnchants()) {
                 itemValue += getTotalEnchantmentPoints(item);
             }
 
+            // Handle doors, workstations, and dyes
+            boolean isCollectionItem = false;
+            if (Arrays.asList(doorNames).contains(itemId) || Arrays.asList(workStationNames).contains(itemId) || Arrays.asList(dyeNames).contains(itemId)) {
+                isCollectionItem = true;
+                if (itemValue == 0.0) {
+                    itemValue = 1.0; // Default value for collection items with no config value
+                }
+            }
+
+            // Log item processing
+            ZappierGames.getInstance().getLogger().info("Main inventory item " + itemId + ": quantity=" + amount + ", value=" + itemValue + (isCollectionItem ? ", collection item" : ""));
+
             // Add to scoreMap
             scoreMap.computeIfAbsent(itemId, k -> new ArrayList<>())
                     .add(new ItemEntry(itemId, amount, itemValue * amount, "Inventory"));
 
-            if (item.getType().name().endsWith("SHULKER_BOX")) {
-                if (item.hasItemMeta() && item.getItemMeta() instanceof BlockStateMeta meta) {
-                    BlockState state = meta.getBlockState();
-                    if (state instanceof ShulkerBox shulkerBox) {
-                        for (ItemStack sItem : shulkerBox.getInventory().getContents()) {
-                            if (sItem == null || sItem.getType() == Material.AIR) {
-                                continue;
-                            }
-                            String sItemId = sItem.getType().toString();
-                            double sItemValue = getItemValue(sItemId);
-                            int sAmount = sItem.getAmount();
+            // Process shulker box contents
+            if (item.getType() == Material.SHULKER_BOX || item.getType().name().endsWith("_SHULKER_BOX")) {
+                ZappierGames.getInstance().getLogger().info("Found shulker box " + itemId + " for " + player.getName());
+                if (!item.hasItemMeta()) {
+                    ZappierGames.getInstance().getLogger().warning("Shulker box " + itemId + " for " + player.getName() + " has no item meta");
+                    continue;
+                }
+                if (!(item.getItemMeta() instanceof BlockStateMeta meta)) {
+                    ZappierGames.getInstance().getLogger().warning("Shulker box " + itemId + " for " + player.getName() + " has invalid meta (not BlockStateMeta)");
+                    continue;
+                }
+                BlockState state = meta.getBlockState();
+                if (!(state instanceof ShulkerBox shulkerBox)) {
+                    ZappierGames.getInstance().getLogger().warning("Shulker box " + itemId + " for " + player.getName() + " is not a valid ShulkerBox");
+                    continue;
+                }
 
-                            // Handle crafted armor, tools, weapons, clocks, and compasses in shulker box
-                            if (isCraftedArmorOrTool(sItemId)) {
-                                sItemValue = getCraftingCost(sItemId);
-                            }
+                // Log shulker box inventory processing
+                ZappierGames.getInstance().getLogger().info("Processing shulker box inventory for " + itemId);
 
-                            // Handle damaged items in shulker box
-                            if (sItem.getItemMeta() instanceof Damageable sDamageable && sDamageable.hasDamage()) {
-                                sItemValue /= 2.0;
-                            }
+                int itemCount = 0;
+                for (ItemStack sItem : shulkerBox.getInventory().getContents()) {
+                    if (sItem == null || sItem.getType() == Material.AIR) {
+                        continue;
+                    }
+                    itemCount++;
+                    String sItemId = sItem.getType().toString();
+                    double sItemValue = getItemValue(sItemId);
+                    int sAmount = sItem.getAmount();
 
-                            // Handle enchantments in shulker box
-                            if (sItem.hasItemMeta() && sItem.getItemMeta().hasEnchants()) {
-                                sItemValue += getTotalEnchantmentPoints(sItem);
-                            }
+                    // Handle crafted armor, tools, etc.
+                    if (isCraftedArmorOrTool(sItemId)) {
+                        sItemValue = getCraftingCost(sItemId);
+                    }
 
-                            // Add to scoreMap
-                            scoreMap.computeIfAbsent(sItemId, k -> new ArrayList<>())
-                                    .add(new ItemEntry(sItemId, sAmount, sItemValue * sAmount, "Shulker Box"));
+                    // Handle damaged items (half points for base value)
+                    if (sItem.getItemMeta() instanceof Damageable sDamageable && sDamageable.hasDamage()) {
+                        sItemValue /= 2.0;
+                    }
+
+                    // Handle enchantments
+                    if (sItem.hasItemMeta() && sItem.getItemMeta().hasEnchants()) {
+                        sItemValue += getTotalEnchantmentPoints(sItem);
+                    }
+
+                    // Handle doors, workstations, and dyes
+                    boolean isShulkerCollectionItem = false;
+                    if (Arrays.asList(doorNames).contains(sItemId) || Arrays.asList(workStationNames).contains(sItemId) || Arrays.asList(dyeNames).contains(sItemId)) {
+                        isShulkerCollectionItem = true;
+                        if (sItemValue == 0.0) {
+                            sItemValue = 1.0; // Default value for collection items with no config value
                         }
                     }
+
+                    // Log shulker box item processing
+                    ZappierGames.getInstance().getLogger().info("Shulker box item " + sItemId + ": quantity=" + sAmount + ", value=" + sItemValue + (isShulkerCollectionItem ? ", collection item" : ""));
+
+                    // Add to scoreMap
+                    scoreMap.computeIfAbsent(sItemId, k -> new ArrayList<>())
+                            .add(new ItemEntry(sItemId, sAmount, sItemValue * sAmount, "Shulker Box"));
                 }
+
+                // Log number of items found in shulker box
+                ZappierGames.getInstance().getLogger().info("Found " + itemCount + " items in shulker box " + itemId);
+
+                // Update shulker box block state to ensure inventory changes are persisted
+                meta.setBlockState(shulkerBox);
+                item.setItemMeta(meta);
             }
         }
+
+        // Log final score map
+        ZappierGames.getInstance().getLogger().info("Final score map for " + player.getName() + ": " + scoreMap);
 
         return scoreMap;
     }
@@ -457,8 +491,8 @@ public class LootHunt {
                 itemId.endsWith("_HOE") || itemId.equals("CLOCK") || itemId.equals("COMPASS") ||
                 itemId.equals("BOW") || itemId.equals("CROSSBOW") || itemId.equals("FISHING_ROD") ||
                 itemId.equals("SHEARS") || itemId.equals("FLINT_AND_STEEL")) &&
-                !itemId.equals("CHAIN_HELMET") && !itemId.equals("CHAIN_CHESTPLATE") &&
-                !itemId.equals("CHAIN_LEGGINGS") && !itemId.equals("CHAIN_BOOTS") &&
+                !itemId.equals("CHAINMAIL_HELMET") && !itemId.equals("CHAINMAIL_CHESTPLATE") &&
+                !itemId.equals("CHAINMAIL_LEGGINGS") && !itemId.equals("CHAINMAIL_BOOTS") &&
                 !itemId.equals("STONE_SWORD") && !itemId.equals("STONE_AXE") &&
                 !itemId.equals("STONE_PICKAXE") && !itemId.equals("STONE_SHOVEL") &&
                 !itemId.equals("STONE_HOE");
@@ -482,10 +516,10 @@ public class LootHunt {
         materialCosts.put("DIAMOND_CHESTPLATE", 8);
         materialCosts.put("DIAMOND_LEGGINGS", 7);
         materialCosts.put("DIAMOND_BOOTS", 4);
-        materialCosts.put("NETHERITE_HELMET", 4);
-        materialCosts.put("NETHERITE_CHESTPLATE", 4);
-        materialCosts.put("NETHERITE_LEGGINGS", 4);
-        materialCosts.put("NETHERITE_BOOTS", 4);
+        materialCosts.put("NETHERITE_HELMET", 1);
+        materialCosts.put("NETHERITE_CHESTPLATE", 1);
+        materialCosts.put("NETHERITE_LEGGINGS", 1);
+        materialCosts.put("NETHERITE_BOOTS", 1);
         materialCosts.put("WOODEN_SWORD", 2);
         materialCosts.put("WOODEN_AXE", 3);
         materialCosts.put("WOODEN_PICKAXE", 3);
@@ -506,11 +540,11 @@ public class LootHunt {
         materialCosts.put("DIAMOND_PICKAXE", 3);
         materialCosts.put("DIAMOND_SHOVEL", 1);
         materialCosts.put("DIAMOND_HOE", 2);
-        materialCosts.put("NETHERITE_SWORD", 4);
-        materialCosts.put("NETHERITE_AXE", 4);
-        materialCosts.put("NETHERITE_PICKAXE", 4);
-        materialCosts.put("NETHERITE_SHOVEL", 4);
-        materialCosts.put("NETHERITE_HOE", 4);
+        materialCosts.put("NETHERITE_SWORD", 1);
+        materialCosts.put("NETHERITE_AXE", 1);
+        materialCosts.put("NETHERITE_PICKAXE", 1);
+        materialCosts.put("NETHERITE_SHOVEL", 1);
+        materialCosts.put("NETHERITE_HOE", 1);
         materialCosts.put("BOW", 3);
         materialCosts.put("CROSSBOW", 3);
         materialCosts.put("FISHING_ROD", 2);
@@ -537,9 +571,9 @@ public class LootHunt {
         } else if (itemId.equals("SHEARS") || itemId.equals("FLINT_AND_STEEL")) {
             return materialCount * getItemValue("IRON_INGOT");
         } else if (itemId.equals("BOW") || itemId.equals("CROSSBOW") || itemId.equals("FISHING_ROD")) {
-            return materialCount;
+            return materialCount * getItemValue("STRING");
         } else if (itemId.startsWith("WOODEN_")) {
-            return materialCount;
+            return materialCount * getItemValue("OAK_PLANKS");
         }
         return 0.0;
     }
@@ -547,7 +581,7 @@ public class LootHunt {
     public static void run() {
         if (ZappierGames.timer <= 0) {
             ZappierGames.gameMode = -1;
-            LootHunt.endGame();
+            endGame();
             return;
         }
 
@@ -560,9 +594,7 @@ public class LootHunt {
         int minutes = (int) ((secondsTotal % 3600) / 60);
         int seconds = (int) (secondsTotal % 60);
 
-        ZappierGames.globalBossBar.setTitle(String.format("Time Left: %02d:%02d:%02d",
-                hours, minutes, seconds));
-
+        ZappierGames.globalBossBar.setTitle(String.format("Time Left: %02d:%02d:%02d", hours, minutes, seconds));
         ZappierGames.globalBossBar.setProgress(ZappierGames.timer / startTimer);
 
         ZappierGames.timer--;
@@ -578,13 +610,13 @@ public class LootHunt {
         if (shulkerColors != null && shulkerColors.length > 0) {
             int pos = 8;
             for (Material shulker : shulkerColors) {
+                ZappierGames.getInstance().getLogger().info("Giving shulker box " + shulker + " to " + player.getName());
                 player.getInventory().setItem(pos++, new ItemStack(shulker));
             }
         } else {
             ZappierGames.getInstance().getLogger().warning("No shulker boxes given to " + player.getName() + ": shulkerColors is empty or null");
         }
 
-        // Custom pearls (commented out as in original)
         /*
         for (Map<String, Object> pearl : customPearls) {
             int sbitem = ((Number) pearl.get("sbitem")).intValue();
