@@ -18,12 +18,12 @@ public class openGUICommand implements TabExecutor {
 
         Player player = (Player) sender;
 
-        // Check if Manhunt is active (gameMode == 1, 2, or 3)
-        boolean isManhuntActive = ZappierGames.gameMode >= 1 && ZappierGames.gameMode <= 3;
-
-        if (isManhuntActive) {
+        if (ZappierGames.gameMode >= 1 && ZappierGames.gameMode <= 9) {
             new GUI("Manhunt").open(player);
             player.sendMessage(ChatColor.YELLOW + "Opening Manhunt menu (game active)");
+        } else if (ZappierGames.gameMode == 0 && ZappierGames.timer > 0) {
+            new GUI("Loothunt").open(player);
+            player.sendMessage(ChatColor.YELLOW + "Opening Loothunt menu (game active)");
         } else {
             new GUI().open(player);
             player.sendMessage(ChatColor.GREEN + "Opening main menu");

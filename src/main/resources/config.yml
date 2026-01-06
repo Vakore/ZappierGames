@@ -1,252 +1,617 @@
 # Initial timer duration (in ticks, 240 = 12 seconds)
-        start-timer: 240.0
+start-timer: 240.0
 
-        # Door settings (use valid Minecraft 1.21.3 material names)
-        door-scores:
-                - 1
-                - 5
-                - 10
-                - 15
-                - 25
-                - 50
-                - 75
-                - 100
-                - 150
-                - 250
-                - 400
-                - 700
-                - 1000
-        door-names:
-                - OAK_DOOR
-                - SPRUCE_DOOR
-                - BIRCH_DOOR
-                - JUNGLE_DOOR
-                - ACACIA_DOOR
-                - DARK_OAK_DOOR
-                - CRIMSON_DOOR
-                - WARPED_DOOR
-                - MANGROVE_DOOR
-                - BAMBOO_DOOR
-                - IRON_DOOR
-                - CHERRY_DOOR
-                - COPPER_DOOR
+# Door settings (use valid Minecraft 1.21.11 material names)
+door-scores:
+  - 1
+  - 5
+  - 10
+  - 15
+  - 25
+  - 50
+  - 75
+  - 100
+  - 150
+  - 250
+  - 400
+  - 700
+  - 1000
+  - 1500
+door-names:
+  - OAK_DOOR
+  - SPRUCE_DOOR
+  - BIRCH_DOOR
+  - JUNGLE_DOOR
+  - ACACIA_DOOR
+  - DARK_OAK_DOOR
+  - CRIMSON_DOOR
+  - WARPED_DOOR
+  - MANGROVE_DOOR
+  - BAMBOO_DOOR
+  - IRON_DOOR
+  - CHERRY_DOOR
+  - COPPER_DOOR
+  - PALE_OAK_DOOR
 
-        # Workstation settings (use valid Minecraft 1.21.3 material names)
-        workstation-names:
-                - BLAST_FURNACE
-                - SMOKER
-                - CARTOGRAPHY_TABLE
-                - BREWING_STAND
-                - COMPOSTER
-                - BARREL
-                - FLETCHING_TABLE
-                - CAULDRON
-                - LECTERN
-                - STONECUTTER
-                - LOOM
-                - SMITHING_TABLE
-                - GRINDSTONE
+# Workstation settings (use valid Minecraft 1.21.11 material names)
+workstation-names:
+  - BLAST_FURNACE
+  - SMOKER
+  - CARTOGRAPHY_TABLE
+  - BREWING_STAND
+  - COMPOSTER
+  - BARREL
+  - FLETCHING_TABLE
+  - CAULDRON
+  - LECTERN
+  - STONECUTTER
+  - LOOM
+  - SMITHING_TABLE
+  - GRINDSTONE
 
-        # Dye settings (use valid Minecraft 1.21.3 material names)
-        dye-names:
-                - WHITE_DYE
-                - LIGHT_GRAY_DYE
-                - GRAY_DYE
-                - BLACK_DYE
-                - BROWN_DYE
-                - RED_DYE
-                - ORANGE_DYE
-                - YELLOW_DYE
-                - LIME_DYE
-                - GREEN_DYE
-                - CYAN_DYE
-                - LIGHT_BLUE_DYE
-                - BLUE_DYE
-                - PURPLE_DYE
-                - MAGENTA_DYE
-                - PINK_DYE
+# Dye settings (use valid Minecraft 1.21.11 material names)
+dye-names:
+  - WHITE_DYE
+  - LIGHT_GRAY_DYE
+  - GRAY_DYE
+  - BLACK_DYE
+  - BROWN_DYE
+  - RED_DYE
+  - ORANGE_DYE
+  - YELLOW_DYE
+  - LIME_DYE
+  - GREEN_DYE
+  - CYAN_DYE
+  - LIGHT_BLUE_DYE
+  - BLUE_DYE
+  - PURPLE_DYE
+  - MAGENTA_DYE
+  - PINK_DYE
 
-        # Shulker box colors for starting items (use valid Minecraft 1.21.3 material names)
-        shulker-colors:
-                - BLUE_SHULKER_BOX
-                - RED_SHULKER_BOX
-                - GREEN_SHULKER_BOX
-                - YELLOW_SHULKER_BOX
-                - BLACK_SHULKER_BOX
+# Bucket Collection (10 different buckets)
+bucket-names:
+  - BUCKET
+  - WATER_BUCKET
+  - LAVA_BUCKET
+  - MILK_BUCKET
+  - COD_BUCKET
+  - SALMON_BUCKET
+  - PUFFERFISH_BUCKET
+  - TROPICAL_FISH_BUCKET
+  - AXOLOTL_BUCKET
+  - POWDER_SNOW_BUCKET
 
-        # Item values for Loot Hunt scoring
-        item-values:
-                RAW_IRON: 1
-                IRON_INGOT: 1
-                RAW_GOLD: 2
-                GOLD_INGOT: 1
-                GOLD_BLOCK: 9
-                RAW_COPPER_BLOCK: 2
-                COPPER_BLOCK: 1
-                IRON_BLOCK: 12
-                COAL_BLOCK: 4
-                REDSTONE_BLOCK: 4
-                LAPIS_BLOCK: 6
-                DIAMOND: 10
-                EMERALD: 3
-                ANCIENT_DEBRIS: 20
-                NETHERITE_INGOT: 100
-                NETHERITE_SCRAP: 20
-                QUARTZ: 1
-                SPECTRAL_ARROW: 2
-                GILDED_BLACKSTONE: 2
-                NETHER_WART: 2
-                SNOUT_BANNER_PATTERN: 20
-                CRYING_OBSIDIAN: 10
-                GLOWSTONE_BLOCK: 4
-                LODESTONE: 1
-                AMETHYST_SHARD: 7
-                WITHER_SKELETON_SKULL: 150
-                TRIDENT: 250
-                ENDER_PEARL: 10
-                LEATHER: 2
-                TOTEM_OF_UNDYING: 100
-                DRAGON_EGG: 500
-                DRAGON_HEAD: 100
-                PLAYER_HEAD: 300
-                ZOMBIE_HEAD: 300
-                SKELETON_SKULL: 300
-                CREEPER_HEAD: 300
-                FEATHER: 2
-                SPONGE: 10
-                WET_SPONGE: 10
-                GOLDEN_APPLE: 15
-                ENCHANTED_GOLDEN_APPLE: 200
-                IRON_HORSE_ARMOR: 15
-                GOLD_HORSE_ARMOR: 20
-                DIAMOND_HORSE_ARMOR: 25
-                NAME_TAG: 20
-                SADDLE: 15
-                HEART_OF_THE_SEA: 40
-                ELYTRA: 250
-                GOAT_HORN: 75
-                EXPERIENCE_BOTTLE: 15
-                BELL: 25
-                TNT: 5
-                SNIFFER_EGG: 25
-                NAUTILUS_SHELL: 40
-                GOLDEN_CARROT: 1
-                WHITE_WOOL: 1
-                ORANGE_WOOL: 1
-                MAGENTA_WOOL: 1
-                LIGHT_BLUE_WOOL: 1
-                YELLOW_WOOL: 1
-                LIME_WOOL: 1
-                PINK_WOOL: 1
-                GRAY_WOOL: 1
-                LIGHT_GRAY_WOOL: 1
-                CYAN_WOOL: 1
-                PURPLE_WOOL: 1
-                BLUE_WOOL: 1
-                BROWN_WOOL: 1
-                GREEN_WOOL: 1
-                RED_WOOL: 1
-                BLACK_WOOL: 1
-                OBSIDIAN: 3
-                BUCKET: 3
-                WATER_BUCKET: 3
-                LAVA_BUCKET: 3
-                MILK_BUCKET: 3
-                CHAIN_HELMET: 6
-                CHAIN_CHESTPLATE: 9
-                CHAIN_LEGGINGS: 8
-                CHAIN_BOOTS: 5
-                ENCHANTED_BOOK: 10
-                MUSIC_DISC_13: 15
-                MUSIC_DISC_CAT: 15
-                MUSIC_DISC_BLOCKS: 50
-                MUSIC_DISC_CHIRP: 50
-                MUSIC_DISC_FAR: 50
-                MUSIC_DISC_MALL: 50
-                MUSIC_DISC_MELLOHI: 50
-                MUSIC_DISC_STAL: 50
-                MUSIC_DISC_STRAD: 50
-                MUSIC_DISC_WARD: 50
-                MUSIC_DISC_WAIT: 50
-                MUSIC_DISC_PIGSTEP: 30
-                MUSIC_DISC_OTHERSIDE: 50
-                MUSIC_DISC_5: 100
-                MUSIC_DISC_RELIC: 100
-                COAST_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                DUNE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                EYE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                RIB_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                TIDE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                VEX_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                WARD_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                WILD_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                RAISER_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                HOST_ARMOR_TRIM_SMITHING_TEMPLATE: 60
-                POTTERY_SHERD_ARCHER: 30
-                POTTERY_SHERD_PRIZE: 30
-                POTTERY_SHERD_SKULL: 30
-                POTTERY_SHERD_ARMS_UP: 30
-                POTTERY_SHERD_BLADE: 30
-                POTTERY_SHERD_BREWER: 30
-                POTTERY_SHERD_BURN: 30
-                POTTERY_SHERD_DANGER: 30
-                POTTERY_SHERD_EXPLORER: 30
-                POTTERY_SHERD_FRIEND: 30
-                POTTERY_SHERD_HEART: 30
-                POTTERY_SHERD_HEARTBREAK: 30
-                POTTERY_SHERD_HOWL: 30
-                POTTERY_SHERD_MINER: 30
-                POTTERY_SHERD_MOURNER: 30
-                POTTERY_SHERD_PLENTY: 30
-                POTTERY_SHERD_SHELTER: 30
-                POTTERY_SHERD_SHEPHERD: 30
-                POTTERY_SHERD_TREASURE: 30
-                BOOK: 5
+# Soup Collection (4 soups)
+soup-names:
+  - MUSHROOM_STEW
+  - RABBIT_STEW
+  - SUSPICIOUS_STEW
+  - BEETROOT_SOUP
 
-        # Collection bonuses
-        collection-bonuses:
-                workstations: 250
-                dyes: 300
+# Brewing Ingredients Collection (20 items)
+brewing-ingredient-names:
+  - REDSTONE
+  - STONE
+  - SUGAR
+  - GUNPOWDER
+  - SPIDER_EYE
+  - GOLDEN_CARROT
+  - BREEZE_ROD
+  - FERMENTED_SPIDER_EYE
+  - COBWEB
+  - GHAST_TEAR
+  - BLAZE_POWDER
+  - NETHER_WART
+  - GLOWSTONE_DUST
+  - MAGMA_CREAM
+  - GLISTERING_MELON_SLICE
+  - PUFFERFISH
+  - RABBIT_FOOT
+  - SLIME_BLOCK
+  - DRAGON_BREATH
+  - PHANTOM_MEMBRANE
 
-        # Kill and death points
-        pvp:
-                base-kill-points: 50
-                base-death-points: 25
-                points-reduction-factor: 2
+brewing-ingredient-scores:
+  - 5
+  - 10
+  - 15
+  - 20
+  - 30
+  - 40
+  - 50
+  - 60
+  - 75
+  - 100
+  - 150
+  - 225
+  - 300
+  - 400
+  - 600
+  - 825
+  - 1000
+  - 1500
+  - 2000
+  - 3000
 
-        # Custom ender pearls to give at start
-        custom-pearls:
-                - sbitem: 1
-                  custom-model-data: 1160001
-                  display-name: "Levitation Pearl"
-                  amount: 1
-                - sbitem: 2
-                  custom-model-data: 1160002
-                  display-name: "Speed Pearl (3)"
-                  amount: 1
-                - sbitem: 20
-                  custom-model-data: 1160020
-                  display-name: "Speed Pearl (20)"
-                  amount: 1
-                - sbitem: 3
-                  custom-model-data: 1160003
-                  display-name: "Regeneration Pearl"
-                  amount: 1
-                - sbitem: 4
-                  custom-model-data: 1160004
-                  display-name: "Jump Boost Pearl"
-                  amount: 1
+# Collection bonuses
+collection-bonuses:
+  workstations: 250
+  dyes: 400
+  buckets: 1000
+  soups: 150
 
-        # Enchantment scoring
-        enchantments:
-                points-per-tier: 4
-                special-enchantments:
-                        SWIFT_SNEAK: 8
-                        MENDING: 8
-                        FROST_WALKER: 8
+# Shulker box colors for starting items (use valid Minecraft 1.21.11 material names)
+shulker-colors:
+  - BLUE_SHULKER_BOX
+  - RED_SHULKER_BOX
+  - GREEN_SHULKER_BOX
+  - YELLOW_SHULKER_BOX
+  - BLACK_SHULKER_BOX
+
+# Item values for Loot Hunt scoring
+item-values:
+  RAW_IRON: 1
+  RAW_IRON_BLOCK: 9
+  IRON_NUGGET: 0.1
+  IRON_INGOT: 1
+  RAW_GOLD: 2
+  RAW_GOLD_BLOCK: 18
+  GOLD_NUGGET: 0.2
+  GOLD_INGOT: 2
+  GOLD_BLOCK: 18
+  RAW_COPPER_BLOCK: 3
+  RAW_COPPER: 0.3
+  WAXED_COPPER_BLOCK: 1
+  IRON_BLOCK: 9
+  COAL_BLOCK: 9
+  COAL: 1
+  REDSTONE_BLOCK: 5
+  REDSTONE: 0.5
+  LAPIS_BLOCK: 5
+  LAPIS_LAZULI: 0.5
+  DIAMOND: 10
+  DIAMOND_BLOCK: 90
+  EMERALD: 5
+  EMERALD_BLOCK: 45
+  ANCIENT_DEBRIS: 20
+  NETHERITE_INGOT: 100
+  NETHERITE_SCRAP: 20
+  QUARTZ: 1
+  QUARTZ_BLOCK: 4
+  SPECTRAL_ARROW: 2
+  GILDED_BLACKSTONE: 2
+  NETHER_WART: 10
+  PIGLIN_BANNER_PATTERN: 20
+  CRYING_OBSIDIAN: 10
+  GLOWSTONE: 4
+  GLOWSTONE_DUST: 1
+  LODESTONE: 1
+  AMETHYST_SHARD: 7
+  WITHER_SKELETON_SKULL: 150
+  TRIDENT: 250
+  ENDER_PEARL: 10
+  LEATHER: 2
+  TOTEM_OF_UNDYING: 200
+  DRAGON_EGG: 500
+  DRAGON_HEAD: 100
+  PIGLIN_HEAD: 300
+  ZOMBIE_HEAD: 300
+  SKELETON_SKULL: 0
+  CREEPER_HEAD: 300
+  FEATHER: 2
+  SPONGE: 20
+  WET_SPONGE: 20
+  GOLDEN_APPLE: 20
+  ENCHANTED_GOLDEN_APPLE: 200
+  IRON_HORSE_ARMOR: 25
+  GOLDEN_HORSE_ARMOR: 25
+  DIAMOND_HORSE_ARMOR: 25
+  NAME_TAG: 20
+  SADDLE: 7
+  HEART_OF_THE_SEA: 15
+  ELYTRA: 250
+  GOAT_HORN: 75
+  EXPERIENCE_BOTTLE: 10
+  BELL: 25
+  TNT: 5
+  SNIFFER_EGG: 60
+  NAUTILUS_SHELL: 40
+  GOLDEN_CARROT: 4
+  WHITE_WOOL: 1
+  ORANGE_WOOL: 1
+  MAGENTA_WOOL: 1
+  LIGHT_BLUE_WOOL: 1
+  YELLOW_WOOL: 1
+  LIME_WOOL: 1
+  PINK_WOOL: 1
+  GRAY_WOOL: 1
+  LIGHT_GRAY_WOOL: 1
+  CYAN_WOOL: 1
+  PURPLE_WOOL: 1
+  BLUE_WOOL: 1
+  BROWN_WOOL: 1
+  GREEN_WOOL: 1
+  RED_WOOL: 1
+  BLACK_WOOL: 1
+  OBSIDIAN: 3
+  BUCKET: 3
+  WATER_BUCKET: 3
+  LAVA_BUCKET: 3
+  MILK_BUCKET: 3
+  COD_BUCKET: 3
+  SALMON_BUCKET: 3
+  AXOLOTL_BUCKET: 3
+  PUFFERFISH_BUCKET: 3
+  POWDER_SNOW_BUCKET: 3
+  TROPICAL_FISH_BUCKET: 3
+  CHAINMAIL_HELMET: 10
+  CHAINMAIL_CHESTPLATE: 30
+  CHAINMAIL_LEGGINGS: 25
+  CHAINMAIL_BOOTS: 10
+  ENCHANTED_BOOK: 5
+  MUSIC_DISC_13: 10
+  MUSIC_DISC_CAT: 10
+  MUSIC_DISC_BLOCKS: 25
+  MUSIC_DISC_CHIRP: 25
+  MUSIC_DISC_CREATOR: 50
+  MUSIC_DISC_CREATOR_MUSIC_BOX: 50
+  MUSIC_DISC_FAR: 25
+  MUSIC_DISC_MALL: 25
+  MUSIC_DISC_MELLOHI: 25
+  MUSIC_DISC_PRECIPICE: 50
+  MUSIC_DISC_STAL: 25
+  MUSIC_DISC_STRAD: 25
+  MUSIC_DISC_WARD: 25
+  MUSIC_DISC_WAIT: 25
+  MUSIC_DISC_PIGSTEP: 30
+  MUSIC_DISC_OTHERSIDE: 50
+  MUSIC_DISC_5: 25
+  MUSIC_DISC_11: 25
+  MUSIC_DISC_RELIC: 250
+  BOLT_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  COAST_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  DUNE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  EYE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  FLOW_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  RIB_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  TIDE_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  VEX_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  WARD_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  WILD_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  RAISER_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  HOST_ARMOR_TRIM_SMITHING_TEMPLATE: 60
+  NETHERITE_UPGRADE_SMITHING_TEMPLATE: 60
+  ANGLER_POTTERY_SHERD: 60
+  ARCHER_POTTERY_SHERD: 60
+  PRIZE_POTTERY_SHERD: 60
+  SKULL_POTTERY_SHERD: 60
+  ARMS_UP_POTTERY_SHERD: 60
+  BLADE_POTTERY_SHERD: 60
+  BREWER_POTTERY_SHERD: 60
+  BURN_POTTERY_SHERD: 60
+  DANGER_POTTERY_SHERD: 60
+  EXPLORER_POTTERY_SHERD: 60
+  FLOW_POTTERY_SHERD: 60
+  FRIEND_POTTERY_SHERD: 60
+  GUSTER_POTTERY_SHERD: 60
+  HEART_POTTERY_SHERD: 60
+  HEARTBREAK_POTTERY_SHERD: 60
+  HOWL_POTTERY_SHERD: 60
+  MINER_POTTERY_SHERD: 60
+  MOURNER_POTTERY_SHERD: 60
+  PLENTY_POTTERY_SHERD: 60
+  SCRAPE_POTTERY_SHERD: 60
+  SHEAF_POTTERY_SHERD: 60
+  SHELTER_POTTERY_SHERD: 60
+  SNORT_POTTERY_SHERD: 60
+  BOOK: 1
+  PRISMARINE_SHARD: 2
+  PRISMARINE_CRYSTALS: 4
+  HEAVY_CORE: 250
+  OMINOUS_BOTTLE: 20
+  WIND_CHARGE: 3
+  HONEY_BOTTLE: 7
+  LARGE_FERN: 100
+  TALL_GRASS: 50
+  RECOVERY_COMPASS: 25
+  GLISTERING_MELON_SLICE: 4
+  IRON_DOOR: 2
+  TIPPED_ARROW: 4
+  ANVIL: 31
+  CHIPPED_ANVIL: 31
+  DAMAGED_ANVIL: 31
+  COAL_ORE: 3
+  DEEPSLATE_COAL_ORE: 50
+  IRON_ORE: 3
+  DEEPSLATE_IRON_ORE: 3
+  GOLD_ORE: 6
+  DEEPSLATE_GOLD_ORE: 6
+  COPPER_ORE: 3
+  DEEPSLATE_COPPER_ORE: 3
+  REDSTONE_ORE: 4
+  DEEPSLATE_REDSTONE_ORE: 4
+  LAPIS_ORE: 6
+  DEEPSLATE_LAPIS_ORE: 6
+  EMERALD_ORE: 50
+  DEEPSLATE_EMERALD_ORE: 1000
+  DIAMOND_ORE: 200
+  DEEPSLATE_DIAMOND_ORE: 30
+  NETHER_GOLD_ORE: 3
+  NETHER_QUARTZ_ORE: 3
+  BEE_NEST: 50
+  COPPER_NAUTILUS_ARMOR: 5
+  IRON_NAUTILUS_ARMOR: 10
+  GOLDEN_NAUTILUS_ARMOR: 20
+  DIAMOND_NAUTILUS_ARMOR: 70
+  SHIELD: 1
+  CROSSBOW: 1.5
+  FLINT_AND_STEEL: 1
+  MAP: 4
+  FILLED_MAP: 4
+  IRON_CHAIN: 1.2
+  LIGHT_WEIGHTED_PRESSURE_PLATE: 4
+  IRON_SPEAR: 1
+  COPPER_SPEAR: 1
+  GOLDEN_SPEAR: 2
+  DIAMOND_SPEAR: 10
+  MUSIC_DISC_TEARS: 25
+  MUSIC_DISC_LAVA_CHICKEN: 200
+  CREAKING_HEART: 10
+  DRIED_GHAST: 30
+  TURTLE_EGG: 30
+  COPPER_HORSE_ARMOR: 15
+  COPPER_HELMET: 5
+  COPPER_CHESTPLATE: 8
+  COPPER_LEGGINGS: 7
+  COPPER_BOOTS: 4
+  COPPER_SWORD: 2
+  COPPER_PICKAXE: 3
+  COPPER_AXE: 3
+  COPPER_HOE: 2
+  COPPER_SHOVEL: 1
+  STONECUTTER: 1
+  BLAST_FURNACE: 5
+  CAULDRON: 7
+  SMITHING_TABLE: 2
+  BOOKSHELF: 3
+  LECTERN: 3
+  LANTERN: 1.1
+  HOPPER: 5
+  RAIL: 0.4
+  POWERED_RAIL: 2.1
+  DETECTOR_RAIL: 1.1
+  ACTIVATOR_RAIL: 1.1
+  BREEZE_ROD: 12
+  BRUSH: 3
+  TRIPWIRE_HOOK: 0.5
+  IRON_BARS: 0.4
+  CLOCK: 8.5
+  COMPASS: 4.5
+  IRON_HELMET: 5
+  IRON_CHESTPLATE: 8
+  IRON_LEGGINGS: 7
+  IRON_BOOTS: 4
+  IRON_SWORD: 2
+  IRON_PICKAXE: 3
+  IRON_AXE: 3
+  IRON_HOE: 2
+  IRON_SHOVEL: 1
+  GOLDEN_HELMET: 10
+  GOLDEN_CHESTPLATE: 16
+  GOLDEN_LEGGINGS: 14
+  GOLDEN_BOOTS: 8
+  GOLDEN_SWORD: 4
+  GOLDEN_PICKAXE: 6
+  GOLDEN_AXE: 6
+  GOLDEN_HOE: 4
+  GOLDEN_SHOVEL: 2
+  DIAMOND_HELMET: 50
+  DIAMOND_CHESTPLATE: 80
+  DIAMOND_LEGGINGS: 70
+  DIAMOND_BOOTS: 40
+  DIAMOND_SWORD: 20
+  DIAMOND_PICKAXE: 30
+  DIAMOND_AXE: 30
+  DIAMOND_HOE: 20
+  DIAMOND_SHOVEL: 10
+  SHEARS: 2
+  LEATHER_HELMET: 10
+  LEATHER_CHESTPLATE: 16
+  LEATHER_LEGGINGS: 14
+  LEATHER_BOOTS: 4
+  TORCH: 0.3
+  SUSPICIOUS_SAND: 20
+  SUSPICIOUS_GRAVEL: 20
+  SMALL_AMETHYST_BUD: 10
+  MEDIUM_AMETHYST_BUD: 15
+  LARGE_AMETHYST_BUD: 20
+  AMETHYST_CLUSTER: 25
+  BLAZE_ROD: 5
+  HONEYCOMB: 3
+
+# Kill and death points
+pvp:
+  base-kill-points: 50
+  base-death-points: 25
+  points-reduction-factor: 2
+
+# Custom ender pearls to give at start
+custom-pearls:
+  - sbitem: 1
+    custom-model-data: 1160001
+    display-name: "Levitation Pearl"
+    amount: 1
+  - sbitem: 2
+    custom-model-data: 1160002
+    display-name: "Speed Pearl (3)"
+    amount: 1
+  - sbitem: 20
+    custom-model-data: 1160020
+    display-name: "Speed Pearl (20)"
+    amount: 1
+  - sbitem: 3
+    custom-model-data: 1160003
+    display-name: "Regeneration Pearl"
+    amount: 1
+  - sbitem: 4
+    custom-model-data: 1160004
+    display-name: "Jump Boost Pearl"
+    amount: 1
+
+# Enchantment scoring
+enchantments:
+  points-per-tier: 4
+  special-enchantments:
+    MENDING: 15
+    FROST_WALKER: 15
+    WIND_BURST: 100
+
+# Potion values for Loot Hunt scoring
+potion-values:
+  # Regular potions
+  WATER: 0
+  THICK: 0
+  MUNDANE: 0
+  AWKWARD: 0
+  REGENERATION: 0
+  LONG_REGENERATION: 0
+  STRONG_REGENERATION: 0
+  SWIFTNESS: 5
+  LONG_SWIFTNESS: 5
+  STRONG_SWIFTNESS: 5
+  FIRE_RESISTANCE: 15
+  LONG_FIRE_RESISTANCE: 15
+  POISON: 5
+  LONG_POISON: 5
+  STRONG_POISON: 5
+  HEALING: 5
+  STRONG_HEALING: 5
+  NIGHT_VISION: 5
+  LONG_NIGHT_VISION: 5
+  WEAKNESS: 5
+  LONG_WEAKNESS: 5
+  STRENGTH: 5
+  LONG_STRENGTH: 5
+  STRONG_STRENGTH: 5
+  SLOWNESS: 5
+  LONG_SLOWNESS: 5
+  STRONG_SLOWNESS: 5
+  LEAPING: 5
+  LONG_LEAPING: 5
+  STRONG_LEAPING: 5
+  HARMING: 5
+  STRONG_HARMING: 5
+  WATER_BREATHING: 10
+  LONG_WATER_BREATHING: 10
+  INVISIBILITY: 5
+  LONG_INVISIBILITY: 5
+  SLOW_FALLING: 5
+  LONG_SLOW_FALLING: 5
+  LUCK: 5
+  TURTLE_MASTER: 5
+  LONG_TURTLE_MASTER: 5
+  STRONG_TURTLE_MASTER: 5
+  WIND_CHARGED: 5
+  WEAVING: 5
+  OOZING: 5
+  INFESTED: 5
+  # Splash potions
+  SPLASH_WATER: 0
+  SPLASH_THICK: 0
+  SPLASH_MUNDANE: 0
+  SPLASH_AWKWARD: 0
+  SPLASH_REGENERATION: 0
+  SPLASH_LONG_REGENERATION: 0
+  SPLASH_STRONG_REGENERATION: 0
+  SPLASH_SWIFTNESS: 5
+  SPLASH_LONG_SWIFTNESS: 5
+  SPLASH_STRONG_SWIFTNESS: 5
+  SPLASH_FIRE_RESISTANCE: 15
+  SPLASH_LONG_FIRE_RESISTANCE: 15
+  SPLASH_POISON: 5
+  SPLASH_LONG_POISON: 5
+  SPLASH_STRONG_POISON: 5
+  SPLASH_HEALING: 5
+  SPLASH_STRONG_HEALING: 5
+  SPLASH_NIGHT_VISION: 5
+  SPLASH_LONG_NIGHT_VISION: 5
+  SPLASH_WEAKNESS: 5
+  SPLASH_LONG_WEAKNESS: 5
+  SPLASH_STRENGTH: 5
+  SPLASH_LONG_STRENGTH: 5
+  SPLASH_STRONG_STRENGTH: 5
+  SPLASH_SLOWNESS: 5
+  SPLASH_LONG_SLOWNESS: 5
+  SPLASH_STRONG_SLOWNESS: 5
+  SPLASH_LEAPING: 5
+  SPLASH_LONG_LEAPING: 5
+  SPLASH_STRONG_LEAPING: 5
+  SPLASH_HARMING: 5
+  SPLASH_STRONG_HARMING: 5
+  SPLASH_WATER_BREATHING: 5
+  SPLASH_LONG_WATER_BREATHING: 5
+  SPLASH_INVISIBILITY: 5
+  SPLASH_LONG_INVISIBILITY: 5
+  SPLASH_SLOW_FALLING: 5
+  SPLASH_LONG_SLOW_FALLING: 5
+  SPLASH_LUCK: 5
+  SPLASH_TURTLE_MASTER: 5
+  SPLASH_LONG_TURTLE_MASTER: 5
+  SPLASH_STRONG_TURTLE_MASTER: 5
+  SPLASH_WIND_CHARGED: 5
+  SPLASH_WEAVING: 5
+  SPLASH_OOZING: 5
+  SPLASH_INFESTED: 5
+  # Lingering potions
+  LINGERING_WATER: 0
+  LINGERING_THICK: 0
+  LINGERING_MUNDANE: 0
+  LINGERING_AWKWARD: 0
+  LINGERING_REGENERATION: 0
+  LINGERING_LONG_REGENERATION: 0
+  LINGERING_STRONG_REGENERATION: 0
+  LINGERING_SWIFTNESS: 5
+  LINGERING_LONG_SWIFTNESS: 5
+  LINGERING_STRONG_SWIFTNESS: 5
+  LINGERING_FIRE_RESISTANCE: 15
+  LINGERING_LONG_FIRE_RESISTANCE: 15
+  LINGERING_POISON: 5
+  LINGERING_LONG_POISON: 5
+  LINGERING_STRONG_POISON: 5
+  LINGERING_HEALING: 5
+  LINGERING_STRONG_HEALING: 5
+  LINGERING_NIGHT_VISION: 5
+  LINGERING_LONG_NIGHT_VISION: 5
+  LINGERING_WEAKNESS: 5
+  LINGERING_LONG_WEAKNESS: 5
+  LINGERING_STRENGTH: 5
+  LINGERING_LONG_STRENGTH: 5
+  LINGERING_STRONG_STRENGTH: 5
+  LINGERING_SLOWNESS: 5
+  LINGERING_LONG_SLOWNESS: 5
+  LINGERING_STRONG_SLOWNESS: 5
+  LINGERING_LEAPING: 5
+  LINGERING_LONG_LEAPING: 5
+  LINGERING_STRONG_LEAPING: 5
+  LINGERING_HARMING: 5
+  LINGERING_STRONG_HARMING: 5
+  LINGERING_WATER_BREATHING: 10
+  LINGERING_LONG_WATER_BREATHING: 10
+  LINGERING_INVISIBILITY: 5
+  LINGERING_LONG_INVISIBILITY: 5
+  LINGERING_SLOW_FALLING: 5
+  LINGERING_LONG_SLOW_FALLING: 5
+  LINGERING_LUCK: 5
+  LINGERING_TURTLE_MASTER: 5
+  LINGERING_LONG_TURTLE_MASTER: 5
+  LINGERING_STRONG_TURTLE_MASTER: 5
+  LINGERING_WIND_CHARGED: 5
+  LINGERING_WEAVING: 5
+  LINGERING_OOZING: 5
+  LINGERING_INFESTED: 5

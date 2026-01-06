@@ -1,5 +1,5 @@
 // src/main/java/org/zappier/zappierGames/TrackerGUIListener.java
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.manhunt;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -7,11 +7,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.profile.PlayerProfile;
 import net.kyori.adventure.text.Component;
+import org.zappier.zappierGames.ZappierGames;
 
 public class TrackerGUIListener implements Listener {
 

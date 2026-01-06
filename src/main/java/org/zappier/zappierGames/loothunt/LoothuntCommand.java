@@ -1,4 +1,4 @@
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.loothunt;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -77,8 +77,7 @@ public class LoothuntCommand implements TabExecutor {
                             if (item.points == 0) {continue;}
                             player.sendMessage(ChatColor.YELLOW + itemId + ": " +
                                     ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
-                                    "Points: " + String.format("%.1f", item.points) + ", " +
-                                    "Source: " + item.source);
+                                    "Points: " + String.format("%.1f", item.points));
                         }
                     }
                 } else {
@@ -91,8 +90,7 @@ public class LoothuntCommand implements TabExecutor {
                         if (item.points == 0) {continue;}
                         player.sendMessage(ChatColor.YELLOW + itemFilter + ": " +
                                 ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
-                                "Points: " + String.format("%.1f", item.points) + ", " +
-                                "Source: " + item.source);
+                                "Points: " + String.format("%.1f", item.points));
                     }
                 }
                 player.sendMessage(ChatColor.GREEN + "=================================");
@@ -140,7 +138,9 @@ public class LoothuntCommand implements TabExecutor {
                     Team team = scoreboard.getTeam(prefix);
                     if (team == null) {
                         team = scoreboard.registerNewTeam(prefix);
-                    } else if (teamColor != null) {
+                    }
+
+                    if (teamColor != null) {
                         team.color(teamColor);
                     }
 

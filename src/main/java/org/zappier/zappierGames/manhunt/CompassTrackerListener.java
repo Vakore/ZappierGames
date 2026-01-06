@@ -1,7 +1,6 @@
 // src/main/java/org/zappier/zappierGames/CompassTrackerListener.java
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.manhunt;
 
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -10,8 +9,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.CompassMeta;
-import org.bukkit.ChatColor;
+import org.zappier.zappierGames.ZappierGames;
 
 public class CompassTrackerListener implements Listener {
 

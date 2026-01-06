@@ -1,4 +1,4 @@
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.loothunt;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;

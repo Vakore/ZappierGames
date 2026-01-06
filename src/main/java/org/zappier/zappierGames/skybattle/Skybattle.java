@@ -1,4 +1,4 @@
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.skybattle;
 
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -10,7 +10,6 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
-import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -33,6 +32,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.logging.Logger;
 import org.bukkit.enchantments.Enchantment;
+import org.zappier.zappierGames.ZappierGames;
 
 public class Skybattle {
     private static final Logger LOGGER = Logger.getLogger("Skybattle");
@@ -219,7 +219,7 @@ public class Skybattle {
                 Location spawn = teamSpawns.get(team);
                 Material teamWool = teamWools[team];
                 if (scoreboard.getTeam(teamNames[team]) != null) {
-                    scoreboard.getTeam(teamNames[team]).setAllowFriendlyFire(false);
+                    scoreboard.getTeam(teamNames[team]).setAllowFriendlyFire(true);
                 }
                 int spawnX = spawn.getBlockX();
                 int spawnY = spawn.getBlockY();

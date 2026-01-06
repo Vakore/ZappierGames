@@ -1,5 +1,5 @@
 // src/main/java/org/zappier/zappierGames/TrackerInventory.java
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.manhunt;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

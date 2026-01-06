@@ -2,7 +2,6 @@ package org.zappier.zappierGames;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,6 +12,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.zappier.zappierGames.biomeparkour.BiomeParkour;
+import org.zappier.zappierGames.loothunt.LootHunt;
+
+import java.util.UUID;
 
 public class PlayerDeathListener implements Listener {
 
@@ -49,8 +52,22 @@ public class PlayerDeathListener implements Listener {
 
             case 2: // Infection Manhunt
                 if ("Runners".equals(playerTeam)) {
+                    int runnerCount = 0;
                     movePlayerToTeam(player, "Hunters", scoreboard);
                     Bukkit.broadcastMessage(player.getName() + " has been infected and joined the Hunters!");
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        if (getPlayerTeam(p, scoreboard).equals("Runners")) {
+                            runnerCount++;
+                        }
+                        p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+                    }
+                    if (runnerCount == 0) {
+                        Bukkit.broadcastMessage("Game over! The hunters win!");
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            p.sendTitle("Hunters Win!", "All Runners Died!");
+                            p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
+                        }
+                    }
                 }
                 break;
 
@@ -60,13 +77,21 @@ public class PlayerDeathListener implements Listener {
                     //respawnPlayer(player, 60);
                 } else if ("President".equals(playerTeam)) {
                     movePlayerToTeam(player, "Bodyguard", scoreboard);
-                    //player.setGameMode(GameMode.SPECTATOR);
-                    //respawnPlayer(player, 60);
-
-                    // Check if there are any Presidents left
-                    Team presidentTeam = scoreboard.getTeam("President");
-                    if (presidentTeam != null && presidentTeam.getEntries().isEmpty()) {
-                        Bukkit.broadcastMessage("The Hunters have won!");
+                    int presidentCount = 0;
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        if (getPlayerTeam(p, scoreboard).equals("President")) {
+                            presidentCount++;
+                        }
+                        p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+                    }
+                    if (presidentCount > 0) {
+                        Bukkit.broadcastMessage("President " + player.getName() + " has died and became a bodyguard!");
+                    } else {
+                        Bukkit.broadcastMessage("President " + player.getName() + " is dead! Hunters win!");
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            p.sendTitle("Hunters Win!", "The President is Dead!");
+                            p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
+                        }
                     }
                 }
                 break;
@@ -135,6 +160,36 @@ public class PlayerDeathListener implements Listener {
                 //Bukkit.broadcastMessage("DEBUG: GIVE ALL SURVIVING PLAYERS +3 POINTS!");
 
                 event.setCancelled(true);
+                break;
+            case 30: // Biome Parkour
+                UUID uuid = player.getUniqueId();
+                int lives = BiomeParkour.playerLives.getOrDefault(uuid, 0) - 1;
+                BiomeParkour.playerLives.put(uuid, lives);
+
+                if (lives <= 0) {
+                    player.setGameMode(GameMode.SPECTATOR);
+                    Bukkit.broadcastMessage(ChatColor.RED + player.getName() + " is out of lives and is now spectating!");
+                    // Check win condition will be handled in BiomeParkour.run()
+                } else {
+                    // Respawn with penalty
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            player.spigot().respawn();
+                            player.teleport(player.getWorld().getSpawnLocation());
+
+                            if (BiomeParkour.respawnLosePoints) {
+                                String key = player.getName().toUpperCase();
+                                double score = BiomeParkour.playerScores.getOrDefault(key, 0.0) - 100.0;
+                                BiomeParkour.playerScores.put(key, Math.max(0, score));
+                                player.sendMessage(ChatColor.RED + "You lost 100 points for dying!");
+                            }
+                            player.sendMessage(ChatColor.YELLOW + "Lives remaining: " + ChatColor.RED + lives);
+                        }
+                    }.runTaskLater(plugin, 20L); // 1 second delay
+                }
+                event.setKeepInventory(true);
+                event.getDrops().clear();
                 break;
         }
     }

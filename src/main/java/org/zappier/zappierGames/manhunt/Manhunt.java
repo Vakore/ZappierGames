@@ -1,7 +1,8 @@
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.manhunt;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.zappier.zappierGames.ZappierGames;
 
 public class Manhunt {
     public static void start(int borderSize, int centerX, int centerZ) {
@@ -14,8 +15,13 @@ public class Manhunt {
 
         for (World world : Bukkit.getWorlds()) {
             WorldBorder border = world.getWorldBorder();
-            border.setCenter(centerX, centerZ);
-            border.setSize(borderSize);
+            if (world.isBedWorks()) {
+                border.setCenter(centerX, centerZ);
+                border.setSize(borderSize);
+            } else {
+                border.setCenter(0, 0);
+                border.setSize(30000000);
+            }
         }
 
         for (Player p : Bukkit.getOnlinePlayers()) {

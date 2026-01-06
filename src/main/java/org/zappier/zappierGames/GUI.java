@@ -7,6 +7,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.zappier.zappierGames.biomeparkour.BiomeParkour;
+import org.zappier.zappierGames.loothunt.LootHunt;
+import org.zappier.zappierGames.skybattle.Skybattle;
 
 import java.util.Arrays;
 import java.util.List;
@@ -75,6 +78,13 @@ public class GUI {
                     "§7Start the game with current settings!", "§aClick to begin."));
             inv.setItem(13, createGuiItem(Material.PLAYER_HEAD, 1, "§eView Endgame Scores",
                     "§7View scores from the last game.", "§aClick to view."));
+            if (!LootHunt.paused) {
+                inv.setItem(14, createGuiItem(Material.CAMPFIRE, 1, "§ePause Game",
+                        "§7Pause loothunt.", "§aClick to pause."));
+            } else {
+                inv.setItem(14, createGuiItem(Material.SOUL_CAMPFIRE, 1, "§eUnpause Game",
+                        "§7Unpause loothunt.", "§aClick to unpause."));
+            }
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));
         } else if (submenuType.equals("Loothunt Team Selection")) {
@@ -211,6 +221,65 @@ public class GUI {
                     "§7Start the game with current settings!", "§aClick to begin."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));
+        } else if (submenuType.equals("Biome Parkour")) {
+            inv.setItem(10, createGuiItem(Material.PAPER, 1, "§bBorder Size",
+                    "§7Current: " + BiomeParkour.borderSize + " blocks",
+                    "§aClick to change."));
+
+            inv.setItem(11, createGuiItem(Material.BLAZE_POWDER, 1, "§eStarting Speed",
+                    "§7Current: " + String.format("%.3f", BiomeParkour.baseBorderSpeed),
+                    "§aClick to adjust."));
+
+            inv.setItem(12, createGuiItem(Material.FIREWORK_ROCKET, 1, "§6Speed Increase Rate",
+                    "§7Current: " + String.format("%.4f", BiomeParkour.speedIncreaseRate) + "/tick",
+                    "§aClick to adjust."));
+
+            inv.setItem(13, createGuiItem(Material.CLOCK, 1, "§bGame Duration",
+                    "§7Current: " + BiomeParkour.maxGameMinutes + " minutes",
+                    "§aClick to set."));
+
+            inv.setItem(14, createGuiItem(Material.TOTEM_OF_UNDYING, 1, "§cRespawn Penalty",
+                    "§7Lose 100 points on respawn: " + (BiomeParkour.respawnLosePoints ? "§aYes" : "§cNo"),
+                    "§aClick to toggle."));
+
+            inv.setItem(15, createGuiItem(Material.EMERALD, 1, "§2Start Biome Parkour",
+                    "§7Start the game with current settings!",
+                    "§aClick to begin."));
+
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to the main menu."));
+        } else if (submenuType.equals("Biome Parkour Border Size")) {
+            int[] sizes = {500, 1000, 2000, 3000, 5000};
+            for (int i = 0; i < sizes.length; i++) {
+                inv.setItem(10 + i, createGuiItem(Material.PAPER, 1, "§b" + sizes[i] + " blocks",
+                        "§aClick to set border size."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
+
+        } else if (submenuType.equals("Biome Parkour Speed")) {
+            double[] speeds = {0.05, 0.1, 0.15, 0.2, 0.3};
+            for (int i = 0; i < speeds.length; i++) {
+                inv.setItem(10 + i, createGuiItem(Material.BLAZE_POWDER, 1, "§e" + String.format("%.3f", speeds[i]),
+                        "§aClick to set starting speed."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
+
+        } else if (submenuType.equals("Biome Parkour Acceleration")) {
+            double[] rates = {0.0, 0.002, 0.005, 0.01, 0.02};
+            for (int i = 0; i < rates.length; i++) {
+                inv.setItem(10 + i, createGuiItem(Material.FIREWORK_ROCKET, 1, "§6+" + String.format("%.4f", rates[i]) + "/tick",
+                        rates[i] == 0 ? "§7No acceleration" : "",
+                        "§aClick to set speed increase."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
+
+        } else if (submenuType.equals("Biome Parkour Duration")) {
+            int[] mins = {10, 20, 30, 45, 60, 120};
+            for (int i = 0; i < mins.length; i++) {
+                inv.setItem(10 + i, createGuiItem(Material.CLOCK, 1, "§b" + mins[i] + " minutes",
+                        "§aClick to set game duration."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
         } else {
             inv.setItem(13, createGuiItem(Material.BOOK, 1, "§e" + submenuType + " Settings",
                     "§7Placeholder for configuration.", "§aWork in progress!"));

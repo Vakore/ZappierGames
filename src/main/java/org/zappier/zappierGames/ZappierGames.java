@@ -4,9 +4,7 @@
 
 package org.zappier.zappierGames;
 
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -27,6 +25,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.zappier.zappierGames.biomeparkour.BiomeParkour;
+import org.zappier.zappierGames.loothunt.*;
+import org.zappier.zappierGames.manhunt.CompassTrackerListener;
+import org.zappier.zappierGames.manhunt.ManhuntCommand;
+import org.zappier.zappierGames.manhunt.TrackerGUIListener;
+import org.zappier.zappierGames.skybattle.CreeperSpawnListener;
+import org.zappier.zappierGames.skybattle.CustomPearlsListener;
+import org.zappier.zappierGames.skybattle.Skybattle;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -163,6 +169,7 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CustomPearlsListener(this), this);
         getServer().getPluginManager().registerEvents(new CreeperSpawnListener(), this);
         getServer().getPluginManager().registerEvents(new DamageHandler(), this);
+        getServer().getPluginManager().registerEvents(new InfinibundleListener(), this);
 
         //!!!
         getServer().getPluginManager().registerEvents(new CompassTrackerListener(this), this);
@@ -289,6 +296,8 @@ public final class ZappierGames extends JavaPlugin {
                     } else {
                         getLogger().info("Parkour Race not running!");
                     }
+                } else if (gameMode == 30) {
+                    BiomeParkour.run();
                 }
             }
         };

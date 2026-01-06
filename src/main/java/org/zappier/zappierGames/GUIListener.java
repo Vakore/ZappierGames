@@ -1,5 +1,6 @@
 package org.zappier.zappierGames;
 
+import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -14,6 +15,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.zappier.zappierGames.biomeparkour.BiomeParkour;
+import org.zappier.zappierGames.loothunt.LootHunt;
+import org.zappier.zappierGames.manhunt.Manhunt;
+import org.zappier.zappierGames.skybattle.Skybattle;
 
 import java.util.List;
 import java.util.Map;
@@ -95,6 +100,15 @@ public class GUIListener implements Listener {
                     gui = new GUI("Loothunt Endgame Scores");
                     gui.open(player);
                     break;
+                case 14: // Toggle Pause
+                    LootHunt.paused = !LootHunt.paused;
+                    Bukkit.broadcastMessage(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"));
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                        p.sendTitle(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"), "", 10, 70, 20);
+                    }
+                    player.closeInventory();
+                    break;
                 case 26: // Back
                     gui = new GUI();
                     gui.open(player);
@@ -117,10 +131,10 @@ public class GUIListener implements Listener {
                     if (team != null) {
                         team.addEntry(player.getName());
                         Bukkit.broadcastMessage(player.getName().toUpperCase() + " has joined team " + teamName);
-                        player.sendMessage(ChatColor.YELLOW + "Joined team §c" + teamName + ChatColor.YELLOW + "!");
+                        player.sendMessage(ChatColor.YELLOW + "Joined team " + getTeamColorLegacy(teamName) + teamName + ChatColor.YELLOW + "!");
                     } else {
                         team = scoreboard.registerNewTeam(teamName);
-                        team.setAllowFriendlyFire(false);
+                        team.setAllowFriendlyFire(true);
                         NamedTextColor teamColor = getTeamColor(teamName);
                         team.color(teamColor);
                         String prefixInitial = getTeamPrefixInitial(teamName);
@@ -196,8 +210,7 @@ public class GUIListener implements Listener {
                                     if (itemEntry.points == 0) {continue;}
                                     player.sendMessage(ChatColor.YELLOW + itemId + ": " +
                                             ChatColor.GRAY + "Quantity: " + itemEntry.quantity + ", " +
-                                            "Points: " + String.format("%.1f", itemEntry.points) +
-                                            ", Source: " + itemEntry.source);
+                                            "Points: " + String.format("%.1f", itemEntry.points));
                                 }
                             }
                             player.sendMessage(ChatColor.GREEN + "=================================");
@@ -386,7 +399,7 @@ public class GUIListener implements Listener {
                         player.sendMessage(ChatColor.YELLOW + "Joined team §c" + teamName + ChatColor.YELLOW + "!");
                     } else {
                         team = scoreboard.registerNewTeam(teamName);
-                        team.setAllowFriendlyFire(false);
+                        team.setAllowFriendlyFire(true);
                         NamedTextColor teamColor = getTeamColor(teamName);
                         team.color(teamColor);
                         String prefixInitial = getTeamPrefixInitial(teamName);
@@ -458,6 +471,96 @@ public class GUIListener implements Listener {
                 default:
                     validClick = false;
             }
+        } else if (title.equals("Biome Parkour Menu")) {
+            switch (slot) {
+                case 10: // Border Size
+                    gui = new GUI("Biome Parkour Border Size");
+                    gui.open(player);
+                    break;
+                case 11: // Starting Speed
+                    gui = new GUI("Biome Parkour Speed");
+                    gui.open(player);
+                    break;
+                case 12: // Speed Increase
+                    gui = new GUI("Biome Parkour Acceleration");
+                    gui.open(player);
+                    break;
+                case 13: // Duration
+                    gui = new GUI("Biome Parkour Duration");
+                    gui.open(player);
+                    break;
+                case 14: // Respawn Penalty Toggle
+                    BiomeParkour.respawnLosePoints = !BiomeParkour.respawnLosePoints;
+                    player.sendMessage(ChatColor.YELLOW + "Respawn point loss: " + (BiomeParkour.respawnLosePoints ? "§aEnabled" : "§cDisabled"));
+                    gui = new GUI("Biome Parkour");
+                    gui.open(player);
+                    break;
+                case 15: // Start Game
+                    BiomeParkour.start(
+                            BiomeParkour.borderSize,
+                            player.getLocation().getX(),
+                            player.getLocation().getZ(),
+                            BiomeParkour.baseBorderSpeed,
+                            BiomeParkour.speedIncreaseRate,
+                            BiomeParkour.respawnLosePoints,
+                            BiomeParkour.maxGameMinutes
+                    );
+                    player.closeInventory();
+                    break;
+                case 26: // Back
+                    gui = new GUI();
+                    gui.open(player);
+                    break;
+            }
+
+        } else if (title.equals("Biome Parkour Border Size Menu")) {
+            int[] sizes = {50, 100, 150, 200, 250};
+            if (slot >= 10 && slot < 10 + sizes.length) {
+                BiomeParkour.borderSize = sizes[slot - 10];
+                player.sendMessage(ChatColor.YELLOW + "Border size set to " + BiomeParkour.borderSize);
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            } else if (slot == 26) {
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            }
+
+        } else if (title.equals("Biome Parkour Speed Menu")) {
+            double[] speeds = {0.05, 0.1, 0.15, 0.2, 0.3};
+            if (slot >= 10 && slot < 10 + speeds.length) {
+                BiomeParkour.baseBorderSpeed = speeds[slot - 10];
+                BiomeParkour.currentBorderSpeed = BiomeParkour.baseBorderSpeed;
+                player.sendMessage(ChatColor.YELLOW + "Starting speed set to " + String.format("%.3f", BiomeParkour.baseBorderSpeed));
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            } else if (slot == 26) {
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            }
+
+        } else if (title.equals("Biome Parkour Acceleration Menu")) {
+            double[] rates = {0.0, 0.002, 0.005, 0.01, 0.02};
+            if (slot >= 10 && slot < 10 + rates.length) {
+                BiomeParkour.speedIncreaseRate = rates[slot - 10];
+                player.sendMessage(ChatColor.YELLOW + "Speed increase rate set to " + String.format("%.4f", BiomeParkour.speedIncreaseRate));
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            } else if (slot == 26) {
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            }
+
+        } else if (title.equals("Biome Parkour Duration Menu")) {
+            int[] mins = {10, 20, 30, 45, 60, 120};
+            if (slot >= 10 && slot < 10 + mins.length) {
+                BiomeParkour.maxGameMinutes = mins[slot - 10];
+                player.sendMessage(ChatColor.YELLOW + "Game duration set to " + BiomeParkour.maxGameMinutes + " minutes");
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            } else if (slot == 26) {
+                gui = new GUI("Biome Parkour");
+                gui.open(player);
+            }
         } else if (title.endsWith(" Menu")) {
             if (slot == 26) { // Back
                 gui = new GUI();
@@ -509,6 +612,32 @@ public class GUIListener implements Listener {
             case "WHITE" -> NamedTextColor.WHITE;
             default -> null;
         };
+    }
+
+    private String getTeamColorLegacy(String teamName) {
+        NamedTextColor color = getTeamColor(teamName);
+        if (color == null) {
+            return "§7"; // Gray as fallback
+        }
+
+        if (color.equals(NamedTextColor.BLACK))          return "§0";
+        if (color.equals(NamedTextColor.DARK_BLUE))      return "§1";
+        if (color.equals(NamedTextColor.DARK_GREEN))     return "§2";
+        if (color.equals(NamedTextColor.DARK_AQUA))      return "§3";
+        if (color.equals(NamedTextColor.DARK_RED))       return "§4";
+        if (color.equals(NamedTextColor.DARK_PURPLE))    return "§5";
+        if (color.equals(NamedTextColor.GOLD))           return "§6";
+        if (color.equals(NamedTextColor.GRAY))           return "§7";
+        if (color.equals(NamedTextColor.DARK_GRAY))      return "§8";
+        if (color.equals(NamedTextColor.BLUE))           return "§9";
+        if (color.equals(NamedTextColor.GREEN))          return "§a";
+        if (color.equals(NamedTextColor.AQUA))           return "§b";
+        if (color.equals(NamedTextColor.RED))            return "§c";
+        if (color.equals(NamedTextColor.LIGHT_PURPLE))   return "§d";
+        if (color.equals(NamedTextColor.YELLOW))         return "§e";
+        if (color.equals(NamedTextColor.WHITE))          return "§f";
+
+        return "§7"; // Final fallback if somehow a non-named color slips through
     }
 
     private String getTeamPrefixInitial(String prefix) {

@@ -1,4 +1,4 @@
-package org.zappier.zappierGames;
+package org.zappier.zappierGames.skybattle;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;

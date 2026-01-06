@@ -1,5 +1,4 @@
 package org.zappier.zappierGames;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -10,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.zappier.zappierGames.skybattle.Skybattle;
 
 public class AutoTNTListener implements Listener {
 
