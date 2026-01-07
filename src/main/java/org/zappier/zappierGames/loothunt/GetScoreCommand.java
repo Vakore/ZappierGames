@@ -9,9 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GetScoreCommand implements TabExecutor {
@@ -50,18 +48,21 @@ public class GetScoreCommand implements TabExecutor {
         double value = LootHunt.getItemValue(itemName);
         StringBuilder message = new StringBuilder(ChatColor.GREEN + itemName);
 
-        // Check for special categories
-        boolean isDoor = LootHunt.doorNames != null && Arrays.asList(LootHunt.doorNames).contains(itemName);
-        boolean isWorkstation = LootHunt.workStationNames != null && Arrays.asList(LootHunt.workStationNames).contains(itemName);
-        boolean isDye = LootHunt.dyeNames != null && Arrays.asList(LootHunt.dyeNames).contains(itemName);
+        // Check which collections this item belongs to
+        List<LootHunt.Collection> itemCollections = new ArrayList<>();
+        for (LootHunt.Collection coll : LootHunt.collections.values()) {
+            if (coll.items.contains(itemName)) {
+                itemCollections.add(coll);
+            }
+        }
+
+        // Check for special item types
         boolean isTool = itemName.equals("STONE_SWORD") || itemName.equals("STONE_AXE") ||
                 itemName.equals("STONE_PICKAXE") || itemName.equals("STONE_SHOVEL") ||
                 itemName.equals("STONE_HOE");
-        boolean isCraftedArmorTool = isCraftedArmorOrTool(itemName);
-        boolean isMusicDisc = itemName.startsWith("MUSIC_DISC_");
 
         // Build the message based on item value and category
-        if (value <= 0 && !isDoor && !isWorkstation && !isDye && !isTool && !isCraftedArmorTool && !isMusicDisc) {
+        if (value <= 0 && itemCollections.isEmpty() && !isTool) {
             player.sendMessage(message.append(" has no value or special scoring.").toString());
             return true;
         }
@@ -85,80 +86,55 @@ public class GetScoreCommand implements TabExecutor {
             double enchantPoints = LootHunt.getTotalEnchantmentPoints(item);
             if (enchantPoints > 0) {
                 value += enchantPoints;
-                message.append(value > 0 || isDoor || isWorkstation || isDye || isCraftedArmorTool || isMusicDisc ? " + " : " ")
+                message.append(value > 0 || !itemCollections.isEmpty() ? " + " : " ")
                         .append(String.format("%.1f", enchantPoints))
                         .append(" for enchantments");
             }
         }
 
-        // Add special category information
-        if (isDoor) {
-            message.append(value > 0 || isWorkstation || isDye || isCraftedArmorTool || isMusicDisc ? " and " : " ")
-                    .append("counts toward the door collection (");
-            if (LootHunt.doorScores != null) {
-                message.append("1st door: 1, 2nd: 5, 3rd: 10, ..., up to 1000 points");
-            } else {
-                message.append("config missing");
+        // Add collection information
+        if (!itemCollections.isEmpty()) {
+            for (LootHunt.Collection coll : itemCollections) {
+                message.append(value > 0 || itemCollections.indexOf(coll) > 0 ? " and " : " ")
+                        .append("counts toward the ").append(coll.name).append(" collection (");
+
+                if ("progressive".equals(coll.type)) {
+                    if (!coll.progressiveScores.isEmpty()) {
+                        message.append("progressive scores: ");
+                        int displayCount = Math.min(3, coll.progressiveScores.size());
+                        for (int i = 0; i < displayCount; i++) {
+                            if (i > 0) message.append(", ");
+                            message.append((i + 1)).append(": ").append(coll.progressiveScores.get(i));
+                        }
+                        if (coll.progressiveScores.size() > 3) {
+                            message.append(", ..., max: ").append(coll.progressiveScores.get(coll.progressiveScores.size() - 1));
+                        }
+                    } else {
+                        message.append("config missing");
+                    }
+                } else { // complete
+                    message.append(coll.completeBonus).append("-point bonus for all ")
+                            .append(coll.items.size()).append(" types");
+                }
+                message.append(")");
             }
-            message.append(")");
         }
-        if (isWorkstation) {
-            message.append(value > 0 || isDoor || isDye || isCraftedArmorTool || isMusicDisc ? " and " : " ")
-                    .append("counts toward the workstation collection (");
-            if (LootHunt.workStationNames != null) {
-                message.append("250-point bonus for all ").append(LootHunt.workStationNames.length).append(" types");
-            } else {
-                message.append("config missing");
-            }
-            message.append(")");
-        }
-        if (isDye) {
-            message.append(value > 0 || isDoor || isWorkstation || isCraftedArmorTool || isMusicDisc ? " and " : " ")
-                    .append("counts toward the dye collection (");
-            if (LootHunt.dyeNames != null) {
-                message.append("300-point bonus for all ").append(LootHunt.dyeNames.length).append(" types");
-            } else {
-                message.append("config missing");
-            }
-            message.append(")");
-        }
+
+        // Add special type information
         if (isTool) {
-            message.append(value > 0 || isDoor || isWorkstation || isDye || isCraftedArmorTool || isMusicDisc ? " and " : " ")
+            message.append(value > 0 || !itemCollections.isEmpty() ? " and " : " ")
                     .append("is a starting tool with no special scoring unless enchanted");
-        }
-        if (isCraftedArmorTool) {
-            message.append(value > 0 || isDoor || isWorkstation || isDye || isTool || isMusicDisc ? " and " : " ")
-                    .append("has points based on its base material crafting cost");
-        }
-        if (isMusicDisc) {
-            message.append(value > 0 || isDoor || isWorkstation || isDye || isTool || isCraftedArmorTool ? " and " : " ")
-                    .append("is a music disc (values: Cat/13: 15, Pigstep: 30, Otherside: 50, 5/Relic: 100, others: 50)");
         }
 
         message.append(".");
         player.sendMessage(message.toString());
 
         // Brief description of scoring rules
-        player.sendMessage(ChatColor.GRAY + "Scoring: Items have base values (halved if damaged). Enchantments add 4 points per tier (8 for Swift Sneak, Mending, Frost Walker). " +
-                "Doors add points per unique type (1, 5, 10, ..., 1000). Workstations grant 250 points for all types. Dyes grant 300 points for all 16 types. " +
-                "Crafted armor/tools score based on material cost. Kills add 50 points, deaths subtract 25, reducing per occurrence. Starting tools have no value unless enchanted.");
+        player.sendMessage(ChatColor.GRAY + "Scoring: Items have base values (halved if damaged). Enchantments add points per tier. " +
+                "Collections grant bonuses (progressive or complete-set). " +
+                "Kills add points, deaths subtract points, both reducing per occurrence. " +
+                "Starting tools have no value unless enchanted.");
         return true;
-    }
-
-    private boolean isCraftedArmorOrTool(String itemName) {
-        // Check for armor, tools, weapons, clock, compass (excluding chain armor, which has explicit values)
-        return itemName.endsWith("_HELMET") || itemName.endsWith("_CHESTPLATE") ||
-                itemName.endsWith("_LEGGINGS") || itemName.endsWith("_BOOTS") ||
-                itemName.endsWith("_SWORD") || itemName.endsWith("_AXE") ||
-                itemName.endsWith("_PICKAXE") || itemName.endsWith("_SHOVEL") ||
-                itemName.endsWith("_HOE") || itemName.equals("CLOCK") || itemName.equals("COMPASS") ||
-                itemName.equals("BOW") || itemName.equals("CROSSBOW") || itemName.equals("FISHING_ROD") ||
-                itemName.equals("SHEARS") || itemName.equals("FLINT_AND_STEEL") ||
-                !itemName.equals("CHAIN_HELMET") && !itemName.equals("CHAIN_CHESTPLATE") &&
-                        !itemName.equals("CHAIN_LEGGINGS") && !itemName.equals("CHAIN_BOOTS") &&
-                        !itemName.equals("STONE_SWORD") && !itemName.equals("STONE_AXE") &&
-                        !itemName.equals("STONE_PICKAXE") && !itemName.equals("STONE_SHOVEL") &&
-                        !itemName.equals("STONE_HOE");
     }
 
     @Override

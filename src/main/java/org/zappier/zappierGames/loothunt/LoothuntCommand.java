@@ -59,42 +59,86 @@ public class LoothuntCommand implements TabExecutor {
                     return true;
                 }
                 String itemFilter = args[1].toUpperCase();
-                String targetPlayerName = args[2].toUpperCase();
+                String targetPlayerName = args[2];
 
-                // Check if player exists in playerItemCounts
-                Map<String, List<LootHunt.ItemEntry>> playerItems = LootHunt.playerItemCounts.get(targetPlayerName);
-                if (playerItems == null || playerItems.isEmpty()) {
-                    player.sendMessage(ChatColor.RED + "No items found for player " + targetPlayerName + ". They may not have participated.");
+                Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+                if (targetPlayer == null) {
+                    player.sendMessage(ChatColor.RED + "Player " + targetPlayerName + " is not online.");
                     return true;
                 }
 
-                player.sendMessage(ChatColor.GREEN + "=== Endgame Items for " + targetPlayerName + " ===");
+                // Calculate current inventory for the target player
+                Map<String, List<LootHunt.ItemEntry>> playerItems = LootHunt.calculateInventoryCounts(targetPlayer);
+                if (playerItems == null || playerItems.isEmpty()) {
+                    player.sendMessage(ChatColor.RED + "No items found for player " + targetPlayerName + ".");
+                    return true;
+                }
+
+                // Get team name
+                String teamName = targetPlayer.getScoreboard().getEntryTeam(targetPlayer.getName()) != null
+                        ? targetPlayer.getScoreboard().getEntryTeam(targetPlayer.getName()).getName()
+                        : "(Solo) " + targetPlayer.getName();
+
+                player.sendMessage(ChatColor.GREEN + "=== Current Items for " + targetPlayerName + " (" + teamName + ") ===");
+
                 if (itemFilter.equals("ALL")) {
+                    double totalScore = 0.0;
                     for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : playerItems.entrySet()) {
                         String itemId = entry.getKey();
                         List<LootHunt.ItemEntry> items = entry.getValue();
+
+                        int totalQuantity = 0;
+                        double totalPoints = 0.0;
+
                         for (LootHunt.ItemEntry item : items) {
-                            if (item.points == 0) {continue;}
+                            totalQuantity += item.quantity;
+                            totalPoints += item.points;
+                        }
+
+                        if (totalPoints > 0) {
                             player.sendMessage(ChatColor.YELLOW + itemId + ": " +
-                                    ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
-                                    "Points: " + String.format("%.1f", item.points));
+                                    ChatColor.GRAY + "Quantity: " + totalQuantity + ", " +
+                                    "Points: " + String.format("%.1f", totalPoints));
+                            totalScore += totalPoints;
                         }
                     }
+
+                    // Add PvP info
+                    int killCount = LootHunt.playerKillCounts.getOrDefault(targetPlayerName.toUpperCase(), 0);
+                    int deathCount = LootHunt.playerDeathCounts.getOrDefault(targetPlayerName.toUpperCase(), 0);
+
+                    if (killCount > 0) {
+                        player.sendMessage(ChatColor.GREEN + "Kills: " + killCount);
+                    }
+                    if (deathCount > 0) {
+                        player.sendMessage(ChatColor.RED + "Deaths: " + deathCount);
+                    }
+
+                    player.sendMessage(ChatColor.GREEN + "Total Score (items only): " + String.format("%.1f", totalScore));
                 } else {
                     List<LootHunt.ItemEntry> items = playerItems.get(itemFilter);
                     if (items == null || items.isEmpty()) {
                         player.sendMessage(ChatColor.RED + "No items of type " + itemFilter + " found for " + targetPlayerName);
                         return true;
                     }
+
+                    int totalQuantity = 0;
+                    double totalPoints = 0.0;
+
                     for (LootHunt.ItemEntry item : items) {
-                        if (item.points == 0) {continue;}
+                        totalQuantity += item.quantity;
+                        totalPoints += item.points;
+                    }
+
+                    if (totalPoints > 0) {
                         player.sendMessage(ChatColor.YELLOW + itemFilter + ": " +
-                                ChatColor.GRAY + "Quantity: " + item.quantity + ", " +
-                                "Points: " + String.format("%.1f", item.points));
+                                ChatColor.GRAY + "Quantity: " + totalQuantity + ", " +
+                                "Points: " + String.format("%.1f", totalPoints));
                     }
                 }
                 player.sendMessage(ChatColor.GREEN + "=================================");
                 return true;
+
 
             case "jointeam":
                 if (args.length < 2) {

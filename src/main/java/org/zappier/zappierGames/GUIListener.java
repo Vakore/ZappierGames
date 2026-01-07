@@ -188,7 +188,7 @@ public class GUIListener implements Listener {
                 gui = new GUI("Loothunt");
                 gui.open(player);
             }
-        } else if (title.equals("Loothunt Endgame Scores Menu")) {
+        }else if (title.equals("Loothunt Endgame Scores Menu")) {
             if (slot == 26) { // Back
                 gui = new GUI("Loothunt");
                 gui.open(player);
@@ -197,23 +197,78 @@ public class GUIListener implements Listener {
                 if (item != null && item.getType() == Material.PLAYER_HEAD) {
                     SkullMeta meta = (SkullMeta) item.getItemMeta();
                     if (meta != null && meta.getOwner() != null) {
-                        String targetPlayer = meta.getOwner().toUpperCase();
-                        Map<String, List<LootHunt.ItemEntry>> playerItems = LootHunt.playerItemCounts.get(targetPlayer);
-                        if (playerItems == null || playerItems.isEmpty()) {
-                            player.sendMessage(ChatColor.RED + "No items found for player " + targetPlayer + ". They may not have participated.");
+                        String targetPlayerName = meta.getOwner();
+                        Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+
+                        if (targetPlayer == null) {
+                            player.sendMessage(ChatColor.RED + "Player " + targetPlayerName + " is not online.");
                         } else {
-                            player.sendMessage(ChatColor.GREEN + "=== Endgame Items for " + targetPlayer + " ===");
-                            for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : playerItems.entrySet()) {
-                                String itemId = entry.getKey();
-                                List<LootHunt.ItemEntry> items = entry.getValue();
-                                for (LootHunt.ItemEntry itemEntry : items) {
-                                    if (itemEntry.points == 0) {continue;}
-                                    player.sendMessage(ChatColor.YELLOW + itemId + ": " +
-                                            ChatColor.GRAY + "Quantity: " + itemEntry.quantity + ", " +
-                                            "Points: " + String.format("%.1f", itemEntry.points));
+                            // Calculate current inventory for the target player
+                            Map<String, List<LootHunt.ItemEntry>> playerItems = LootHunt.calculateInventoryCounts(targetPlayer);
+
+                            if (playerItems == null || playerItems.isEmpty()) {
+                                player.sendMessage(ChatColor.RED + "No items found for player " + targetPlayerName + ".");
+                            } else {
+                                // Get team name
+                                String teamName = targetPlayer.getScoreboard().getEntryTeam(targetPlayer.getName()) != null
+                                        ? targetPlayer.getScoreboard().getEntryTeam(targetPlayer.getName()).getName()
+                                        : "(Solo) " + targetPlayer.getName();
+
+                                player.sendMessage(ChatColor.GREEN + "=== Current Items for " + targetPlayerName + " (" + teamName + ") ===");
+
+                                // Calculate total score
+                                double totalScore = 0.0;
+
+                                for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : playerItems.entrySet()) {
+                                    String itemId = entry.getKey();
+                                    List<LootHunt.ItemEntry> items = entry.getValue();
+
+                                    int totalQuantity = 0;
+                                    double totalPoints = 0.0;
+
+                                    for (LootHunt.ItemEntry itemEntry : items) {
+                                        totalQuantity += itemEntry.quantity;
+                                        totalPoints += itemEntry.points;
+                                    }
+
+                                    if (totalPoints > 0) {
+                                        player.sendMessage(ChatColor.YELLOW + itemId + ": " +
+                                                ChatColor.GRAY + "Quantity: " + totalQuantity + ", " +
+                                                "Points: " + String.format("%.1f", totalPoints));
+                                        totalScore += totalPoints;
+                                    }
                                 }
+
+                                // Add PvP scores
+                                int killCount = LootHunt.playerKillCounts.getOrDefault(targetPlayerName.toUpperCase(), 0);
+                                int deathCount = LootHunt.playerDeathCounts.getOrDefault(targetPlayerName.toUpperCase(), 0);
+
+                                if (killCount > 0) {
+                                    player.sendMessage(ChatColor.GREEN + "Kills: " + killCount);
+                                }
+                                if (deathCount > 0) {
+                                    player.sendMessage(ChatColor.RED + "Deaths: " + deathCount);
+                                }
+
+                                // Show collection progress
+                                player.sendMessage(ChatColor.AQUA + "=== Collections ===");
+                                for (Map.Entry<String, LootHunt.Collection> collEntry : LootHunt.collections.entrySet()) {
+                                    LootHunt.Collection coll = collEntry.getValue();
+                                    long uniqueCollected = coll.items.stream()
+                                            .filter(playerItems::containsKey)
+                                            .count();
+
+                                    if ("progressive".equals(coll.type)) {
+                                        player.sendMessage(ChatColor.GRAY + coll.name + ": " + uniqueCollected + "/" + coll.items.size());
+                                    } else { // complete
+                                        String status = uniqueCollected >= coll.items.size() ? ("" + ChatColor.GREEN + "COMPLETE") : ("" + ChatColor.GRAY + uniqueCollected + "/" + coll.items.size());
+                                        player.sendMessage(ChatColor.GRAY + coll.name + ": " + status);
+                                    }
+                                }
+
+                                player.sendMessage(ChatColor.GREEN + "Total Score (items only): " + String.format("%.1f", totalScore));
+                                player.sendMessage(ChatColor.GREEN + "=================================");
                             }
-                            player.sendMessage(ChatColor.GREEN + "=================================");
                         }
                     }
                 } else {

@@ -118,9 +118,10 @@ public class GUI {
                     "§7Return to Loothunt menu."));
         } else if (submenuType.equals("Loothunt Endgame Scores")) {
             // Add player heads for participants
-            List<String> participants = LootHunt.playerItemCounts.keySet().stream()
-                    .filter(name -> Bukkit.getPlayer(name) != null)
+            List<String> participants = Bukkit.getOnlinePlayers().stream()
+                    .map(Player::getName)
                     .collect(Collectors.toList());
+
             for (int i = 0; i < participants.size() && i < 17; i++) { // Limit to slots 10-26
                 String playerName = participants.get(i);
                 inv.setItem(10 + i, createPlayerHead(playerName));
