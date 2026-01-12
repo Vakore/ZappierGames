@@ -9,15 +9,23 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.loothunt.LootHunt;
+import org.zappier.zappierGames.manhunt.Manhunt;
 import org.zappier.zappierGames.skybattle.Skybattle;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.lang.Integer.parseInt;
+
 public class GUI {
     private final Inventory inv;
     private final String type;
+    // In GUI.java, you can define these as fields or just hardcode the strings
+    public static final String MANHUNT_WHEEL_MENU = "Wheel of Manhunt Settings";
+    public static final String MANHUNT_TWISTS_TOGGLE = "Twists - Toggle Enabled";
+    public static final String MANHUNT_TWISTS_ROLLABLE = "Twists - Toggle Rollable";
+    public static final String MANHUNT_TWISTS_RANDOMIZE = "Twists - Randomize";
 
     public GUI() {
         this.type = "MAIN";
@@ -62,13 +70,82 @@ public class GUI {
             inv.setItem(12, createGuiItem(Material.GREEN_BANNER, 1, "§aJoin Team",
                     "§7Join a team for Manhunt.", "§aClick to select."));
             inv.setItem(13, createGuiItem(Material.COMPASS, 1, "§9Compass Settings",
-                    "§7Announce on Track: " + (ZappierGames.shoutHunterTarget == 1 ? "On" : "Off"),
-                    "§7Show Dimensions: " + (ZappierGames.showTrackerDimension == 1 ? "On" : "Off"),
+                    "§7Announce on Track: " + (Manhunt.shoutHunterTarget == 1 ? "On" : "Off"),
+                    "§7Show Dimensions: " + (Manhunt.showTrackerDimension == 1 ? "On" : "Off"),
                     "§aClick to configure."));
-            inv.setItem(14, createGuiItem(Material.EMERALD, 1, "§2Start Manhunt",
+            inv.setItem(14, createGuiItem(Material.LAPIS_LAZULI, 1, "§2Presidential Settings",
+                    "§7Change presidential settings.", "§aClick to select."));
+            inv.setItem(15, createGuiItem(Material.CLOCK, 1, "§2Manhunt Wheel Options",
+                    "§7Configure random modifiers for your manhunt.", "§aClick to select."));
+            inv.setItem(16, createGuiItem(Material.EMERALD, 1, "§2Start Manhunt",
                     "§7Start the game with current settings!", "§aClick to begin."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));
+        } else if (submenuType.equals(MANHUNT_WHEEL_MENU)) {
+            inv.setItem(11, createGuiItem(Material.TNT, 1, "§cRandomize Twists!",
+                    "§7Click to announce", "§7and roll random twists!", " ", "§eJust announces — no auto-roll"));
+
+            inv.setItem(13, createGuiItem(Material.COMPARATOR, 1, "§eToggle Twists (Enabled)",
+                    "§7Manually turn twists", "§7on/off", " ", "§aCurrent page: 1"));
+
+            inv.setItem(15, createGuiItem(Material.REPEATER, 1, "§6Toggle Rollable",
+                    "§7Decide which twists", "§7can be randomly selected", " ", "§aCurrent page: 1"));
+
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Manhunt menu"));
+        } else if (submenuType.contains(MANHUNT_TWISTS_TOGGLE) || submenuType.contains(MANHUNT_TWISTS_ROLLABLE)) {
+            boolean isToggleEnabled = submenuType.contains(MANHUNT_TWISTS_TOGGLE);
+            String titlePart = isToggleEnabled ? "Enabled" : "Rollable";
+
+            // We show 7 twists per page (slots 10–16)
+            //Bukkit.broadcastMessage(submenuType);
+            //Bukkit.broadcastMessage("" + submenuType.split(" ")[submenuType.split(" ").length - 1]);
+            int page = 1;
+            try {
+                page = parseInt(submenuType.split(" ")[submenuType.split(" ").length - 1]);
+            } catch (Exception e) {
+
+            }
+
+            int startIndex = (page - 1) * 7;
+            int endIndex = Math.min(startIndex + 7, Manhunt.manhuntTwists.length);
+
+            for (int i = startIndex, slot = 10; i < endIndex; i++, slot++) {
+                Manhunt.manhuntTwist twist = Manhunt.manhuntTwists[i];
+
+                Material displayMat = twist.mat;
+                String statusColor = isToggleEnabled
+                        ? (twist.enabled  ? "§a" : "§c")
+                        : (twist.rollable ? "§a" : "§c");
+
+                String statusText = isToggleEnabled
+                        ? (twist.enabled  ? "§aENABLED" : "§cDISABLED")
+                        : (twist.rollable ? "§aROLLABLE" : "§cNOT ROLLABLE");
+
+                inv.setItem(slot, createGuiItem(displayMat, 1,
+                        "§f" + twist.name,
+                        "§7" + twist.desc1,
+                        "§7" + twist.desc2,
+                        " ",
+                        statusColor + "Current: " + statusText,
+                        "§aClick to toggle"));
+            }
+
+            // Navigation / info
+            if (page > 1) {
+                inv.setItem(9, createGuiItem(Material.ARROW, 1, "§ePrevious Page"));
+            }
+            inv.setItem(17, createGuiItem(Material.ARROW, 1, "§eNext Page"));
+
+            inv.setItem(4, createGuiItem(Material.BOOK, 1, "§6" + titlePart + " Status",
+                    "§7Green = active", "§7Red = inactive"));
+
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
+        } else if (submenuType.equals(MANHUNT_TWISTS_RANDOMIZE)) {
+            inv.setItem(13, createGuiItem(Material.TNT, 1, "§c§lRANDOMIZE TWISTS!",
+                    "§7Click to broadcast:", " ", "§eRandomizing twists!"));
+
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
         } else if (submenuType.equals("Loothunt")) {
             inv.setItem(10, createGuiItem(Material.GREEN_BANNER, 1, "§aJoin Team",
                     "§7Join a team for Loothunt.", "§aClick to select."));
@@ -159,9 +236,20 @@ public class GUI {
                     "§7Return to Manhunt menu."));
         } else if (submenuType.equals("Compass Settings")) {
             inv.setItem(10, createGuiItem(Material.PAPER, 1, "§eAnnounce on Track",
-                    "§7Current: " + (ZappierGames.shoutHunterTarget == 1 ? "On" : "Off"), "§aClick to toggle."));
+                    "§7Current: " + (Manhunt.shoutHunterTarget == 1 ? "On" : "Off"), "§aClick to toggle."));
             inv.setItem(11, createGuiItem(Material.PAPER, 1, "§eShow Dimensions",
-                    "§7Current: " + (ZappierGames.showTrackerDimension == 1 ? "On" : "Off"), "§aClick to toggle."));
+                    "§7Current: " + (Manhunt.showTrackerDimension == 1 ? "On" : "Off"), "§aClick to toggle."));
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Manhunt menu."));
+        } else if (submenuType.equals("Presidential Settings")) {
+            inv.setItem(10, createGuiItem((Manhunt.presidentDeathLink == 1 ? Material.SKELETON_SKULL : Material.TOTEM_OF_UNDYING), 1, "§ePresidential Death Link",
+                    "§7Current: " + (Manhunt.presidentDeathLink == 1 ? "On" : "Off"), "§aWhen on, if one president dies, all die."));
+            inv.setItem(11, createGuiItem((Manhunt.bodyguardRespawn == 1 ? Material.SOUL_CAMPFIRE : Material.WITHER_SKELETON_SKULL), 1, "§eCan Bodyguards Respawn",
+                    "§7Current: " + (Manhunt.bodyguardRespawn == 1 ? "On" : "Off"), "§aClick to toggle."));
+            inv.setItem(12, createGuiItem(Material.GOLDEN_APPLE, 1, "§eBodyguard HP bonus.",
+                    "§7Current: " + Manhunt.bodyguardHpBonus, "§aClick to increment."));
+            inv.setItem(13, createGuiItem(Material.IRON_CHESTPLATE, 1, "§ePresident Can Wear Armor.",
+                    "§7Current: " + (Manhunt.presidentWearArmor == 1 ? "On" : "Off"), "§aClick to toggle."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to Manhunt menu."));
         } else if (submenuType.equals("Skybattle")) {
@@ -280,6 +368,10 @@ public class GUI {
                 inv.setItem(10 + i, createGuiItem(Material.CLOCK, 1, "§b" + mins[i] + " minutes",
                         "§aClick to set game duration."));
             }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
+        } else if (submenuType.equals("Survival Games")) {
+            inv.setItem(13, createGuiItem(Material.EMERALD, 1, "§2Start Survival Games",
+                    "§7Start the game with current settings!", "§aClick to begin."));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
         } else {
             inv.setItem(13, createGuiItem(Material.BOOK, 1, "§e" + submenuType + " Settings",

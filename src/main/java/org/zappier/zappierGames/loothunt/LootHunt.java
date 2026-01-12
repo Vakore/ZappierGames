@@ -171,6 +171,7 @@ public class LootHunt {
     public static void start(double duration) {
         InfinibundleListener.clearAll();
         LootHunt.paused = false;
+        ZappierGames.resetPlayers(false);
         for (World world : Bukkit.getWorlds()) {
             world.setGameRule(GameRule.KEEP_INVENTORY, true);
             world.setTime(0);
@@ -271,8 +272,11 @@ public class LootHunt {
 
                 if ("progressive".equals(coll.type)) {
                     int count = (int) uniqueCollected;
-                    if (count > 0 && !coll.progressiveScores.isEmpty()) {
-                        int bonus = coll.progressiveScores.get(Math.min(count - 1, coll.progressiveScores.size() - 1));
+                    if (!coll.progressiveScores.isEmpty()) {
+                        int bonus = 0;
+                        if (count > 0) {
+                            bonus = coll.progressiveScores.get(Math.min(count - 1, coll.progressiveScores.size() - 1));
+                        }
                         totalScore += bonus;
 
                         Component hover = Component.text("Collected " + coll.name + ":", NamedTextColor.AQUA)

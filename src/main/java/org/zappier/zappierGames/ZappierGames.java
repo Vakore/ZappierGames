@@ -28,6 +28,7 @@ import org.bukkit.scoreboard.Team;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.loothunt.*;
 import org.zappier.zappierGames.manhunt.CompassTrackerListener;
+import org.zappier.zappierGames.manhunt.Manhunt;
 import org.zappier.zappierGames.manhunt.ManhuntCommand;
 import org.zappier.zappierGames.manhunt.TrackerGUIListener;
 import org.zappier.zappierGames.skybattle.CreeperSpawnListener;
@@ -59,14 +60,26 @@ public final class ZappierGames extends JavaPlugin {
     public final Map<String, String> trackingPairs = new HashMap<>();
     //where each player is in each dimension
     private final Map<String, int[]> playerPositions = new HashMap<>();
-    public static int showTrackerDimension = 1;
-    public static int shoutHunterTarget = 1;
 
     //border
     public static int borderSize = 2500;
 
     //LOOTHUNT
     private final Map<UUID, Integer> playerScores = new HashMap<>();
+
+    public static void resetPlayers(boolean clearInv) {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (clearInv) {p.getInventory().clear();}
+            p.setHealth(20.0);
+            p.setFoodLevel(20);
+            p.setSaturation(20.0f);
+            p.setExperienceLevelAndProgress(0);
+            p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+            p.clearActivePotionEffects();
+            p.setCollidable(true);
+            p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(20.0);
+        }
+    }
 
 
     //COMMANDS
@@ -113,7 +126,7 @@ public final class ZappierGames extends JavaPlugin {
             } else {
                 sender.sendMessage(ChatColor.GREEN + "Now tracking " + target.getName());
                 trackingPairs.put(player.getName(), target.getName());
-                if (shoutHunterTarget > 0) {
+                if (Manhunt.shoutHunterTarget > 0) {
                     Bukkit.broadcastMessage(ChatColor.RED + player.getName() + " is tracking " + target.getName() + "!");
                 }
             }
@@ -264,7 +277,7 @@ public final class ZappierGames extends JavaPlugin {
                                     }
                                 }
                                 if (holdingTracker) {
-                                    if (showTrackerDimension > 0) {
+                                    if (Manhunt.showTrackerDimension > 0) {
                                         player.sendActionBar(leTrackColor + "Distance to " + trackingPairs.get(player.getName()) + " (" + targetDimension + "): " + (int) player.getLocation().distance(trackedLocation));
                                     } else {
                                         player.sendActionBar(leTrackColor + "Distance to " + trackingPairs.get(player.getName()) + ": " + (int) player.getLocation().distance(trackedLocation));
@@ -282,6 +295,7 @@ public final class ZappierGames extends JavaPlugin {
                     LootHunt.run();
                 } else if (gameMode == 1 || gameMode == 2 || gameMode == 3) {
                     //run manhunt
+                    Manhunt.run();
                 } else if (gameMode == 10) {
                     World skybattleWorld = Bukkit.getWorld("skybattle_world");
                     if (skybattleWorld != null) {

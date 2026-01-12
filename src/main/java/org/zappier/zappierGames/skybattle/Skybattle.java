@@ -112,6 +112,7 @@ public class Skybattle {
         borderTime = 20;
         borderRadius = 135.0;
         ZappierGames.gameMode = 10;
+        ZappierGames.resetPlayers(false);
 
         clearArea(world, -120, -120, 240, 240, 148, 180);
 
@@ -755,7 +756,7 @@ public class Skybattle {
         for (Player p : world.getPlayers()) {
             if (p.getGameMode() == GameMode.SURVIVAL) {
                 String teamName = getPlayerTeam(p); // You'll need to implement this method
-                if (teamName != null) {
+                if (teamName.length() > 0) {
                     aliveTeams.add(teamName);
                 }
             }
@@ -794,14 +795,14 @@ public class Skybattle {
             }
         }
     }
-    private static String getPlayerTeam(Player p) {
+    public static String getPlayerTeam(Player p) {
         Scoreboard board = p.getScoreboard();
         for (Team team : board.getTeams()) {
             if (team.hasEntry(p.getName())) {
                 return team.getName();
             }
         }
-        return null;
+        return "";
     }
 
     private static String getColoredTeamName(String teamName) {

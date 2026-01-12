@@ -77,7 +77,7 @@ public class TrackerGUIListener implements Listener {
             plugin.trackingPairs.put(p.getName(), target.getName());
             p.sendMessage(ChatColor.GREEN + "Now tracking " + target.getName() + "!");
 
-            if (ZappierGames.shoutHunterTarget > 0) {
+            if (Manhunt.shoutHunterTarget > 0) {
                 Bukkit.broadcastMessage(ChatColor.RED + p.getName() + " is tracking " + target.getName() + "!");
             }
 

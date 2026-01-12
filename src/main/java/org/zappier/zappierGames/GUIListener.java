@@ -19,12 +19,19 @@ import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.loothunt.LootHunt;
 import org.zappier.zappierGames.manhunt.Manhunt;
 import org.zappier.zappierGames.skybattle.Skybattle;
+import org.zappier.zappierGames.survivalgames.SurvivalGames;
 
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Integer.parseInt;
+
 public class GUIListener implements Listener {
     private final ZappierGames plugin;
+    private static final String MANHUNT_WHEEL_MENU = "Wheel of Manhunt Settings Menu";
+    private static final String MANHUNT_TWISTS_TOGGLE = "Twists - Toggle Enabled Menu";
+    private static final String MANHUNT_TWISTS_ROLLABLE = "Twists - Toggle Rollable Menu";
+    private static final String MANHUNT_TWISTS_RANDOMIZE = "Twists - Randomize Menu";
 
     public GUIListener(ZappierGames plugin) {
         this.plugin = plugin;
@@ -277,6 +284,114 @@ public class GUIListener implements Listener {
             } else {
                 validClick = false;
             }
+        } else if (title.equals("Wheel of Manhunt Settings")) {
+            switch (slot) {
+                case 11: // Randomize announcement only
+                    Bukkit.broadcastMessage(ChatColor.GOLD + "§l»»» " + ChatColor.RED + "§lRANDOMIZING TWISTS!" + ChatColor.GOLD + " «««");
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.8f);
+                    }
+                    break;
+
+                case 13: // Open toggle enabled menu
+                    gui = new GUI(GUI.MANHUNT_TWISTS_TOGGLE + " 1");
+                    gui.open(player);
+                    break;
+
+                case 15: // Open toggle rollable menu
+                    gui = new GUI(GUI.MANHUNT_TWISTS_ROLLABLE + " 1");
+                    gui.open(player);
+                    break;
+
+                case 26:
+                    gui = new GUI("Manhunt");
+                    gui.open(player);
+                    break;
+
+                default:
+                    validClick = false;
+            }
+        } else if (title.contains(GUI.MANHUNT_TWISTS_TOGGLE) || title.contains(GUI.MANHUNT_TWISTS_ROLLABLE)) {
+            boolean isToggleEnabled = title.contains(GUI.MANHUNT_TWISTS_TOGGLE);
+
+            if (slot == 26) { // Back
+                gui = new GUI("Wheel of Manhunt Settings");
+                gui.open(player);
+            } else if (slot >= 10 && slot <= 16) { // Twist toggle slots
+                //Bukkit.broadcastMessage(title);
+                //Bukkit.broadcastMessage("" + title.split(" ")[title.split(" ").length - 2]);
+                int page = parseInt(title.split(" ")[title.split(" ").length - 2]);
+                int index = (page - 1) * 7 + (slot - 10);
+
+                if (index < Manhunt.manhuntTwists.length) {
+                    Manhunt.manhuntTwist twist = Manhunt.manhuntTwists[index];
+
+                    if (isToggleEnabled) {
+                        twist.enabled = !twist.enabled;
+                        player.sendMessage(ChatColor.YELLOW + twist.name + " is now " +
+                                (twist.enabled ? "§aENABLED" : "§cDISABLED"));
+                    } else {
+                        twist.rollable = !twist.rollable;
+                        player.sendMessage(ChatColor.YELLOW + twist.name + " is now " +
+                                (twist.rollable ? "§aROLLABLE" : "§cNOT ROLLABLE"));
+                    }
+
+                    // Refresh current menu
+                    //gui = new GUI(title);
+                    gui = new GUI((isToggleEnabled ? GUI.MANHUNT_TWISTS_TOGGLE : GUI.MANHUNT_TWISTS_ROLLABLE) + " " + page);
+                    gui.open(player);
+                }
+            } else if (slot == 9 || slot == 17) {
+
+                //player.sendMessage(ChatColor.GOLD + "Pagination coming soon™");
+
+                int page = parseInt(title.split(" ")[title.split(" ").length - 2]);
+                if (slot == 9) {page--;} else {page++;}
+                if (page < 1) {page = 1;}
+                gui = new GUI((isToggleEnabled ? GUI.MANHUNT_TWISTS_TOGGLE : GUI.MANHUNT_TWISTS_ROLLABLE) + " " + (page));
+                gui.open(player);
+            } else {
+                validClick = false;
+            }
+        } else if (title.equals(MANHUNT_TWISTS_RANDOMIZE)) {
+            if (slot == 13) {
+                Bukkit.broadcastMessage(ChatColor.GOLD + "§l»»» " + ChatColor.RED + "§lRANDOMIZING TWISTS!" + ChatColor.GOLD + " «««");
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.8f);
+                }
+            }
+            else if (slot == 26) {
+                gui = new GUI("Wheel of Manhunt Settings");
+                gui.open(player);
+            }
+        } else if (title.equals(MANHUNT_WHEEL_MENU)) {
+            switch (slot) {
+                case 11: // Randomize announcement only
+                    Bukkit.broadcastMessage(ChatColor.GOLD + "§l»»» " + ChatColor.RED + "§lRANDOMIZING TWISTS!" + ChatColor.GOLD + " «««");
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.8f);
+                    }
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+                    break;
+
+                case 13: // Open toggle enabled menu
+                    gui = new GUI("Twists - Toggle Enabled 1");
+                    gui.open(player);
+                    break;
+
+                case 15: // Open toggle rollable menu
+                    gui = new GUI("Twists - Toggle Rollable 1");
+                    gui.open(player);
+                    break;
+
+                case 26: // Back
+                    gui = new GUI("Manhunt");
+                    gui.open(player);
+                    break;
+
+                default:
+                    validClick = false;
+            }
         } else if (title.equals("Manhunt Menu")) {
             switch (slot) {
                 case 10: // Set Game Mode
@@ -295,7 +410,15 @@ public class GUIListener implements Listener {
                     gui = new GUI("Compass Settings");
                     gui.open(player);
                     break;
-                case 14: // Start Manhunt
+                case 14: // Presidential Settings
+                    gui = new GUI("Presidential Settings");
+                    gui.open(player);
+                    break;
+                case 15: // Wheel of Manhunt Settings
+                    gui = new GUI("Wheel of Manhunt Settings");
+                    gui.open(player);
+                    break;
+                case 16: // Start Manhunt
                     Manhunt.start(ZappierGames.borderSize, (int) player.getLocation().getX(), (int) player.getLocation().getZ());
                     player.closeInventory();
                     break;
@@ -386,15 +509,49 @@ public class GUIListener implements Listener {
         } else if (title.equals("Compass Settings Menu")) {
             switch (slot) {
                 case 10: // Announce on Track
-                    ZappierGames.shoutHunterTarget = -ZappierGames.shoutHunterTarget;
-                    Bukkit.broadcastMessage(ChatColor.YELLOW + "shoutHunterTarget set to " + ((ZappierGames.shoutHunterTarget == 1) ? "On" : "Off"));
+                    Manhunt.shoutHunterTarget = -Manhunt.shoutHunterTarget;
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "shoutHunterTarget set to " + ((Manhunt.shoutHunterTarget == 1) ? "On" : "Off"));
                     gui = new GUI("Compass Settings");
                     gui.open(player);
                     break;
                 case 11: // Show Dimensions
-                    ZappierGames.showTrackerDimension = -ZappierGames.showTrackerDimension;
-                    Bukkit.broadcastMessage(ChatColor.YELLOW + "showTrackerDimension set to " + ((ZappierGames.showTrackerDimension == 1) ? "On" : "Off"));
+                    Manhunt.showTrackerDimension = -Manhunt.showTrackerDimension;
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "showTrackerDimension set to " + ((Manhunt.showTrackerDimension == 1) ? "On" : "Off"));
                     gui = new GUI("Compass Settings");
+                    gui.open(player);
+                    break;
+                case 26: // Back
+                    gui = new GUI("Manhunt");
+                    gui.open(player);
+                    break;
+                default:
+                    validClick = false;
+            }
+        } else if (title.equals("Presidential Settings Menu")) {
+            switch (slot) {
+                case 10:
+                    Manhunt.presidentDeathLink = -Manhunt.presidentDeathLink;
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Death Link: " + ((Manhunt.presidentDeathLink == 1) ? "On" : "Off"));
+                    gui = new GUI("Presidential Settings");
+                    gui.open(player);
+                    break;
+                case 11:
+                    Manhunt.bodyguardRespawn = -Manhunt.bodyguardRespawn;
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Bodyguards respawn: " + ((Manhunt.bodyguardRespawn == 1) ? "On" : "Off"));
+                    gui = new GUI("Presidential Settings");
+                    gui.open(player);
+                    break;
+                case 12:
+                    Manhunt.bodyguardHpBonus += 20;
+                    if (Manhunt.bodyguardHpBonus > 80) {Manhunt.bodyguardHpBonus = 0;}
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Bodyguard Health Bonus: +" + (Manhunt.bodyguardHpBonus) + "hp (" + (Manhunt.bodyguardHpBonus / 2) + " hearts)");
+                    gui = new GUI("Presidential Settings");
+                    gui.open(player);
+                    break;
+                case 13:
+                    Manhunt.presidentWearArmor = -Manhunt.presidentWearArmor;
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "President can wear armor: " + ((Manhunt.presidentWearArmor == 1) ? "On" : "Off"));
+                    gui = new GUI("Presidential Settings");
                     gui.open(player);
                     break;
                 case 26: // Back
@@ -615,6 +772,17 @@ public class GUIListener implements Listener {
             } else if (slot == 26) {
                 gui = new GUI("Biome Parkour");
                 gui.open(player);
+            }
+        } else if (title.equals("Survival Games Menu")) {
+            if (slot == 13) {
+                World skybattleWorld = Bukkit.getWorld("skybattle_world");
+                if (skybattleWorld != null) {
+                    SurvivalGames.start(skybattleWorld, 5000);
+                    player.closeInventory();
+                    player.sendMessage(ChatColor.GREEN + "Survival Games started!");
+                } else {
+                    player.sendMessage(ChatColor.RED + "Skybattle world not found!");
+                }
             }
         } else if (title.endsWith(" Menu")) {
             if (slot == 26) { // Back

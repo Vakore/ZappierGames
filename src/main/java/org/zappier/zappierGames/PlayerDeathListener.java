@@ -14,6 +14,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.loothunt.LootHunt;
+import org.zappier.zappierGames.manhunt.Manhunt;
 
 import java.util.UUID;
 
@@ -47,6 +48,9 @@ public class PlayerDeathListener implements Listener {
                     movePlayerToTeam(player, "Spectator", scoreboard);
                     Bukkit.broadcastMessage(player.getName() + " has been eliminated as a Runner!");
                     player.setGameMode(GameMode.SPECTATOR);
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+                    }
                 }
                 break;
 
@@ -72,15 +76,24 @@ public class PlayerDeathListener implements Listener {
                 break;
 
             case 3: // President Manhunt
-                if ("Bodyguard".equals(playerTeam)) {
-                    //player.setGameMode(GameMode.SPECTATOR);
-                    //respawnPlayer(player, 60);
+                if ("Bodyguard".equals(playerTeam) && Manhunt.bodyguardRespawn <= 0) {
+                    movePlayerToTeam(player, "Spectator", scoreboard);
+                    Bukkit.broadcastMessage(player.getName() + " has been eliminated as a Bodyguard!");
+                    player.setGameMode(GameMode.SPECTATOR);
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+                    }
                 } else if ("President".equals(playerTeam)) {
                     movePlayerToTeam(player, "Bodyguard", scoreboard);
                     int presidentCount = 0;
                     for (Player p : Bukkit.getOnlinePlayers()) {
                         if (getPlayerTeam(p, scoreboard).equals("President")) {
                             presidentCount++;
+                            if (Manhunt.presidentDeathLink > 0) {
+                                presidentCount--;
+                                p.setGameMode(GameMode.SPECTATOR);
+                                movePlayerToTeam(p, "Spectator", scoreboard);
+                            }
                         }
                         p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
                     }

@@ -53,6 +53,7 @@ public class BiomeParkour {
         direction = 1;
         scheduleNextAxisChange();
 
+        ZappierGames.resetPlayers(true);
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.getInventory().clear();
             p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());

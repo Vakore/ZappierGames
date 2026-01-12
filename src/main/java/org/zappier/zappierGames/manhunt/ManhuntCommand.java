@@ -106,11 +106,11 @@ public class ManhuntCommand implements TabExecutor {
                     return false;
                 } else {
                     if (args[1].equals("announceontrack")) {
-                        ZappierGames.shoutHunterTarget = -ZappierGames.shoutHunterTarget;
-                        Bukkit.broadcastMessage(ChatColor.YELLOW + "shoutHunterTarget set to " + ZappierGames.shoutHunterTarget);
+                        Manhunt.shoutHunterTarget = -Manhunt.shoutHunterTarget;
+                        Bukkit.broadcastMessage(ChatColor.YELLOW + "shoutHunterTarget set to " + Manhunt.shoutHunterTarget);
                     } else if (args[1].equals("showdimensions")) {
-                        ZappierGames.showTrackerDimension = -ZappierGames.showTrackerDimension;
-                        Bukkit.broadcastMessage(ChatColor.YELLOW + "showTrackerDimension set to " + ZappierGames.showTrackerDimension);
+                        Manhunt.showTrackerDimension = -Manhunt.showTrackerDimension;
+                        Bukkit.broadcastMessage(ChatColor.YELLOW + "showTrackerDimension set to " + Manhunt.showTrackerDimension);
                     } else {
                         return false;
                     }

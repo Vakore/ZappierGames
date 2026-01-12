@@ -31,6 +31,9 @@ public class InfinibundleListener implements Listener {
     // teamName -> player currently viewing it (to prevent concurrent access)
     private static final Map<String, Player> viewingPlayer = new HashMap<>();
 
+    // teamName -> buffer for deposits while viewing
+    private static final Map<String, List<ItemStack>> depositBuffers = new HashMap<>();
+
     public static List<ItemStack> getTeamStorage(String teamName) {
         return teamStorages.computeIfAbsent(teamName, k -> new ArrayList<>());
     }
@@ -38,6 +41,7 @@ public class InfinibundleListener implements Listener {
     public static void clearAll() {
         teamStorages.clear();
         viewingPlayer.clear();
+        depositBuffers.clear();
     }
 
     private boolean isInfinibundle(ItemStack item) {
@@ -82,7 +86,7 @@ public class InfinibundleListener implements Listener {
 
         boolean involvesBundle = isInfinibundle(current) || isInfinibundle(cursor);
 
-        // General bundle handling (deposit, prevent nesting, etc.)
+        // General bundle handling
         if (involvesBundle) {
             if (event.getClickedInventory() == null) {
                 event.setCancelled(true);
@@ -95,19 +99,25 @@ public class InfinibundleListener implements Listener {
                 String team = getTeamName(player);
                 List<ItemStack> storage = getTeamStorage(team);
 
-                storage.add(cursor.clone());
+                ItemStack toDeposit = cursor.clone();
+
+                if (viewingPlayer.containsKey(team)) {
+                    List<ItemStack> buffer = depositBuffers.computeIfAbsent(team, k -> new ArrayList<>());
+                    mergeIntoStorage(buffer, toDeposit);
+                } else {
+                    mergeIntoStorage(storage, toDeposit);
+                }
+
                 player.setItemOnCursor(null);
                 player.sendMessage(Component.text("Item deposited into team inventory!", NamedTextColor.GREEN));
                 return;
             }
 
-            // Prevent putting bundle inside another bundle
+            // Prevent nesting bundles
             if (isInfinibundle(cursor) && isInfinibundle(current)) {
                 event.setCancelled(true);
                 return;
             }
-
-            // Other bundle movements (including number key and shift) are allowed here
         }
 
         // Handle team inventory GUI
@@ -115,13 +125,13 @@ public class InfinibundleListener implements Listener {
         String title = PlainTextComponentSerializer.plainText().serialize(titleComp);
         if (!title.contains(" Team Inventory")) return;
 
-        // Issue 6: Prevent moving the infinibundle while teamchest is open
+        // Prevent moving the infinibundle while teamchest is open
         if (event.getClickedInventory() == view.getBottomInventory() && involvesBundle) {
             event.setCancelled(true);
             return;
         }
 
-        // Allow normal interactions in player's inventory (bottom)
+        // Allow normal interactions in player's inventory
         if (event.getClickedInventory() != view.getTopInventory()) return;
 
         // Clicked in top inventory: fully control
@@ -175,15 +185,39 @@ public class InfinibundleListener implements Listener {
             return;
         }
 
-        // Normal click: swap with cursor
-        if (cursor.getType() == Material.AIR) {
-            // Taking item
+        // === FIXED: Normal left/right click with cursor ===
+        if (cursor == null || cursor.getType() == Material.AIR) {
+            // Taking item from team inventory
             player.setItemOnCursor(current != null ? current.clone() : null);
             event.getInventory().setItem(slot, null);
         } else {
-            // Placing item
-            event.getInventory().setItem(slot, cursor.clone());
-            player.setItemOnCursor(null);
+            // Placing item into team inventory
+            if (current == null || current.getType() == Material.AIR) {
+                // Empty slot: place entire cursor stack
+                event.getInventory().setItem(slot, cursor.clone());
+                player.setItemOnCursor(null);
+            } else if (current.isSimilar(cursor)) {
+                // Same type: add as much as possible
+                int maxStack = current.getMaxStackSize();
+                int total = current.getAmount() + cursor.getAmount();
+                int toLeaveInSlot = Math.min(maxStack, total);
+                int remainder = total - maxStack;
+
+                current.setAmount(toLeaveInSlot);
+                event.getInventory().setItem(slot, current);
+
+                if (remainder > 0) {
+                    ItemStack leftover = cursor.clone();
+                    leftover.setAmount(remainder);
+                    player.setItemOnCursor(leftover);
+                } else {
+                    player.setItemOnCursor(null);
+                }
+            } else {
+                // Different types: swap
+                player.setItemOnCursor(current.clone());
+                event.getInventory().setItem(slot, cursor.clone());
+            }
         }
     }
 
@@ -194,7 +228,7 @@ public class InfinibundleListener implements Listener {
         Component titleComp = event.getView().title();
         String title = PlainTextComponentSerializer.plainText().serialize(titleComp);
 
-        ItemStack cursor = event.getCursor();
+        ItemStack cursor = event.getOldCursor();
         if (isInfinibundle(cursor)) {
             event.setCancelled(true);
             return;
@@ -210,7 +244,6 @@ public class InfinibundleListener implements Listener {
 
         if (!title.contains(" Team Inventory")) return;
 
-        // In team inventory: prevent drag on control row
         for (int raw : event.getRawSlots()) {
             if (raw < event.getView().getTopInventory().getSize() && raw >= SLOTS_PER_PAGE) {
                 event.setCancelled(true);
@@ -224,7 +257,7 @@ public class InfinibundleListener implements Listener {
         int maxPage = Math.max(0, (storage.size() - 1) / SLOTS_PER_PAGE);
 
         if (page < 0) page = 0;
-        if (page > maxPage + 1) page = maxPage + 1;
+        if (page > maxPage) page = maxPage; // Don't allow beyond last full page
 
         Inventory inv = Bukkit.createInventory(null, 54, Component.text(team + " Team Inventory - Page " + (page + 1)));
 
@@ -235,7 +268,7 @@ public class InfinibundleListener implements Listener {
             inv.setItem(i - start, storage.get(i).clone());
         }
 
-        // Fill control row with gray panes
+        // Filler panes
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta fm = filler.getItemMeta();
         fm.displayName(Component.text(" "));
@@ -245,7 +278,7 @@ public class InfinibundleListener implements Listener {
             inv.setItem(i, filler);
         }
 
-        // Navigation arrows (overwrite fillers)
+        // Navigation arrows
         if (page > 0) {
             ItemStack prev = new ItemStack(Material.ARROW);
             ItemMeta pm = prev.getItemMeta();
@@ -254,8 +287,7 @@ public class InfinibundleListener implements Listener {
             inv.setItem(45, prev);
         }
 
-        boolean showNext = page < maxPage || (end - start == SLOTS_PER_PAGE);
-        if (showNext) {
+        if (end == start + SLOTS_PER_PAGE || page < maxPage) {
             ItemStack next = new ItemStack(Material.ARROW);
             ItemMeta nm = next.getItemMeta();
             nm.displayName(Component.text("Next Page", NamedTextColor.GREEN));
@@ -286,26 +318,32 @@ public class InfinibundleListener implements Listener {
         int page = Integer.parseInt(title.split("Page ")[1]) - 1;
         int start = page * SLOTS_PER_PAGE;
 
-        // Collect items from content slots (0-44)
-        List<ItemStack> newPageItems = new ArrayList<>();
+        // Collect items from this page
+        List<ItemStack> pageItems = new ArrayList<>();
         for (int i = 0; i < SLOTS_PER_PAGE; i++) {
             ItemStack item = inv.getItem(i);
             if (item != null && item.getType() != Material.AIR) {
-                newPageItems.add(item.clone());
+                pageItems.add(item.clone());
             }
         }
 
-        // Remove old page range
+        // Remove old items in this page range
         int oldEnd = Math.min(start + SLOTS_PER_PAGE, storage.size());
         if (oldEnd > start) {
             storage.subList(start, oldEnd).clear();
         }
 
-        // Insert new items
-        storage.addAll(start, newPageItems);
+        // Insert updated page items
+        storage.addAll(start, pageItems);
 
-        // Remove nulls
-        storage.removeIf(Objects::isNull);
+        // Add buffered deposits if any
+        if (depositBuffers.containsKey(team)) {
+            List<ItemStack> buffer = depositBuffers.remove(team);
+            storage.addAll(buffer);
+        }
+
+        // Compress entire storage to merge stacks
+        compressStorage(storage);
     }
 
     @EventHandler
@@ -315,6 +353,35 @@ public class InfinibundleListener implements Listener {
         if (viewingPlayer.getOrDefault(team, null) == player) {
             viewingPlayer.remove(team);
         }
+    }
+
+    // === Helper: merge item into storage (used on deposit) ===
+    private void mergeIntoStorage(List<ItemStack> storage, ItemStack item) {
+        for (ItemStack existing : storage) {
+            if (existing.isSimilar(item)) {
+                int space = existing.getMaxStackSize() - existing.getAmount();
+                if (space > 0) {
+                    int add = Math.min(space, item.getAmount());
+                    existing.setAmount(existing.getAmount() + add);
+                    item.setAmount(item.getAmount() - add);
+                    if (item.getAmount() <= 0) return;
+                }
+            }
+        }
+        // If any left, add new stack
+        if (item.getAmount() > 0) {
+            storage.add(item);
+        }
+    }
+
+    // === Helper: compress entire storage list by merging similar items ===
+    private void compressStorage(List<ItemStack> storage) {
+        List<ItemStack> compressed = new ArrayList<>();
+        for (ItemStack item : storage) {
+            mergeIntoStorage(compressed, item.clone());
+        }
+        storage.clear();
+        storage.addAll(compressed);
     }
 
     public static Set<String> getTeamStorageKeys() {

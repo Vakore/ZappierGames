@@ -40,7 +40,7 @@ public class DamageHandler implements Listener {
                 return team.getName();
             }
         }
-        return null;
+        return "";
     }
 
     private boolean areOnSameTeam(Player aTeam, Player bTeam) {
