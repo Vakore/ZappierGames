@@ -287,6 +287,8 @@ public class ParkourRace {
     private static int currentCap = 0;
 
     public static void start(World world) {
+        //ZappierGames.resetPlayers(true);
+        ZappierGames.noPvP = true;
         currentDifficulty = 0;
         currentCap = 0;
         difficultyMap.clear();
@@ -318,6 +320,7 @@ public class ParkourRace {
         //timeLeft = 20 * 60 * 1 + (20 * 10);
         timeToStart = (20 * 9);
         if (plugin == null) {
+            Bukkit.broadcastMessage("Something went wrong...");
             LOGGER.severe("ParkourRace plugin instance not initialized! Call ParkourRace.init(plugin) in onEnable.");
             return;
         }

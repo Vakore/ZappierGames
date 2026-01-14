@@ -83,12 +83,10 @@ public class DamageHandler implements Listener {
             }
 
             if (attacker != null && attacker != player) { // player is the victim from earlier
-                if (areOnSameTeam(player, attacker)) {
+                if (ZappierGames.noPvP || areOnSameTeam(player, attacker)) {
                     // Cancel melee or arrow damage between teammates
                     // Explosions (ENTITY_EXPLOSION, BLOCK_EXPLOSION) and other causes remain allowed
                     event.setCancelled(true);
-                    // Optional: still apply knockback for melee (Minecraft does it automatically if not cancelled too early)
-                    // For projectiles, knockback is handled by the projectile itself
                 }
             }
         }

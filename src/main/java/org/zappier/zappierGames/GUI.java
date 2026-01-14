@@ -155,6 +155,8 @@ public class GUI {
                     "§7Start the game with current settings!", "§aClick to begin."));
             inv.setItem(13, createGuiItem(Material.PLAYER_HEAD, 1, "§eView Endgame Scores",
                     "§7View scores from the last game.", "§aClick to view."));
+            inv.setItem(15, createGuiItem(LootHunt.noPvP ? Material.POPPY : Material.IRON_SWORD, 1, "§eToggle PvP",
+                    "§7PvP (Currently " + (LootHunt.noPvP ? "Off" : "On") + ")", "§aClick to toggle."));
             if (!LootHunt.paused) {
                 inv.setItem(14, createGuiItem(Material.CAMPFIRE, 1, "§ePause Game",
                         "§7Pause loothunt.", "§aClick to pause."));

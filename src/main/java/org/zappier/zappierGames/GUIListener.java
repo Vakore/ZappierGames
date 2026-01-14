@@ -23,6 +23,7 @@ import org.zappier.zappierGames.survivalgames.SurvivalGames;
 
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static java.lang.Integer.parseInt;
 
@@ -116,6 +117,16 @@ public class GUIListener implements Listener {
                     }
                     player.closeInventory();
                     break;
+
+                case 15: // Toggle Pause
+                    LootHunt.noPvP = !LootHunt.noPvP;
+                    Bukkit.broadcastMessage(LootHunt.noPvP ? (ChatColor.GREEN + "Loothunt PvP: Off") : (ChatColor.RED + "Loothunt PVP: On"));
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                    }
+                    gui = new GUI("Loothunt");
+                    gui.open(player);
+                    break;
                 case 26: // Back
                     gui = new GUI();
                     gui.open(player);
@@ -195,7 +206,7 @@ public class GUIListener implements Listener {
                 gui = new GUI("Loothunt");
                 gui.open(player);
             }
-        }else if (title.equals("Loothunt Endgame Scores Menu")) {
+        } else if (title.equals("Loothunt Endgame Scores Menu")) {
             if (slot == 26) { // Back
                 gui = new GUI("Loothunt");
                 gui.open(player);
@@ -223,10 +234,11 @@ public class GUIListener implements Listener {
 
                                 player.sendMessage(ChatColor.GREEN + "=== Current Items for " + targetPlayerName + " (" + teamName + ") ===");
 
-                                // Calculate total score
+                                // 1. Sort items alphabetically using a TreeMap
+                                Map<String, List<LootHunt.ItemEntry>> sortedItems = new TreeMap<>(playerItems);
                                 double totalScore = 0.0;
 
-                                for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : playerItems.entrySet()) {
+                                for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : sortedItems.entrySet()) {
                                     String itemId = entry.getKey();
                                     List<LootHunt.ItemEntry> items = entry.getValue();
 
@@ -257,9 +269,11 @@ public class GUIListener implements Listener {
                                     player.sendMessage(ChatColor.RED + "Deaths: " + deathCount);
                                 }
 
-                                // Show collection progress
+                                // 2. Show collection progress (also sorted alphabetically)
                                 player.sendMessage(ChatColor.AQUA + "=== Collections ===");
-                                for (Map.Entry<String, LootHunt.Collection> collEntry : LootHunt.collections.entrySet()) {
+                                Map<String, LootHunt.Collection> sortedCollections = new TreeMap<>(LootHunt.collections);
+
+                                for (Map.Entry<String, LootHunt.Collection> collEntry : sortedCollections.entrySet()) {
                                     LootHunt.Collection coll = collEntry.getValue();
                                     long uniqueCollected = coll.items.stream()
                                             .filter(playerItems::containsKey)

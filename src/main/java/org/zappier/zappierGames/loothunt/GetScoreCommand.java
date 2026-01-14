@@ -7,7 +7,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -73,14 +72,6 @@ public class GetScoreCommand implements TabExecutor {
             message.append(" has no base value");
         }
 
-        // Check for damaged item (only if checking held item)
-        if (args.length == 0 && item.getItemMeta() instanceof Damageable damageable && damageable.hasDamage()) {
-            value /= 2.0;
-            message.append(value > 0 ? " (" : " (")
-                    .append(String.format("%.1f", value))
-                    .append(" when damaged)");
-        }
-
         // Check for enchantments (only if checking held item)
         if (args.length == 0 && item.hasItemMeta() && item.getItemMeta().hasEnchants()) {
             double enchantPoints = LootHunt.getTotalEnchantmentPoints(item);
@@ -130,10 +121,11 @@ public class GetScoreCommand implements TabExecutor {
         player.sendMessage(message.toString());
 
         // Brief description of scoring rules
-        player.sendMessage(ChatColor.GRAY + "Scoring: Items have base values (halved if damaged). Enchantments add points per tier. " +
+        // Unneeded
+        /*player.sendMessage(ChatColor.GRAY + "Scoring: Items have base values. Enchantments add points per tier. " +
                 "Collections grant bonuses (progressive or complete-set). " +
                 "Kills add points, deaths subtract points, both reducing per occurrence. " +
-                "Starting tools have no value unless enchanted.");
+                "Starting tools have no value unless enchanted.");*/
         return true;
     }
 
@@ -143,6 +135,7 @@ public class GetScoreCommand implements TabExecutor {
             return Arrays.stream(Material.values())
                     .map(Material::name)
                     .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
+                    .sorted() // This ensures the list is alphabetical in-game
                     .collect(Collectors.toList());
         }
         return Collections.emptyList();

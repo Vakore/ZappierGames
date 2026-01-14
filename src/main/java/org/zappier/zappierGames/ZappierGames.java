@@ -4,6 +4,12 @@
 
 package org.zappier.zappierGames;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.Bukkit;
@@ -35,6 +41,9 @@ import org.zappier.zappierGames.skybattle.CreeperSpawnListener;
 import org.zappier.zappierGames.skybattle.CustomPearlsListener;
 import org.zappier.zappierGames.skybattle.Skybattle;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,6 +56,8 @@ public final class ZappierGames extends JavaPlugin {
     public static final int LOOTHUNT = 0;
     public static final int MANHUNT = 1;
 
+
+    public static boolean noPvP = false;
     public static String[] teamList = {"Runners", "Hunters", "Runner_Suppliers", "Hunter_Suppliers", "President", "Bodyguard", "Spectator"};
 
     //MASTER LOOP
@@ -68,6 +79,8 @@ public final class ZappierGames extends JavaPlugin {
     private final Map<UUID, Integer> playerScores = new HashMap<>();
 
     public static void resetPlayers(boolean clearInv) {
+        ZappierGames.getInstance().stopResultsWebServer();
+        ZappierGames.noPvP = false;
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (clearInv) {p.getInventory().clear();}
             p.setHealth(20.0);
@@ -145,7 +158,9 @@ public final class ZappierGames extends JavaPlugin {
             return Collections.emptyList();
         }
     }
-
+    private static HttpServer resultsWebServer = null;
+    private static final int WEB_PORT = 8081;
+    private static final long RESULTS_AVAILABLE_MINUTES = 10;
     public static ZappierGames getInstance() {
         return instance;
     }
@@ -154,16 +169,18 @@ public final class ZappierGames extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         LootHunt.loadConfig(getConfig());
-        // Set the singleton instance
+
         instance = this;
 
-        // Register command
         getLogger().info("ZappierGames - Now running!");
-        saveDefaultConfig(); // Save default config if it doesn't exist
+        saveDefaultConfig();
         loadItemValues();
         createVoidWorld("skybattle_world");
+
         Skybattle.init(instance);
         ParkourRace.init(instance);
+
+        // Register commands
         this.getCommand("loothunt").setExecutor(new LoothuntCommand());
         this.getCommand("manhunt").setExecutor(new ManhuntCommand());
         this.getCommand("getcompass").setExecutor(new GetcompassCommand());
@@ -174,6 +191,7 @@ public final class ZappierGames extends JavaPlugin {
         this.getCommand("globalkeepinventory").setExecutor(new GlobalKeepInventoryCommand());
         this.getCommand("GUI").setExecutor(new openGUICommand());
 
+        // Register events
         getServer().getPluginManager().registerEvents(new LootHuntKillListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
@@ -183,14 +201,13 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CreeperSpawnListener(), this);
         getServer().getPluginManager().registerEvents(new DamageHandler(), this);
         getServer().getPluginManager().registerEvents(new InfinibundleListener(), this);
-
-        //!!!
         getServer().getPluginManager().registerEvents(new CompassTrackerListener(this), this);
         getServer().getPluginManager().registerEvents(new TrackerGUIListener(this), this);
 
-
+        // Team colors
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        NamedTextColor[] teamColors = {NamedTextColor.GREEN, NamedTextColor.RED, NamedTextColor.LIGHT_PURPLE, NamedTextColor.DARK_PURPLE, NamedTextColor.BLUE, NamedTextColor.AQUA, NamedTextColor.DARK_GRAY};
+        NamedTextColor[] teamColors = {NamedTextColor.GREEN, NamedTextColor.RED, NamedTextColor.LIGHT_PURPLE,
+                NamedTextColor.DARK_PURPLE, NamedTextColor.BLUE, NamedTextColor.AQUA, NamedTextColor.DARK_GRAY};
         for (int i = 0; i < teamList.length; i++) {
             Team team = scoreboard.getTeam(teamList[i]);
             if (team == null) {
@@ -199,16 +216,16 @@ public final class ZappierGames extends JavaPlugin {
             team.color(teamColors[i]);
         }
 
+        // Main game loop
         gameTask = new BukkitRunnable() {
             int updateCompassTimer = 20;
+
             @Override
             public void run() {
-                //Compass logic
                 updateCompassTimer--;
                 if (updateCompassTimer <= 0) {
                     updateCompassTimer = 10;
                     for (Player player : Bukkit.getOnlinePlayers()) {
-                        //player.sendMessage(ChatColor.GREEN + "Hello, " + player.getName() + "!");
                         Location playerLoc = player.getLocation();
                         int[] playerVec = {(int) playerLoc.getX(), (int) playerLoc.getY(), (int) playerLoc.getZ()};
                         String trackingDimension = playerLoc.getWorld().getName();
@@ -217,11 +234,9 @@ public final class ZappierGames extends JavaPlugin {
                         }
                         String playerLocStr = player.getName() + " # " + trackingDimension;
                         playerPositions.put(playerLocStr, playerVec);
-                        //player.sendMessage(playerLocStr);
 
                         if (trackingPairs.get(player.getName()) != null && Bukkit.getPlayer(trackingPairs.get(player.getName())) != null) {
                             String targetLocStr = trackingPairs.get(player.getName()) + " # " + trackingDimension;
-                            //player.sendMessage(targetLocStr);
                             int[] targetPos = playerPositions.get(targetLocStr);
                             if (targetPos != null) {
                                 String targetWorld = Bukkit.getPlayer(trackingPairs.get(player.getName())).getWorld().getName();
@@ -239,12 +254,12 @@ public final class ZappierGames extends JavaPlugin {
                                     case THE_END:
                                         targetDimension = "End";
                                         break;
-                                    default:  // CUSTOM or any other unknown
+                                    default:
                                         targetDimension = targetWorld;
                                         break;
                                 }
                                 Location trackedLocation = new Location(player.getWorld(), targetPos[0], targetPos[1], targetPos[2]);
-                                //player.setLastDeathLocation(trackedLocation);
+
                                 for (ItemStack item : player.getInventory().getContents()) {
                                     if (item != null && item.getType() == Material.COMPASS) {
                                         if (item.hasItemMeta() && item.getItemMeta() instanceof CompassMeta compassMeta) {
@@ -266,7 +281,6 @@ public final class ZappierGames extends JavaPlugin {
                                     }
                                 }
 
-                                //Do the same for offhand
                                 if (!holdingTracker) {
                                     itemInHand = player.getInventory().getItemInOffHand();
                                     if (itemInHand != null && itemInHand.getType() == Material.COMPASS) {
@@ -282,49 +296,125 @@ public final class ZappierGames extends JavaPlugin {
                                     } else {
                                         player.sendActionBar(leTrackColor + "Distance to " + trackingPairs.get(player.getName()) + ": " + (int) player.getLocation().distance(trackedLocation));
                                     }
-                                    //player.sendActionBar(ChatColor.GREEN + targetLocStr + ": " + targetPos[0] + ", " + targetPos[1] + ", " + targetPos[2]);
                                 }
                             }
                         }
                     }
                 }
 
-
-
                 if (gameMode == LOOTHUNT) {
                     LootHunt.run();
                 } else if (gameMode == 1 || gameMode == 2 || gameMode == 3) {
-                    //run manhunt
                     Manhunt.run();
                 } else if (gameMode == 10) {
                     World skybattleWorld = Bukkit.getWorld("skybattle_world");
                     if (skybattleWorld != null) {
                         Skybattle.run(skybattleWorld);
-                    } else {
-                        getLogger().info("Sky battle not running!");
                     }
                 } else if (gameMode == 20) {
                     World skybattleWorld = Bukkit.getWorld("skybattle_world");
                     if (skybattleWorld != null) {
                         ParkourRace.run(skybattleWorld);
-                    } else {
-                        getLogger().info("Parkour Race not running!");
                     }
                 } else if (gameMode == 30) {
                     BiomeParkour.run();
                 }
             }
         };
-        gameTask.runTaskTimer(ZappierGames.this, 0, 1);
+        gameTask.runTaskTimer(this, 0L, 1L);
     }
 
     @Override
     public void onDisable() {
-        // Cleanup and stop any running tasks
         if (gameTask != null) {
             gameTask.cancel();
         }
+        // Stop web server if still running
+        stopResultsWebServer();
         getLogger().info("ZappierGames - Now disabled");
+    }
+
+    private class SingleFileResultsHandler implements HttpHandler {
+        private final String allowedFileName;
+
+        SingleFileResultsHandler(String fileName) {
+            this.allowedFileName = fileName;
+        }
+
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            if (path.startsWith("/")) path = path.substring(1);
+
+            if (!path.equals(allowedFileName)) {
+                String msg = "404 - Not found";
+                exchange.sendResponseHeaders(404, msg.getBytes().length);
+                exchange.getResponseBody().write(msg.getBytes());
+                exchange.getResponseBody().close();
+                return;
+            }
+
+            // Now we can safely call getDataFolder() because this is non-static
+            File file = new File(ZappierGames.this.getDataFolder(), path);
+
+            if (!file.exists() || !file.isFile()) {
+                String msg = "File no longer available";
+                exchange.sendResponseHeaders(404, msg.getBytes().length);
+                exchange.getResponseBody().write(msg.getBytes());
+                exchange.getResponseBody().close();
+                return;
+            }
+
+            exchange.getResponseHeaders().add("Content-Type", "text/html; charset=UTF-8");
+            exchange.sendResponseHeaders(200, file.length());
+            java.nio.file.Files.copy(file.toPath(), exchange.getResponseBody());
+            exchange.getResponseBody().close();
+        }
+    }
+
+
+    public void startResultsWebServer(String htmlFileName) {
+        stopResultsWebServer();
+
+        try {
+            resultsWebServer = HttpServer.create(new InetSocketAddress(WEB_PORT), 0);
+
+            // Pass 'this' implicitly since handler is non-static inner class
+            resultsWebServer.createContext("/", new SingleFileResultsHandler(htmlFileName));
+
+            resultsWebServer.setExecutor(null);
+            resultsWebServer.start();
+
+            getLogger().info("Temporary results web server started on port " + WEB_PORT + " for file: " + htmlFileName);
+
+            Bukkit.getScheduler().runTaskLater(this, this::stopResultsWebServer,
+                    RESULTS_AVAILABLE_MINUTES * 60 * 20L);
+
+            /*String serverIp = Bukkit.getIp();
+            if (serverIp == null || serverIp.isEmpty() || serverIp.equals("0.0.0.0")) {
+                serverIp = "your-server-ip"; // or fetch external IP if needed
+            }
+            String url = "http://" + serverIp + ":" + WEB_PORT + "/" + htmlFileName;
+
+            Component message = Component.text("Loot Hunt results ready! ", NamedTextColor.GREEN)
+                    .append(Component.text("Click here to view (available for " + RESULTS_AVAILABLE_MINUTES + " min)", NamedTextColor.YELLOW)
+                            .clickEvent(ClickEvent.openUrl(url))
+                            .hoverEvent(HoverEvent.showText(Component.text(url, NamedTextColor.AQUA))));*/
+
+            //Bukkit.broadcast(message);
+            //getLogger().info("Results URL: " + url);
+
+        } catch (IOException e) {
+            getLogger().severe("Failed to start temporary results web server: " + e.getMessage());
+        }
+    }
+
+    public void stopResultsWebServer() {
+        if (resultsWebServer != null) {
+            resultsWebServer.stop(0);
+            resultsWebServer = null;
+            getLogger().info("Temporary results web server stopped (no longer using resources)");
+        }
     }
 
     private void createVoidWorld(String worldName) {

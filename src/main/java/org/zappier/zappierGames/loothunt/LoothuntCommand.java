@@ -58,6 +58,7 @@ public class LoothuntCommand implements TabExecutor {
                     player.sendMessage(ChatColor.RED + "Usage: /loothunt endscore <all|item_id> <player_name>");
                     return true;
                 }
+
                 String itemFilter = args[1].toUpperCase();
                 String targetPlayerName = args[2];
 
@@ -83,7 +84,11 @@ public class LoothuntCommand implements TabExecutor {
 
                 if (itemFilter.equals("ALL")) {
                     double totalScore = 0.0;
-                    for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : playerItems.entrySet()) {
+
+                    // Wrap original map in a TreeMap to sort keys (Item IDs) alphabetically
+                    Map<String, List<LootHunt.ItemEntry>> sortedItems = new TreeMap<>(playerItems);
+
+                    for (Map.Entry<String, List<LootHunt.ItemEntry>> entry : sortedItems.entrySet()) {
                         String itemId = entry.getKey();
                         List<LootHunt.ItemEntry> items = entry.getValue();
 
@@ -116,6 +121,7 @@ public class LoothuntCommand implements TabExecutor {
 
                     player.sendMessage(ChatColor.GREEN + "Total Score (items only): " + String.format("%.1f", totalScore));
                 } else {
+                    // Specific item lookup
                     List<LootHunt.ItemEntry> items = playerItems.get(itemFilter);
                     if (items == null || items.isEmpty()) {
                         player.sendMessage(ChatColor.RED + "No items of type " + itemFilter + " found for " + targetPlayerName);

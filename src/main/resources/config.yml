@@ -79,7 +79,7 @@ collections:
 
   buckets:
     name: "Buckets"
-    type: complete
+    type: progressive
     items:
       - BUCKET
       - WATER_BUCKET
@@ -91,7 +91,17 @@ collections:
       - TROPICAL_FISH_BUCKET
       - AXOLOTL_BUCKET
       - POWDER_SNOW_BUCKET
-    bonus: 1000
+    scores:
+      - 1
+      - 5
+      - 10
+      - 20
+      - 30
+      - 50
+      - 150
+      - 300
+      - 500
+      - 1000
 
   soups:
     name: "Soups"
@@ -101,7 +111,7 @@ collections:
       - RABBIT_STEW
       - SUSPICIOUS_STEW
       - BEETROOT_SOUP
-    bonus: 150
+    bonus: 200
 
   brewing-ingredients:
     name: "Brewing Ingredients"
@@ -133,18 +143,18 @@ collections:
       - 15
       - 20
       - 30
-      - 40
       - 50
-      - 60
       - 75
       - 100
       - 150
-      - 225
+      - 200
       - 300
       - 400
-      - 600
-      - 825
+      - 500
+      - 650
+      - 800
       - 1000
+      - 1250
       - 1500
       - 2000
       - 3000
@@ -155,7 +165,7 @@ shulker-colors:
   - RED_SHULKER_BOX
   - GREEN_SHULKER_BOX
   - YELLOW_SHULKER_BOX
-  - BLACK_SHULKER_BOX
+  - PURPLE_SHULKER_BOX
 
 # Item values for Loot Hunt scoring
 item-values:
@@ -174,8 +184,8 @@ item-values:
   IRON_BLOCK: 9
   COAL_BLOCK: 9
   COAL: 1
-  REDSTONE_BLOCK: 5
-  REDSTONE: 0.5
+  REDSTONE_BLOCK: 7
+  REDSTONE: 0.7
   LAPIS_BLOCK: 5
   LAPIS_LAZULI: 0.5
   DIAMOND: 10
@@ -196,7 +206,7 @@ item-values:
   GLOWSTONE_DUST: 1
   LODESTONE: 1
   AMETHYST_SHARD: 7
-  WITHER_SKELETON_SKULL: 150
+  WITHER_SKELETON_SKULL: 300
   TRIDENT: 250
   ENDER_PEARL: 10
   LEATHER: 2
@@ -226,22 +236,6 @@ item-values:
   SNIFFER_EGG: 60
   NAUTILUS_SHELL: 40
   GOLDEN_CARROT: 4
-  WHITE_WOOL: 1
-  ORANGE_WOOL: 1
-  MAGENTA_WOOL: 1
-  LIGHT_BLUE_WOOL: 1
-  YELLOW_WOOL: 1
-  LIME_WOOL: 1
-  PINK_WOOL: 1
-  GRAY_WOOL: 1
-  LIGHT_GRAY_WOOL: 1
-  CYAN_WOOL: 1
-  PURPLE_WOOL: 1
-  BLUE_WOOL: 1
-  BROWN_WOOL: 1
-  GREEN_WOOL: 1
-  RED_WOOL: 1
-  BLACK_WOOL: 1
   OBSIDIAN: 3
   BUCKET: 3
   WATER_BUCKET: 3
@@ -322,7 +316,7 @@ item-values:
   BOOK: 1
   PRISMARINE_SHARD: 2
   PRISMARINE_CRYSTALS: 4
-  HEAVY_CORE: 250
+  HEAVY_CORE: 500
   OMINOUS_BOTTLE: 20
   WIND_CHARGE: 3
   HONEY_BOTTLE: 7
@@ -339,18 +333,18 @@ item-values:
   DEEPSLATE_COAL_ORE: 50
   IRON_ORE: 3
   DEEPSLATE_IRON_ORE: 3
-  GOLD_ORE: 6
-  DEEPSLATE_GOLD_ORE: 6
+  GOLD_ORE: 4
+  DEEPSLATE_GOLD_ORE: 4
   COPPER_ORE: 3
   DEEPSLATE_COPPER_ORE: 3
   REDSTONE_ORE: 4
   DEEPSLATE_REDSTONE_ORE: 4
-  LAPIS_ORE: 6
-  DEEPSLATE_LAPIS_ORE: 6
+  LAPIS_ORE: 7
+  DEEPSLATE_LAPIS_ORE: 7
   EMERALD_ORE: 50
   DEEPSLATE_EMERALD_ORE: 1000
   DIAMOND_ORE: 200
-  DEEPSLATE_DIAMOND_ORE: 30
+  DEEPSLATE_DIAMOND_ORE: 20
   NETHER_GOLD_ORE: 3
   NETHER_QUARTZ_ORE: 3
   BEE_NEST: 50
@@ -361,12 +355,12 @@ item-values:
   SHIELD: 1
   CROSSBOW: 1.5
   FLINT_AND_STEEL: 1
-  MAP: 4
-  FILLED_MAP: 4
+  MAP: 4.7
+  FILLED_MAP: 4.7
   IRON_CHAIN: 1.2
   LIGHT_WEIGHTED_PRESSURE_PLATE: 4
   IRON_SPEAR: 1
-  COPPER_SPEAR: 1
+  COPPER_SPEAR: 0.1
   GOLDEN_SPEAR: 2
   DIAMOND_SPEAR: 10
   MUSIC_DISC_TEARS: 25
@@ -375,15 +369,15 @@ item-values:
   DRIED_GHAST: 30
   TURTLE_EGG: 30
   COPPER_HORSE_ARMOR: 15
-  COPPER_HELMET: 5
-  COPPER_CHESTPLATE: 8
-  COPPER_LEGGINGS: 7
-  COPPER_BOOTS: 4
-  COPPER_SWORD: 2
-  COPPER_PICKAXE: 3
-  COPPER_AXE: 3
-  COPPER_HOE: 2
-  COPPER_SHOVEL: 1
+  COPPER_HELMET: 0.5
+  COPPER_CHESTPLATE: 0.8
+  COPPER_LEGGINGS: 0.7
+  COPPER_BOOTS: 0.4
+  COPPER_SWORD: 0.2
+  COPPER_PICKAXE: 0.3
+  COPPER_AXE: 0.3
+  COPPER_HOE: 0.2
+  COPPER_SHOVEL: 0.1
   STONECUTTER: 1
   BLAST_FURNACE: 5
   CAULDRON: 7
@@ -400,8 +394,8 @@ item-values:
   BRUSH: 3
   TRIPWIRE_HOOK: 0.5
   IRON_BARS: 0.4
-  CLOCK: 8.5
-  COMPASS: 4.5
+  CLOCK: 8.7
+  COMPASS: 4.7
   IRON_HELMET: 5
   IRON_CHESTPLATE: 8
   IRON_LEGGINGS: 7
@@ -440,14 +434,14 @@ item-values:
   SMALL_AMETHYST_BUD: 10
   MEDIUM_AMETHYST_BUD: 15
   LARGE_AMETHYST_BUD: 20
-  AMETHYST_CLUSTER: 25
+  AMETHYST_CLUSTER: 30
   BLAZE_ROD: 5
   HONEYCOMB: 3
 
 # Kill and death points
 pvp:
   base-kill-points: 50
-  base-death-points: 25
+  base-death-points: 50
   points-reduction-factor: 2
 
 # Custom ender pearls to give at start
