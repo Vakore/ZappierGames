@@ -879,7 +879,7 @@ public class SurvivalGames {
     }
 
     public static void start(World world, int borderSize) {
-        ZappierGames.resetPlayers(true);
+        ZappierGames.resetPlayers(true, false);
         world.getEntities().stream()
                 .filter(e -> !(e instanceof Player))
                 .forEach(org.bukkit.entity.Entity::remove);

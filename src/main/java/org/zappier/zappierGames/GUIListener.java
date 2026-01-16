@@ -478,11 +478,15 @@ public class GUIListener implements Listener {
                     Manhunt.bedBombing = -Manhunt.bedBombing;
                     player.sendMessage("§eBed Bombing: " + ((Manhunt.bedBombing > 0) ? "§aEnabled" : "§cDisabled"));
                     break;
-                case 12: // Toggle Anchor Bombing
+                case 12: // Toggle Bed Bombing
+                    Manhunt.neverBedBomb = -Manhunt.neverBedBomb;
+                    player.sendMessage("§ePvE Bed Bombing: " + ((Manhunt.neverBedBomb < 0) ? "§aEnabled" : "§cDisabled"));
+                    break;
+                case 13: // Toggle Anchor Bombing
                     Manhunt.anchorBombing = -Manhunt.anchorBombing;
                     player.sendMessage("§eAnchor Bombing: " + ((Manhunt.anchorBombing > 0) ? "§aEnabled" : "§cDisabled"));
                     break;
-                case 13: // Toggle Spear
+                case 14: // Toggle Spear
                     Manhunt.allowSpears = -Manhunt.allowSpears;
                     player.sendMessage("§eDisable Spears: " + ((Manhunt.allowSpears > 0) ? "§aEnabled" : "§cDisabled"));
                     break;

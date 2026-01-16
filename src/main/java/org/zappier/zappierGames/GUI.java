@@ -109,15 +109,21 @@ public class GUI {
                     ((Manhunt.bedBombing > 0) ? "§aENABLED" : "§cDISABLED"),
                     "§aClick to toggle"));
 
-            inv.setItem(12, createGuiItem(Material.RESPAWN_ANCHOR, 1, "§eAnchor Bombing",
+            inv.setItem(12, createGuiItem(Material.BLUE_BED, 1, "§ePvE Bed Bombing",
+                    "§7Disallow bed bombing at all, even in non-PvP",
+                    " ",
+                    ((Manhunt.neverBedBomb < 0) ? "§aENABLED" : "§cDISABLED"),
+                    "§aClick to toggle"));
+
+            inv.setItem(13, createGuiItem(Material.RESPAWN_ANCHOR, 1, "§eAnchor Bombing",
                     "§7Allow anchors to explode in Overworld/End",
                     " ",
                     ((Manhunt.anchorBombing > 0) ? "§aENABLED" : "§cDISABLED"),
                     "§aClick to toggle"));
 
 
-            inv.setItem(13, createGuiItem(Material.STONE_SHOVEL, 1, "§eAllow Spears",
-                    "§7Replace spears with shovels.",
+            inv.setItem(14, createGuiItem(Material.STONE_SHOVEL, 1, "§eAllow Spears",
+                    "§7When disabled: Replaces spears with shovels.",
                     " ",
                     ((Manhunt.allowSpears > 0) ? "§aENABLED" : "§cDISABLED"),
                     "§aClick to toggle"));

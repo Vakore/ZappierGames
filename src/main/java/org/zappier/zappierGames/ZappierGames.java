@@ -15,6 +15,8 @@ import org.bukkit.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -32,6 +34,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.loothunt.*;
 import org.zappier.zappierGames.manhunt.*;
@@ -77,7 +80,7 @@ public final class ZappierGames extends JavaPlugin {
     //LOOTHUNT
     private final Map<UUID, Integer> playerScores = new HashMap<>();
 
-    public static void resetPlayers(boolean clearInv) {
+    public static void resetPlayers(boolean clearInv, boolean clearAdvancements) {
         ZappierGames.getInstance().stopResultsWebServer();
         ZappierGames.noPvP = false;
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -90,6 +93,28 @@ public final class ZappierGames extends JavaPlugin {
             p.clearActivePotionEffects();
             p.setCollidable(true);
             p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(20.0);
+            if (clearAdvancements) {
+                for (@NotNull Iterator<Advancement> it = Bukkit.advancementIterator(); it.hasNext(); ) {
+                    Advancement advancement = it.next();
+                    AdvancementProgress progress = p.getAdvancementProgress(advancement);
+
+                    // Only touch it if the player has any progress
+                    if (!progress.getRemainingCriteria().isEmpty()) {
+                        for (String criterion : progress.getAwardedCriteria()) {
+                            progress.revokeCriteria(criterion);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        for (World world : Bukkit.getWorlds()) {
+            world.setGameRule(GameRule.NATURAL_REGENERATION, true);
+            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
+            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
+            world.setGameRule(GameRule.DO_WEATHER_CYCLE, true);
+            world.setTime(0);
         }
     }
 
@@ -544,6 +569,7 @@ public final class ZappierGames extends JavaPlugin {
         gameStateConfig.set("manhunt.netherLavaPvP",        Manhunt.netherLavaPvP);
         gameStateConfig.set("manhunt.allowSpears",          Manhunt.allowSpears);
         gameStateConfig.set("manhunt.bedBombing",           Manhunt.bedBombing);
+        gameStateConfig.set("manhunt.neverBedBomb",           Manhunt.neverBedBomb);
         gameStateConfig.set("manhunt.anchorBombing",        Manhunt.anchorBombing);
         gameStateConfig.set("manhunt.funtimer",             Manhunt.funtimer);
 
@@ -637,6 +663,7 @@ public final class ZappierGames extends JavaPlugin {
         Manhunt.netherLavaPvP        = gameStateConfig.getInt("manhunt.netherLavaPvP",        -1);
         Manhunt.allowSpears          = gameStateConfig.getInt("manhunt.allowSpears",          -1);
         Manhunt.bedBombing           = gameStateConfig.getInt("manhunt.bedBombing",           -1);
+        Manhunt.neverBedBomb           = gameStateConfig.getInt("manhunt.neverBedBomb",           -1);
         Manhunt.anchorBombing        = gameStateConfig.getInt("manhunt.anchorBombing",        -1);
         Manhunt.funtimer             = gameStateConfig.getInt("manhunt.funtimer",             0);
 

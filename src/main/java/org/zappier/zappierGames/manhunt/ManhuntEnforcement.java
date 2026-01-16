@@ -1,8 +1,6 @@
 package org.zappier.zappierGames.manhunt;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -22,27 +20,54 @@ public class ManhuntEnforcement implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onLavaPlace(PlayerBucketEmptyEvent event) {
-        if (ZappierGames.gameMode > 5) {return;}
-        if (Manhunt.netherLavaPvP <= 0) {
-            Player player = event.getPlayer();
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) {
+            return;
+        }
 
-            if (event.getBucket() == Material.LAVA_BUCKET &&
-                    player.getWorld().getEnvironment() == World.Environment.NETHER) {
-                double radius = 5.0;
-                for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
-                    if (entity instanceof Player && !entity.equals(player) && !DamageHandler.areOnSameTeam(player, (Player)entity)) {
-                        event.setCancelled(true);
-                        player.sendMessage("§cNether Lava PvP is disabled");
-                        return;
-                    }
-                }
+        // Feature is enabled → allow lava everywhere
+        if (Manhunt.netherLavaPvP > 0) {
+            return;
+        }
+
+        Player placer = event.getPlayer();
+
+        if (event.getBucket() != Material.LAVA_BUCKET) return;
+        if (placer.getWorld().getEnvironment() != World.Environment.NETHER) return;
+
+        // This is the block where the lava will actually be placed
+        Block targetBlock = event.getBlockClicked().getRelative(event.getBlockFace());
+
+        // Now check players near the *placement location*, not near the placer
+        double radius = 5.0;
+        Location checkCenter = targetBlock.getLocation().add(0.5, 0.5, 0.5); // center of the block for fair distance
+
+        for (Entity entity : targetBlock.getWorld().getNearbyEntities(checkCenter, radius, radius, radius)) {
+            if (!(entity instanceof Player)) continue;
+
+            Player target = (Player) entity;
+            if (target.equals(placer)) continue;
+
+            // Skip teammates
+            if (DamageHandler.areOnSameTeam(placer, target)) continue;
+
+            // Only cancel if BOTH are in survival/adventure
+            GameMode placerMode = placer.getGameMode();
+            GameMode targetMode = target.getGameMode();
+
+            if ((placerMode == GameMode.SURVIVAL || placerMode == GameMode.ADVENTURE) &&
+                    (targetMode == GameMode.SURVIVAL  || targetMode == GameMode.ADVENTURE)) {
+
+                event.setCancelled(true);
+                placer.sendMessage("§cNether Lava PvP is disabled");
+                // Optional: target.sendMessage("§cLava placement near you was blocked (PvP disabled)");
+                return; // No need to check further players
             }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSmeltInteract(PlayerInteractEvent event) {
-        if (ZappierGames.gameMode > 5) return;
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) return;
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
         Block block = event.getClickedBlock();
@@ -60,7 +85,7 @@ public class ManhuntEnforcement implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (ZappierGames.gameMode > 5) return;
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) return;
 
         // No Placing Blocks Twist
         if (Manhunt.twists.getOrDefault("No Placing Blocks", false)) {
@@ -71,7 +96,7 @@ public class ManhuntEnforcement implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onExplosiveInteract(PlayerInteractEvent event) {
-        if (ZappierGames.gameMode > 5) return;
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) return;
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
         Block block = event.getClickedBlock();
@@ -82,24 +107,53 @@ public class ManhuntEnforcement implements Listener {
         Material type = block.getType();
         ItemStack itemInHand = event.getItem();
 
-        // 1. Bed Bombing Logic
-        if (Manhunt.bedBombing <= 0) {
-            if (type.name().contains("_BED") && (env == World.Environment.NETHER || env == World.Environment.THE_END)) {
-                // Allow placing blocks on beds if sneaking
-                if (player.isSneaking() && itemInHand != null && itemInHand.getType().isBlock()) {
-                    return;
-                }
-                event.setCancelled(true);
-                player.sendMessage("§cBed bombing is disabled!");
-            }
+        // Always disable charging respawn anchors (glowstone right-click), everywhere
+        if (type == Material.RESPAWN_ANCHOR && itemInHand != null && itemInHand.getType() == Material.GLOWSTONE) {
+            event.setCancelled(true);
+            player.sendMessage("§cRespawn anchor charging is disabled!");
+            return;
         }
 
-        if (Manhunt.anchorBombing <= 0) {
-            if (type == Material.RESPAWN_ANCHOR && (env == World.Environment.NORMAL || env == World.Environment.THE_END)) {
-                if (itemInHand != null && itemInHand.getType() == Material.GLOWSTONE) {
+        // Bed bombing logic (only in Nether / End)
+        if (type.name().contains("_BED") && (env == World.Environment.NETHER || env == World.Environment.THE_END)) {
+
+            // Allow placing blocks on beds if sneaking
+            if (player.isSneaking() && itemInHand != null && itemInHand.getType().isBlock()) {
+                return;
+            }
+
+            // Never allow bed usage if neverBedBomb > 0
+            if (Manhunt.neverBedBomb > 0) {
+                event.setCancelled(true);
+                player.sendMessage("§cBed bombing is permanently disabled!");
+                return;
+            }
+
+            if (Manhunt.bedBombing > 0) {
+                return;
+            }
+
+            // Otherwise: check for nearby enemies around the BED location
+            double radius = 7.0;
+            Location checkCenter = block.getLocation().add(0.5, 0.5, 0.5); // center of bed for fair checking
+
+            for (Entity entity : block.getWorld().getNearbyEntities(checkCenter, radius, radius, radius)) {
+                if (!(entity instanceof Player)) continue;
+
+                Player target = (Player) entity;
+                if (target.equals(player)) continue;
+                if (DamageHandler.areOnSameTeam(player, target)) continue;
+
+                // Only cancel if BOTH are in survival/adventure
+                GameMode playerMode = player.getGameMode();
+                GameMode targetMode = target.getGameMode();
+
+                if ((playerMode == GameMode.SURVIVAL || playerMode == GameMode.ADVENTURE) &&
+                        (targetMode == GameMode.SURVIVAL || targetMode == GameMode.ADVENTURE)) {
+
                     event.setCancelled(true);
-                    player.sendMessage("§cAnchor bombing is disabled!");
-                    return;
+                    player.sendMessage("§cBed bombing near enemies is disabled!");
+                    return; // Stop after first valid enemy found
                 }
             }
         }

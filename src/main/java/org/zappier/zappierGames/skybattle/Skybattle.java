@@ -112,7 +112,7 @@ public class Skybattle {
         borderTime = 20;
         borderRadius = 135.0;
         ZappierGames.gameMode = 10;
-        ZappierGames.resetPlayers(false);
+        ZappierGames.resetPlayers(false, false);
 
         clearArea(world, -120, -120, 240, 240, 148, 180);
 

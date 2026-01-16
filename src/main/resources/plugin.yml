@@ -1,5 +1,5 @@
 name: ZappierGames
-version: '1.15-SNAPSHOT'
+version: '1.16-SNAPSHOT'
 main: org.zappier.zappierGames.ZappierGames
 api-version: '1.21'
 authors: [ Vakore ]

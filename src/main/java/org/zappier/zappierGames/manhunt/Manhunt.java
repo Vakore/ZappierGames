@@ -25,6 +25,7 @@ public class Manhunt {
     public static int allowSpears = -1;
     public static int bedBombing = -1;
     public static int anchorBombing = -1;
+    public static int neverBedBomb = -1;
     public static HashMap<String, Boolean> twists = new HashMap<>();
     public static ArrayList<Material> allowedFoods = new ArrayList<>();
     public static HashMap<String, Integer> playerDeaths = new HashMap<>();
@@ -169,7 +170,7 @@ public class Manhunt {
         }
 
         ZappierGames.globalBossBar.setVisible(false);
-        ZappierGames.resetPlayers(true);
+        ZappierGames.resetPlayers(true, true);
 
         for (World world : Bukkit.getWorlds()) {
             WorldBorder border = world.getWorldBorder();
