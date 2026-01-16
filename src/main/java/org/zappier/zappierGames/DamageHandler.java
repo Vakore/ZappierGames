@@ -34,7 +34,7 @@ public class DamageHandler implements Listener {
         }
     }
 
-    private String getPlayerTeam(Player player, Scoreboard scoreboard) {
+    private static String getPlayerTeam(Player player, Scoreboard scoreboard) {
         for (Team team : scoreboard.getTeams()) {
             if (team.hasEntry(player.getName())) {
                 return team.getName();
@@ -43,7 +43,7 @@ public class DamageHandler implements Listener {
         return "";
     }
 
-    private boolean areOnSameTeam(Player aTeam, Player bTeam) {
+    public static boolean areOnSameTeam(Player aTeam, Player bTeam) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         String a = getPlayerTeam(aTeam, scoreboard);
         String b = getPlayerTeam(bTeam, scoreboard);

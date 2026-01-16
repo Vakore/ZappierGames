@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.inventory.ItemStack;
+import org.zappier.zappierGames.manhunt.Manhunt;
 
 // Renamed the class to avoid conflict
 public class PlayerSpawnListener implements Listener {
@@ -29,13 +30,11 @@ public class PlayerSpawnListener implements Listener {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
         String playerTeam = getPlayerTeam(player, scoreboard);
-        if ((ZappierGames.gameMode == 1 || ZappierGames.gameMode == 2 || ZappierGames.gameMode == 3) &&
-                ("Hunters".equals(playerTeam) || "Runner_Suppliers".equals(playerTeam) || "Hunter_Suppliers".equals(playerTeam)) ) {
-            ItemStack compass = new ItemStack(Material.COMPASS);
-            compass.addEnchantment(Enchantment.VANISHING_CURSE, 1);
+        if (ZappierGames.gameMode <= 5 && ZappierGames.gameMode > 0) {
+             Manhunt.giveKit(player);
+        }
 
-            player.getInventory().addItem(compass);
-        } else if (ZappierGames.gameMode == 10) {
+        if (ZappierGames.gameMode == 10) {
             World skybattleWorld = Bukkit.getWorld("skybattle_world");
             if (skybattleWorld != null) {
                 event.setRespawnLocation(new Location(skybattleWorld, 0.5, 150, 0.5));

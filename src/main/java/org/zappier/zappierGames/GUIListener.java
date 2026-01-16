@@ -110,12 +110,13 @@ public class GUIListener implements Listener {
                     break;
                 case 14: // Toggle Pause
                     LootHunt.paused = !LootHunt.paused;
-                    Bukkit.broadcastMessage(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"));
+                        Bukkit.broadcastMessage(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"));
                     for (Player p : Bukkit.getOnlinePlayers()) {
                         p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
                         p.sendTitle(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"), "", 10, 70, 20);
                     }
                     player.closeInventory();
+                    if (LootHunt.paused) {ZappierGames.shouldSave = true;}
                     break;
 
                 case 15: // Toggle Pause
@@ -355,6 +356,24 @@ public class GUIListener implements Listener {
                     gui = new GUI((isToggleEnabled ? GUI.MANHUNT_TWISTS_TOGGLE : GUI.MANHUNT_TWISTS_ROLLABLE) + " " + page);
                     gui.open(player);
                 }
+            } else if (slot == 18) {
+
+                if (isToggleEnabled) {
+                    for (int i = 0; i < Manhunt.manhuntTwists.length; i++) {
+                        Manhunt.manhuntTwists[i].enabled = false;
+                    }
+                    player.sendMessage(ChatColor.GOLD + "All twists disabled.");
+                } else {
+                    boolean wasroll = !Manhunt.manhuntTwists[0].rollable;
+                    for (int i = 0; i < Manhunt.manhuntTwists.length; i++) {
+                        Manhunt.manhuntTwists[i].rollable = wasroll;
+                    }
+                    player.sendMessage(ChatColor.GOLD + "All twists " + (Manhunt.manhuntTwists[0].rollable ? "" : "un") + "rollable.");
+                }
+
+                int page = parseInt(title.split(" ")[title.split(" ").length - 2]);
+                gui = new GUI((isToggleEnabled ? GUI.MANHUNT_TWISTS_TOGGLE : GUI.MANHUNT_TWISTS_ROLLABLE) + " " + page);
+                gui.open(player);
             } else if (slot == 9 || slot == 17) {
 
                 //player.sendMessage(ChatColor.GOLD + "Pagination coming soon™");
@@ -380,8 +399,10 @@ public class GUIListener implements Listener {
             }
         } else if (title.equals(MANHUNT_WHEEL_MENU)) {
             switch (slot) {
-                case 11: // Randomize announcement only
+                case 11: // Randomize
                     Bukkit.broadcastMessage(ChatColor.GOLD + "§l»»» " + ChatColor.RED + "§lRANDOMIZING TWISTS!" + ChatColor.GOLD + " «««");
+                    Manhunt.enableRandomTwists(1);
+
                     for (Player p : Bukkit.getOnlinePlayers()) {
                         p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.8f);
                     }
@@ -436,6 +457,10 @@ public class GUIListener implements Listener {
                     Manhunt.start(ZappierGames.borderSize, (int) player.getLocation().getX(), (int) player.getLocation().getZ());
                     player.closeInventory();
                     break;
+                case 17: // Combat Settings
+                    gui = new GUI("Combat Settings");
+                    gui.open(player);
+                    break;
                 case 26: // Back
                     gui = new GUI();
                     gui.open(player);
@@ -443,6 +468,32 @@ public class GUIListener implements Listener {
                 default:
                     validClick = false;
             }
+        } else if (title.equals("Combat Settings Menu")) {
+            switch (slot) {
+                case 10: // Toggle Nether Lava
+                    Manhunt.netherLavaPvP = -Manhunt.netherLavaPvP;
+                    player.sendMessage("§eNether Lava PvP: " + ((Manhunt.netherLavaPvP > 0) ? "§aEnabled" : "§cDisabled"));
+                    break;
+                case 11: // Toggle Bed Bombing
+                    Manhunt.bedBombing = -Manhunt.bedBombing;
+                    player.sendMessage("§eBed Bombing: " + ((Manhunt.bedBombing > 0) ? "§aEnabled" : "§cDisabled"));
+                    break;
+                case 12: // Toggle Anchor Bombing
+                    Manhunt.anchorBombing = -Manhunt.anchorBombing;
+                    player.sendMessage("§eAnchor Bombing: " + ((Manhunt.anchorBombing > 0) ? "§aEnabled" : "§cDisabled"));
+                    break;
+                case 13: // Toggle Spear
+                    Manhunt.allowSpears = -Manhunt.allowSpears;
+                    player.sendMessage("§eDisable Spears: " + ((Manhunt.allowSpears > 0) ? "§aEnabled" : "§cDisabled"));
+                    break;
+                case 26: // Back
+                    gui = new GUI("Manhunt");
+                    gui.open(player);
+                    return; // Exit so we don't refresh the "Combat Settings" menu
+            }
+            // Refresh the menu to show the new Enabled/Disabled status
+            gui = new GUI("Combat Settings");
+            gui.open(player);
         } else if (title.equals("Game Mode Menu")) {
             switch (slot) {
                 case 10: // Standard

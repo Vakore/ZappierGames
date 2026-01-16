@@ -22,6 +22,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -33,10 +34,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.loothunt.*;
-import org.zappier.zappierGames.manhunt.CompassTrackerListener;
-import org.zappier.zappierGames.manhunt.Manhunt;
-import org.zappier.zappierGames.manhunt.ManhuntCommand;
-import org.zappier.zappierGames.manhunt.TrackerGUIListener;
+import org.zappier.zappierGames.manhunt.*;
 import org.zappier.zappierGames.skybattle.CreeperSpawnListener;
 import org.zappier.zappierGames.skybattle.CustomPearlsListener;
 import org.zappier.zappierGames.skybattle.Skybattle;
@@ -55,6 +53,7 @@ public final class ZappierGames extends JavaPlugin {
     public static double loothuntDuration = 0; // Default to 0, must be set before starting
     public static final int LOOTHUNT = 0;
     public static final int MANHUNT = 1;
+    public static boolean shouldSave = false;
 
 
     public static boolean noPvP = false;
@@ -68,7 +67,7 @@ public final class ZappierGames extends JavaPlugin {
 
     //COMPASS TRACKING
     //who tracks who
-    public final Map<String, String> trackingPairs = new HashMap<>();
+    public static final Map<String, String> trackingPairs = new HashMap<>();
     //where each player is in each dimension
     private final Map<String, int[]> playerPositions = new HashMap<>();
 
@@ -158,6 +157,46 @@ public final class ZappierGames extends JavaPlugin {
             return Collections.emptyList();
         }
     }
+    public class LoadStateCommand implements TabExecutor {
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+            // Optional: restrict to ops / console only
+            if (!sender.hasPermission("zappiergames.loadstate") && !sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+                return true;
+            }
+
+            // Optional: add confirmation for safety (reload can be dangerous)
+            if (args.length == 0 || !args[0].equalsIgnoreCase("confirm")) {
+                sender.sendMessage(ChatColor.YELLOW + "Warning: This will reload the game state from gamestate.yml.");
+                sender.sendMessage(ChatColor.YELLOW + "This may reset timers, twists, tracking, etc.");
+                sender.sendMessage(ChatColor.YELLOW + "Use " + ChatColor.WHITE + "/loadstate confirm" + ChatColor.YELLOW + " to proceed.");
+                return true;
+            }
+
+            // Actually load the state
+            loadGameState();
+
+            sender.sendMessage(ChatColor.GREEN + "Game state has been reloaded from gamestate.yml.");
+
+            // Optional: broadcast or log
+            Bukkit.broadcastMessage(ChatColor.GRAY + "[Admin] " + sender.getName() + " reloaded game state.");
+            getLogger().info(sender.getName() + " manually reloaded game state via /loadstate");
+
+            return true;
+        }
+
+        @Override
+        public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+            if (args.length == 1) {
+                return Collections.singletonList("confirm");
+            }
+            return Collections.emptyList();
+        }
+    }
+
+
     private static HttpServer resultsWebServer = null;
     private static final int WEB_PORT = 8081;
     private static final long RESULTS_AVAILABLE_MINUTES = 10;
@@ -165,12 +204,28 @@ public final class ZappierGames extends JavaPlugin {
         return instance;
     }
 
+    private File gameStateFile;
+    private FileConfiguration gameStateConfig;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
         LootHunt.loadConfig(getConfig());
 
         instance = this;
+
+        gameStateFile = new File(getDataFolder(), "gamestate.yml");
+        if (!gameStateFile.exists()) {
+            try {
+                gameStateFile.createNewFile();
+            } catch (IOException e) {
+                getLogger().severe("Could not create gamestate.yml!");
+                e.printStackTrace();
+            }
+        }
+        gameStateConfig = YamlConfiguration.loadConfiguration(gameStateFile);
+
+        //loadGameState();//don't do this automatically
 
         getLogger().info("ZappierGames - Now running!");
         saveDefaultConfig();
@@ -190,6 +245,8 @@ public final class ZappierGames extends JavaPlugin {
         this.getCommand("getscore").setExecutor(new GetScoreCommand());
         this.getCommand("globalkeepinventory").setExecutor(new GlobalKeepInventoryCommand());
         this.getCommand("GUI").setExecutor(new openGUICommand());
+        this.getCommand("loadstate").setExecutor(new LoadStateCommand());
+        this.getCommand("loadstate").setTabCompleter(new LoadStateCommand());
 
         // Register events
         getServer().getPluginManager().registerEvents(new LootHuntKillListener(), this);
@@ -203,6 +260,7 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new InfinibundleListener(), this);
         getServer().getPluginManager().registerEvents(new CompassTrackerListener(this), this);
         getServer().getPluginManager().registerEvents(new TrackerGUIListener(this), this);
+        getServer().getPluginManager().registerEvents(new ManhuntEnforcement(), this);
 
         // Team colors
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
@@ -222,6 +280,11 @@ public final class ZappierGames extends JavaPlugin {
 
             @Override
             public void run() {
+                if (shouldSave) {
+                    saveGameState();
+                    shouldSave = false;
+                    Bukkit.broadcastMessage("Manhunt/Loothunt game state saved.");
+                }
                 updateCompassTimer--;
                 if (updateCompassTimer <= 0) {
                     updateCompassTimer = 10;
@@ -331,6 +394,7 @@ public final class ZappierGames extends JavaPlugin {
         }
         // Stop web server if still running
         stopResultsWebServer();
+        saveGameState();
         getLogger().info("ZappierGames - Now disabled");
     }
 
@@ -467,4 +531,271 @@ public final class ZappierGames extends JavaPlugin {
     }
 
 
+
+
+    public void saveGameState() {
+        // Manhunt static fields
+        gameStateConfig.set("manhunt.showTrackerDimension", Manhunt.showTrackerDimension);
+        gameStateConfig.set("manhunt.shoutHunterTarget",    Manhunt.shoutHunterTarget);
+        gameStateConfig.set("manhunt.presidentDeathLink",   Manhunt.presidentDeathLink);
+        gameStateConfig.set("manhunt.presidentWearArmor",   Manhunt.presidentWearArmor);
+        gameStateConfig.set("manhunt.bodyguardRespawn",     Manhunt.bodyguardRespawn);
+        gameStateConfig.set("manhunt.bodyguardHpBonus",     Manhunt.bodyguardHpBonus);
+        gameStateConfig.set("manhunt.netherLavaPvP",        Manhunt.netherLavaPvP);
+        gameStateConfig.set("manhunt.allowSpears",          Manhunt.allowSpears);
+        gameStateConfig.set("manhunt.bedBombing",           Manhunt.bedBombing);
+        gameStateConfig.set("manhunt.anchorBombing",        Manhunt.anchorBombing);
+        gameStateConfig.set("manhunt.funtimer",             Manhunt.funtimer);
+
+        // Twists enabled state
+        for (Manhunt.manhuntTwist twist : Manhunt.manhuntTwists) {
+            gameStateConfig.set("manhunt.twists." + twist.name.replace(" ", "_"), twist.enabled);
+        }
+
+        // playerDeaths
+        gameStateConfig.createSection("manhunt.playerDeaths", Manhunt.playerDeaths);
+
+        // LootHunt / Infinibundle related (select what actually needs persistence)
+        gameStateConfig.set("loothunt.noPvP", LootHunt.noPvP);
+        gameStateConfig.set("loothunt.paused", true);
+
+        gameStateConfig.createSection("loothunt.playerKillCounts", LootHunt.playerKillCounts);
+        gameStateConfig.createSection("loothunt.playerDeathCounts", LootHunt.playerDeathCounts);
+
+        // Infinibundle teamStorages (now persisted with ItemStack serialization)
+        for (Map.Entry<String, List<ItemStack>> entry : InfinibundleListener.teamStorages.entrySet()) {
+            List<Map<String, Object>> serializedItems = new ArrayList<>();
+            for (ItemStack item : entry.getValue()) {
+                if (item != null) {
+                    serializedItems.add(item.serialize());
+                } else {
+                    serializedItems.add(null); // Handle null items if possible, though rare
+                }
+            }
+            gameStateConfig.set("infinibundle.teamStorages." + entry.getKey(), serializedItems);
+        }
+
+        // ZappierGames main fields
+        gameStateConfig.set("core.gameMode", ZappierGames.gameMode);
+        gameStateConfig.set("core.timer", ZappierGames.timer);
+        gameStateConfig.set("core.loothuntDuration", ZappierGames.loothuntDuration);
+        gameStateConfig.set("core.noPvP", ZappierGames.noPvP);           // or use LootHunt.noPvP — pick one source of truth
+        gameStateConfig.set("core.borderSize", ZappierGames.borderSize);
+
+        // trackingPairs (String → String)
+        gameStateConfig.createSection("core.trackingPairs", ZappierGames.trackingPairs);
+
+        // playerPositions (String → int[3]  →  x,y,z)
+        Map<String, List<Integer>> serializedPositions = new HashMap<>();
+        for (Map.Entry<String, int[]> entry : ZappierGames.this.playerPositions.entrySet()) {
+            List<Integer> coords = new ArrayList<>();
+            int[] pos = entry.getValue();
+            if (pos != null && pos.length >= 3) {
+                coords.add(pos[0]);
+                coords.add(pos[1]);
+                coords.add(pos[2]);
+            }
+            serializedPositions.put(entry.getKey(), coords);
+        }
+        gameStateConfig.createSection("core.playerPositions", serializedPositions);
+
+        // playerScores (UUID → Integer)
+        Map<String, Integer> serializedScores = new HashMap<>();
+        for (Map.Entry<UUID, Integer> entry : ZappierGames.this.playerScores.entrySet()) {
+            serializedScores.put(entry.getKey().toString(), entry.getValue());
+        }
+        gameStateConfig.createSection("core.playerScores", serializedScores);
+
+        // BossBar state (title, color, style, progress)
+        if (ZappierGames.globalBossBar != null) {
+            gameStateConfig.set("core.bossbar.title", ZappierGames.globalBossBar.getTitle());
+            gameStateConfig.set("core.bossbar.color", ZappierGames.globalBossBar.getColor().name());
+            gameStateConfig.set("core.bossbar.style", ZappierGames.globalBossBar.getStyle().name());
+            gameStateConfig.set("core.bossbar.progress", ZappierGames.globalBossBar.getProgress());
+        }
+        gameStateConfig.set("core.startTimerTicks", LootHunt.startTimer);
+
+        try {
+            gameStateConfig.save(gameStateFile);
+            getLogger().info("Game state saved to gamestate.yml");
+        } catch (IOException e) {
+            getLogger().severe("Failed to save game state!");
+            e.printStackTrace();
+        }
+    }
+
+    public void loadGameState() {
+        if (!gameStateFile.exists()) return;
+
+        // Manhunt values
+        Manhunt.showTrackerDimension = gameStateConfig.getInt("manhunt.showTrackerDimension", 1);
+        Manhunt.shoutHunterTarget    = gameStateConfig.getInt("manhunt.shoutHunterTarget",    1);
+        Manhunt.presidentDeathLink   = gameStateConfig.getInt("manhunt.presidentDeathLink",   -1);
+        Manhunt.presidentWearArmor   = gameStateConfig.getInt("manhunt.presidentWearArmor",   -1);
+        Manhunt.bodyguardRespawn     = gameStateConfig.getInt("manhunt.bodyguardRespawn",     -1);
+        Manhunt.bodyguardHpBonus     = gameStateConfig.getInt("manhunt.bodyguardHpBonus",     0);
+        Manhunt.netherLavaPvP        = gameStateConfig.getInt("manhunt.netherLavaPvP",        -1);
+        Manhunt.allowSpears          = gameStateConfig.getInt("manhunt.allowSpears",          -1);
+        Manhunt.bedBombing           = gameStateConfig.getInt("manhunt.bedBombing",           -1);
+        Manhunt.anchorBombing        = gameStateConfig.getInt("manhunt.anchorBombing",        -1);
+        Manhunt.funtimer             = gameStateConfig.getInt("manhunt.funtimer",             0);
+
+        // Twists
+        for (Manhunt.manhuntTwist twist : Manhunt.manhuntTwists) {
+            String key = "manhunt.twists." + twist.name.replace(" ", "_");
+            if (gameStateConfig.isBoolean(key)) {
+                twist.enabled = gameStateConfig.getBoolean(key, false);
+            }
+        }
+
+        // playerDeaths
+        if (gameStateConfig.isConfigurationSection("manhunt.playerDeaths")) {
+            Manhunt.playerDeaths.clear();
+            for (String uuid : gameStateConfig.getConfigurationSection("manhunt.playerDeaths").getKeys(false)) {
+                Manhunt.playerDeaths.put(uuid, gameStateConfig.getInt("manhunt.playerDeaths." + uuid, 0));
+            }
+        }
+
+        // LootHunt
+        LootHunt.noPvP  = gameStateConfig.getBoolean("loothunt.noPvP", false);
+        LootHunt.paused = gameStateConfig.getBoolean("loothunt.paused", false);
+
+        // playerKillCounts and playerDeathCounts (now loaded)
+        if (gameStateConfig.isConfigurationSection("loothunt.playerKillCounts")) {
+            LootHunt.playerKillCounts.clear();
+            for (String key : gameStateConfig.getConfigurationSection("loothunt.playerKillCounts").getKeys(false)) {
+                LootHunt.playerKillCounts.put(key, gameStateConfig.getInt("loothunt.playerKillCounts." + key, 0));
+            }
+        }
+        if (gameStateConfig.isConfigurationSection("loothunt.playerDeathCounts")) {
+            LootHunt.playerDeathCounts.clear();
+            for (String key : gameStateConfig.getConfigurationSection("loothunt.playerDeathCounts").getKeys(false)) {
+                LootHunt.playerDeathCounts.put(key, gameStateConfig.getInt("loothunt.playerDeathCounts." + key, 0));
+            }
+        }
+
+        // Infinibundle teamStorages (now loaded with ItemStack deserialization)
+        // In loadGameState(), inside the teamStorages loading block:
+
+        if (gameStateConfig.isConfigurationSection("infinibundle.teamStorages")) {
+            InfinibundleListener.teamStorages.clear();
+
+            for (String teamKey : gameStateConfig.getConfigurationSection("infinibundle.teamStorages").getKeys(false)) {
+                // Use the actual return type of getMapList
+                List<Map<?, ?>> rawList = gameStateConfig.getMapList("infinibundle.teamStorages." + teamKey);
+
+                List<ItemStack> items = new ArrayList<>();
+
+                for (Map<?, ?> rawMap : rawList) {
+                    if (rawMap == null) {
+                        items.add(null);
+                        continue;
+                    }
+
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> itemMap = (Map<String, Object>) rawMap;
+
+                    try {
+                        items.add(ItemStack.deserialize(itemMap));
+                    } catch (Exception e) {
+                        getLogger().warning("Failed to deserialize ItemStack for team " + teamKey + ": " + e.getMessage());
+                    }
+                }
+
+                InfinibundleListener.teamStorages.put(teamKey, items);
+            }
+        }
+
+        ZappierGames.gameMode         = gameStateConfig.getInt("core.gameMode", -1);
+        ZappierGames.timer            = gameStateConfig.getInt("core.timer", 0);
+        ZappierGames.loothuntDuration = gameStateConfig.getDouble("core.loothuntDuration", 0);
+        ZappierGames.noPvP            = gameStateConfig.getBoolean("core.noPvP", false);
+        ZappierGames.borderSize       = gameStateConfig.getInt("core.borderSize", 2500);
+
+        // trackingPairs
+        if (gameStateConfig.isConfigurationSection("core.trackingPairs")) {
+            ZappierGames.trackingPairs.clear();
+            for (String key : gameStateConfig.getConfigurationSection("core.trackingPairs").getKeys(false)) {
+                String value = gameStateConfig.getString("core.trackingPairs." + key);
+                if (value != null) {
+                    ZappierGames.trackingPairs.put(key, value);
+                }
+            }
+        }
+
+        // playerPositions
+        if (gameStateConfig.isConfigurationSection("core.playerPositions")) {
+            ZappierGames.this.playerPositions.clear();
+            for (String playerKey : gameStateConfig.getConfigurationSection("core.playerPositions").getKeys(false)) {
+                List<Integer> coords = gameStateConfig.getIntegerList("core.playerPositions." + playerKey);
+                if (coords.size() >= 3) {
+                    int[] pos = new int[]{coords.get(0), coords.get(1), coords.get(2)};
+                    ZappierGames.this.playerPositions.put(playerKey, pos);
+                }
+            }
+        }
+
+        // playerScores
+        if (gameStateConfig.isConfigurationSection("core.playerScores")) {
+            ZappierGames.this.playerScores.clear();
+            for (String uuidStr : gameStateConfig.getConfigurationSection("core.playerScores").getKeys(false)) {
+                try {
+                    UUID uuid = UUID.fromString(uuidStr);
+                    int score = gameStateConfig.getInt("core.playerScores." + uuidStr, 0);
+                    ZappierGames.this.playerScores.put(uuid, score);
+                } catch (IllegalArgumentException e) {
+                    getLogger().warning("Invalid UUID in playerScores: " + uuidStr);
+                }
+            }
+        }
+
+        LootHunt.startTimer = gameStateConfig.getDouble("core.startTimerTicks", 240.0 * 20);
+        // BossBar recreation
+        String title    = gameStateConfig.getString("core.bossbar.title", "Title");
+        String colorStr = gameStateConfig.getString("core.bossbar.color", "PURPLE");
+        String styleStr = gameStateConfig.getString("core.bossbar.style", "SOLID");
+        double progress = gameStateConfig.getDouble("core.bossbar.progress", 1.0);
+
+        BarColor color;
+        BarStyle style;
+        try {
+            color = BarColor.valueOf(colorStr);
+        } catch (Exception e) {
+            color = BarColor.PURPLE;
+        }
+        try {
+            style = BarStyle.valueOf(styleStr);
+        } catch (Exception e) {
+            style = BarStyle.SOLID;
+        }
+
+        // Recreate boss bar
+        ZappierGames.globalBossBar = Bukkit.createBossBar(title, color, style);
+
+        double elapsed   = ZappierGames.timer;
+        double total     = ZappierGames.loothuntDuration;
+
+        if (total <= 0) {
+            progress = 0.0;  // safety if duration not set
+        } else if (ZappierGames.timer >= total) {
+            progress = 0.0;  // or 1.0 depending on fill/drain style
+        } else {
+            // Most common: drain-style (starts full, empties)
+            progress = 1.0 - (elapsed / total);
+
+            // Alternative: fill-style (starts empty, fills up)
+            // progress = elapsed / total;
+        }
+
+        // Always clamp – defense in depth
+        progress = Math.max(0.0, Math.min(1.0, progress));
+
+        ZappierGames.globalBossBar.setProgress(progress);
+
+        getLogger().info("Game state loaded from gamestate.yml");
+    }
+
+    public void autoSaveGameState() {
+        saveGameState();
+    }
 }

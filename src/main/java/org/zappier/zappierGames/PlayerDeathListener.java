@@ -37,6 +37,71 @@ public class PlayerDeathListener implements Listener {
         // Check the player's current team
         String playerTeam = getPlayerTeam(player, scoreboard);
 
+        if (gameMode > 0 && gameMode <= 5) {
+            int deathCount = Manhunt.playerDeaths.getOrDefault(player.getName().toLowerCase(), 0) + 1;
+            Manhunt.playerDeaths.put(player.getName().toLowerCase(), deathCount);
+            if (Manhunt.twists.get("Hunter Lives") && playerTeam.equals("Hunters")) {
+                if (deathCount < 3) {
+                    String livesVlife = (3 - deathCount) == 1 ? "life" : "lives";
+                    Bukkit.broadcastMessage(player.getName() + " has died and has " + (3 - deathCount) + " " + livesVlife + " left!");
+                } else {
+                    movePlayerToTeam(player, "Spectator", scoreboard);
+                    player.setGameMode(GameMode.SPECTATOR);
+                    Bukkit.broadcastMessage(player.getName() + " is out of lives and has been eliminated.");
+                }
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+                }
+            }
+
+            if (Manhunt.twists.get("Runner Lives") && (playerTeam.equals("Runners") || playerTeam.equals("President") || playerTeam.equals("Bodyguard"))) {
+                if (deathCount < 2) {
+                    String livesVlife = (2 - deathCount) == 1 ? "life" : "lives";
+                    Bukkit.broadcastMessage(player.getName() + " has died and has " + (2 - deathCount) + " " + livesVlife + " left!");
+                } else {
+                    int runnerCount = 0;
+                    if (gameMode != 2) {
+                        movePlayerToTeam(player, "Spectator", scoreboard);
+                        player.setGameMode(GameMode.SPECTATOR);
+                        Bukkit.broadcastMessage(player.getName() + " is out of lives and has been eliminated.");
+                        if (gameMode == 3) {
+                            for (Player p : Bukkit.getOnlinePlayers()) {
+                                if (getPlayerTeam(p, scoreboard).equals("President")) {
+                                    runnerCount++;
+                                }
+                            }
+                            if (Manhunt.presidentDeathLink > 0) {runnerCount = 0;}
+                            if (runnerCount == 0) {
+                                Bukkit.broadcastMessage("Game over! The hunters win!");
+                                for (Player p : Bukkit.getOnlinePlayers()) {
+                                    p.sendTitle("Hunters Win!", "The President is Dead!");
+                                    p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
+                                }
+                            }
+                        }
+                    } else {
+                        movePlayerToTeam(player, "Hunters", scoreboard);
+                        Bukkit.broadcastMessage(player.getName() + " is out of lives and has become a hunter.");
+                        Manhunt.playerDeaths.put(player.getName().toLowerCase(), 0);
+                    }
+                }
+                int runnerCount = 0;
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    if (getPlayerTeam(p, scoreboard).equals("Runners")) {
+                        runnerCount++;
+                    }
+                    p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+                }
+                if (runnerCount == 0 && gameMode != 3) {
+                    Bukkit.broadcastMessage("Game over! The hunters win!");
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.sendTitle("Hunters Win!", "All runners died!");
+                        p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
+                    }
+                }
+            }
+        }
+
         switch (gameMode) {
             case 0: // LootHunt
                 //Bukkit.broadcastMessage(player.getName() + " has died and will lose points!");
@@ -44,17 +109,30 @@ public class PlayerDeathListener implements Listener {
                 break;
 
             case 1: // Manhunt
+                if (Manhunt.twists.get("Runner Lives")) {break;}
                 if ("Runners".equals(playerTeam)) {
                     movePlayerToTeam(player, "Spectator", scoreboard);
                     Bukkit.broadcastMessage(player.getName() + " has been eliminated as a Runner!");
                     player.setGameMode(GameMode.SPECTATOR);
+                    int runnerCount = 0;
                     for (Player p : Bukkit.getOnlinePlayers()) {
+                        if (getPlayerTeam(p, scoreboard).equals("Runners")) {
+                            runnerCount++;
+                        }
                         p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+                    }
+                    if (runnerCount == 0) {
+                        Bukkit.broadcastMessage("Game over! The hunters win!");
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            p.sendTitle("Hunters Win!", "All Runners Died!");
+                            p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
+                        }
                     }
                 }
                 break;
 
             case 2: // Infection Manhunt
+                if (Manhunt.twists.get("Runner Lives")) {break;}
                 if ("Runners".equals(playerTeam)) {
                     int runnerCount = 0;
                     movePlayerToTeam(player, "Hunters", scoreboard);
@@ -76,6 +154,7 @@ public class PlayerDeathListener implements Listener {
                 break;
 
             case 3: // President Manhunt
+                if (Manhunt.twists.get("Runner Lives")) {break;}
                 if ("Bodyguard".equals(playerTeam) && Manhunt.bodyguardRespawn <= 0) {
                     movePlayerToTeam(player, "Spectator", scoreboard);
                     Bukkit.broadcastMessage(player.getName() + " has been eliminated as a Bodyguard!");

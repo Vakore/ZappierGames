@@ -23,7 +23,7 @@ public class InfinibundleListener implements Listener {
     private static final int CUSTOM_MODEL_DATA = 900009;
     private static final int SLOTS_PER_PAGE = 45;
 
-    private static final Map<String, List<ItemStack>> teamStorages = new HashMap<>();
+    public static final Map<String, List<ItemStack>> teamStorages = new HashMap<>();
     private static final Map<String, Player> viewingPlayer = new HashMap<>();
     private static final Map<String, List<ItemStack>> depositBuffers = new HashMap<>();
 

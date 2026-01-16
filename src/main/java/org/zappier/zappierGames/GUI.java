@@ -79,17 +79,48 @@ public class GUI {
                     "§7Configure random modifiers for your manhunt.", "§aClick to select."));
             inv.setItem(16, createGuiItem(Material.EMERALD, 1, "§2Start Manhunt",
                     "§7Start the game with current settings!", "§aClick to begin."));
+            inv.setItem(17, createGuiItem(Material.NETHERITE_SWORD, 1, "§6Combat Settings",
+                    "§7Toggle Lava, Beds, and Anchors.", "§aClick to configure."));
+
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));
         } else if (submenuType.equals(MANHUNT_WHEEL_MENU)) {
             inv.setItem(11, createGuiItem(Material.TNT, 1, "§cRandomize Twists!",
                     "§7Click to announce", "§7and roll random twists!", " ", "§eJust announces — no auto-roll"));
 
-            inv.setItem(13, createGuiItem(Material.COMPARATOR, 1, "§eToggle Twists (Enabled)",
+            inv.setItem(13, createGuiItem(Material.ACTIVATOR_RAIL, 1, "§eToggle Active Twists",
                     "§7Manually turn twists", "§7on/off", " ", "§aCurrent page: 1"));
 
-            inv.setItem(15, createGuiItem(Material.REPEATER, 1, "§6Toggle Rollable",
+            inv.setItem(15, createGuiItem(Material.REPEATER, 1, "§6Toggle Rollable Twists",
                     "§7Decide which twists", "§7can be randomly selected", " ", "§aCurrent page: 1"));
+
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Manhunt menu"));
+        } else if (submenuType.equals("Combat Settings")) {
+            inv.setItem(10, createGuiItem(Material.LAVA_BUCKET, 1, "§eNether Lava PvP",
+                    "§7Allow placing lava near enemies in Nether",
+                    " ",
+                    ((Manhunt.netherLavaPvP > 0) ? "§aENABLED" : "§cDISABLED"),
+                    "§aClick to toggle"));
+
+            inv.setItem(11, createGuiItem(Material.RED_BED, 1, "§eBed Bombing",
+                    "§7Allow beds to explode in Nether/End",
+                    " ",
+                    ((Manhunt.bedBombing > 0) ? "§aENABLED" : "§cDISABLED"),
+                    "§aClick to toggle"));
+
+            inv.setItem(12, createGuiItem(Material.RESPAWN_ANCHOR, 1, "§eAnchor Bombing",
+                    "§7Allow anchors to explode in Overworld/End",
+                    " ",
+                    ((Manhunt.anchorBombing > 0) ? "§aENABLED" : "§cDISABLED"),
+                    "§aClick to toggle"));
+
+
+            inv.setItem(13, createGuiItem(Material.STONE_SHOVEL, 1, "§eAllow Spears",
+                    "§7Replace spears with shovels.",
+                    " ",
+                    ((Manhunt.allowSpears > 0) ? "§aENABLED" : "§cDISABLED"),
+                    "§aClick to toggle"));
 
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to Manhunt menu"));
@@ -141,6 +172,7 @@ public class GUI {
                     "§7Green = active", "§7Red = inactive"));
 
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack"));
+            inv.setItem(18, createGuiItem(Material.REDSTONE, 1, isToggleEnabled ? "§cTurn All Off" : "§cToggle All"));
         } else if (submenuType.equals(MANHUNT_TWISTS_RANDOMIZE)) {
             inv.setItem(13, createGuiItem(Material.TNT, 1, "§c§lRANDOMIZE TWISTS!",
                     "§7Click to broadcast:", " ", "§eRandomizing twists!"));

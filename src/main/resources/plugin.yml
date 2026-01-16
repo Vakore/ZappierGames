@@ -1,5 +1,5 @@
 name: ZappierGames
-version: '1.14-SNAPSHOT'
+version: '1.15-SNAPSHOT'
 main: org.zappier.zappierGames.ZappierGames
 api-version: '1.21'
 authors: [ Vakore ]
@@ -32,7 +32,15 @@ commands:
   gui:
     description: Opens GUI
     usage: /gui
+  loadstate:
+    description: Reloads the game state from gamestate.yml (admin only)
+    usage: /<command> [confirm]
+    permission: zappiergames.loadstate
 resources:
   config.yml:
     description: Configuration file for Loot Hunt item values, door scores, and other settings
     default: config.yml
+permissions:
+  zappiergames.loadstate:
+    description: Allows reloading the game state
+    default: op
