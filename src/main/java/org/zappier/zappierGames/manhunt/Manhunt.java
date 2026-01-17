@@ -22,6 +22,7 @@ public class Manhunt {
     public static int bodyguardRespawn = -1;
     public static int bodyguardHpBonus = 0;
     public static int netherLavaPvP = -1;
+    public static int netherCobwebPvP = -1;
     public static int allowSpears = -1;
     public static int bedBombing = -1;
     public static int anchorBombing = -1;
@@ -470,7 +471,7 @@ public class Manhunt {
             }
 
 
-            if (twists.get("Armorless Runner") && playerTeam.equals("Runner") || playerTeam.equals("Runner_Suppliers") || playerTeam.equals("Bodyguard")) {
+            if (twists.get("Armorless Runner") && (playerTeam.equals("Runner") || playerTeam.equals("Runner_Suppliers") || playerTeam.equals("Bodyguard"))) {
                 preventArmor(p, "§cTwist says no armor for runners!!");
             }
 

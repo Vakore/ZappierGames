@@ -59,7 +59,59 @@ public class ManhuntEnforcement implements Listener {
 
                 event.setCancelled(true);
                 placer.sendMessage("§cNether Lava PvP is disabled");
-                // Optional: target.sendMessage("§cLava placement near you was blocked (PvP disabled)");
+                return; // No need to check further players
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onCobwebPlace(BlockPlaceEvent event) {
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) {
+            return;
+        }
+
+        // Feature is enabled -> allow cobwebs everywhere in nether
+        if (Manhunt.netherCobwebPvP > 0) {
+            return;
+        }
+
+        Player placer = event.getPlayer();
+
+        // Only care about cobweb being placed
+        if (event.getBlockPlaced().getType() != Material.COBWEB) {
+            return;
+        }
+
+        // Only in the Nether
+        if (placer.getWorld().getEnvironment() != World.Environment.NETHER) {
+            return;
+        }
+
+        // This is the block where the cobweb is actually being placed
+        Block targetBlock = event.getBlockPlaced();
+
+        // Check players near the placement location
+        double radius = 5.0;
+        Location checkCenter = targetBlock.getLocation().add(0.5, 0.5, 0.5); // center of the block
+
+        for (Entity entity : targetBlock.getWorld().getNearbyEntities(checkCenter, radius, radius, radius)) {
+            if (!(entity instanceof Player)) continue;
+
+            Player target = (Player) entity;
+            if (target.equals(placer)) continue;
+
+            // Skip teammates
+            if (DamageHandler.areOnSameTeam(placer, target)) continue;
+
+            // Only cancel if BOTH are in survival/adventure mode
+            GameMode placerMode = placer.getGameMode();
+            GameMode targetMode = target.getGameMode();
+
+            if ((placerMode == GameMode.SURVIVAL || placerMode == GameMode.ADVENTURE) &&
+                    (targetMode == GameMode.SURVIVAL  || targetMode == GameMode.ADVENTURE)) {
+
+                event.setCancelled(true);
+                placer.sendMessage("§cNether Cobweb PvP is disabled");
                 return; // No need to check further players
             }
         }

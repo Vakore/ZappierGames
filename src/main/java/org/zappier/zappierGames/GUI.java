@@ -128,6 +128,15 @@ public class GUI {
                     ((Manhunt.allowSpears > 0) ? "§aENABLED" : "§cDISABLED"),
                     "§aClick to toggle"));
 
+
+            inv.setItem(15, createGuiItem(Material.COBWEB, 1, "§eNether Cobweb PvP",
+                    "§7Allow placing cobwebs near enemies in Nether",
+                    " ",
+                    ((Manhunt.netherCobwebPvP > 0) ? "§aENABLED" : "§cDISABLED"),
+                    "§aClick to toggle"));
+
+
+
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to Manhunt menu"));
         } else if (submenuType.contains(MANHUNT_TWISTS_TOGGLE) || submenuType.contains(MANHUNT_TWISTS_ROLLABLE)) {

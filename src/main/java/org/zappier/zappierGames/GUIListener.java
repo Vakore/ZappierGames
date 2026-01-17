@@ -490,6 +490,10 @@ public class GUIListener implements Listener {
                     Manhunt.allowSpears = -Manhunt.allowSpears;
                     player.sendMessage("§eDisable Spears: " + ((Manhunt.allowSpears > 0) ? "§aEnabled" : "§cDisabled"));
                     break;
+                case 15: // Toggle Cobweb Lava
+                    Manhunt.netherCobwebPvP = -Manhunt.netherCobwebPvP;
+                    player.sendMessage("§eNether Cobweb PvP: " + ((Manhunt.netherCobwebPvP > 0) ? "§aEnabled" : "§cDisabled"));
+                    break;
                 case 26: // Back
                     gui = new GUI("Manhunt");
                     gui.open(player);

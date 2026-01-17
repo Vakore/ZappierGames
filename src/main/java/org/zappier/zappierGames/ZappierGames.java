@@ -567,6 +567,7 @@ public final class ZappierGames extends JavaPlugin {
         gameStateConfig.set("manhunt.bodyguardRespawn",     Manhunt.bodyguardRespawn);
         gameStateConfig.set("manhunt.bodyguardHpBonus",     Manhunt.bodyguardHpBonus);
         gameStateConfig.set("manhunt.netherLavaPvP",        Manhunt.netherLavaPvP);
+        gameStateConfig.set("manhunt.netherCobwebPvP",        Manhunt.netherCobwebPvP);
         gameStateConfig.set("manhunt.allowSpears",          Manhunt.allowSpears);
         gameStateConfig.set("manhunt.bedBombing",           Manhunt.bedBombing);
         gameStateConfig.set("manhunt.neverBedBomb",           Manhunt.neverBedBomb);
@@ -661,6 +662,7 @@ public final class ZappierGames extends JavaPlugin {
         Manhunt.bodyguardRespawn     = gameStateConfig.getInt("manhunt.bodyguardRespawn",     -1);
         Manhunt.bodyguardHpBonus     = gameStateConfig.getInt("manhunt.bodyguardHpBonus",     0);
         Manhunt.netherLavaPvP        = gameStateConfig.getInt("manhunt.netherLavaPvP",        -1);
+        Manhunt.netherCobwebPvP        = gameStateConfig.getInt("manhunt.netherCobwebPvP",        -1);
         Manhunt.allowSpears          = gameStateConfig.getInt("manhunt.allowSpears",          -1);
         Manhunt.bedBombing           = gameStateConfig.getInt("manhunt.bedBombing",           -1);
         Manhunt.neverBedBomb           = gameStateConfig.getInt("manhunt.neverBedBomb",           -1);
