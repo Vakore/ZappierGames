@@ -1,5 +1,5 @@
 name: ZappierGames
-version: '1.17-SNAPSHOT'
+version: '1.18-SNAPSHOT'
 main: org.zappier.zappierGames.ZappierGames
 api-version: '1.21'
 authors: [ Vakore ]
@@ -36,6 +36,10 @@ commands:
     description: Reloads the game state from gamestate.yml (admin only)
     usage: /<command> [confirm]
     permission: zappiergames.loadstate
+  getinfinibundle:
+    description: Gives you a new Infinibundle for your team in case you lose yours.
+    usage: /getinfinibundle
+    permission: zappiergames.getinfinibundle
 resources:
   config.yml:
     description: Configuration file for Loot Hunt item values, door scores, and other settings

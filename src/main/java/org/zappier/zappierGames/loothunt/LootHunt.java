@@ -232,14 +232,21 @@ public class LootHunt {
     }
 
     public static void endGame() {
-        if (noPvP) {playerKillCounts.clear();}
+        if (noPvP) {
+            playerKillCounts.clear();
+        }
         ZappierGames.globalBossBar.removeAll();
         ZappierGames.gameMode = -1;
 
-        Map<String, Map<String, Double>> teamItemCounts = new HashMap<>();
-        Map<String, List<PlayerResult>> teamPlayers = new HashMap<>();
-        Map<String, Map<String, List<ItemEntry>>> teamStorages = new HashMap<>();
+        ItemValueActionBarListener.clearTracking();
 
+        // 1. Setup data structures
+        Map<String, List<PlayerResult>> teamPlayers = new HashMap<>();
+        Map<String, Map<String, Double>> teamItemCounts = new HashMap<>();
+        Map<String, Map<String, List<ItemEntry>>> teamStorages = new HashMap<>();
+        Set<String> teamsWithStorageProcessed = new HashSet<>();
+
+        // 2. Process Players (Personal Inventories & Storage)
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.sendTitle(ChatColor.YELLOW + "Game Finished!", "", 10, 70, 20);
             p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.5f);
@@ -248,68 +255,85 @@ public class LootHunt {
                     ? p.getScoreboard().getEntryTeam(p.getName()).getName()
                     : "(Solo) " + p.getName();
 
-            // Personal inventory
+            // Process personal inventory
             Map<String, List<ItemEntry>> personalInv = new HashMap<>();
             processContainer(personalInv, Arrays.asList(p.getInventory().getContents()), "Inventory");
 
-            // Team storage
-            List<ItemStack> teamStorageItems = InfinibundleListener.getTeamStorage(teamName);
-            Map<String, List<ItemEntry>> teamStorage = new HashMap<>();
-            processContainer(teamStorage, teamStorageItems, "Team Storage");
+            double personalScore = personalInv.values().stream()
+                    .flatMap(List::stream)
+                    .mapToDouble(e -> e.points)
+                    .sum();
 
-            // Combined for team counts
-            Map<String, List<ItemEntry>> combined = new HashMap<>(personalInv);
-            teamStorage.forEach((k, v) -> combined.merge(k, v, (a, b) -> {
-                a.addAll(b);
-                return a;
-            }));
-
-            Map<String, Double> teamScores = teamItemCounts.computeIfAbsent(teamName, k -> new HashMap<>());
-            for (Map.Entry<String, List<ItemEntry>> entry : combined.entrySet()) {
-                double totalPoints = entry.getValue().stream().mapToDouble(e -> e.points).sum();
-                teamScores.merge(entry.getKey(), totalPoints, Double::sum);
-            }
-
-            // Kills
-            int killCount = playerKillCounts.getOrDefault(p.getName().toUpperCase(), 0);
-            int oldKillCount = killCount;
-            double killValue = baseKillPoints;
-            double addScore = 0.0;
-            while (killCount > 0 && killValue > 1) {
-                addScore += killValue;
-                killCount--;
-                killValue /= pointsReductionFactor;
-            }
-            Bukkit.broadcast(Component.text(p.getName() + " got " + oldKillCount + " kills, earning " + addScore + " points for team " + teamName, NamedTextColor.YELLOW));
-            teamScores.put("kills", teamScores.getOrDefault("kills", 0.0) + addScore);
-
-            // Deaths
-            int deathCount = playerDeathCounts.getOrDefault(p.getName().toUpperCase(), 0);
-            int oldDeathCount = deathCount;
-            double deathValue = baseDeathPoints;
-            addScore = 0.0;
-            while (deathCount > 0 && deathValue > 1) {
-                addScore -= deathValue;
-                deathCount--;
-                deathValue /= pointsReductionFactor;
-            }
-            Bukkit.broadcast(Component.text(p.getName() + " got " + oldDeathCount + " deaths, losing " + Math.abs(addScore) + " points for team " + teamName, NamedTextColor.YELLOW));
-            teamScores.put("deaths", teamScores.getOrDefault("deaths", 0.0) + addScore);
-
-            // Store player result
+            // Create PlayerResult record
             PlayerResult pr = new PlayerResult();
             pr.name = p.getName();
             pr.uuid = p.getUniqueId().toString();
-            pr.kills = oldKillCount;
-            pr.deaths = oldDeathCount;
+            pr.kills = playerKillCounts.getOrDefault(p.getName().toUpperCase(), 0);
+            pr.deaths = playerDeathCounts.getOrDefault(p.getName().toUpperCase(), 0);
             pr.personalInventory = personalInv;
-            pr.personalScore = personalInv.values().stream().flatMap(List::stream).mapToDouble(e -> e.points).sum();
-            pr.inventoryContents = p.getInventory().getContents(); // For visual
+            pr.personalScore = personalScore;
+            pr.inventoryContents = p.getInventory().getContents();
 
             teamPlayers.computeIfAbsent(teamName, k -> new ArrayList<>()).add(pr);
-            teamStorages.put(teamName, teamStorage);
+
+            // Process Shared Team Storage ONCE per team
+            Map<String, Double> teamScores = teamItemCounts.computeIfAbsent(teamName, k -> new HashMap<>());
+
+            if (!teamsWithStorageProcessed.contains(teamName)) {
+                List<ItemStack> teamStorageItems = InfinibundleListener.getTeamStorage(teamName);
+                Map<String, List<ItemEntry>> storageResults = new HashMap<>();
+                processContainer(storageResults, teamStorageItems, "Team Storage");
+
+                // Add storage points to team total
+                for (Map.Entry<String, List<ItemEntry>> entry : storageResults.entrySet()) {
+                    double totalPoints = entry.getValue().stream().mapToDouble(e -> e.points).sum();
+                    teamScores.merge(entry.getKey(), totalPoints, Double::sum);
+                }
+
+                teamStorages.put(teamName, storageResults);
+                teamsWithStorageProcessed.add(teamName);
+            }
         }
 
+        // 3. Add personal inventories + kills/deaths to team totals
+        for (Map.Entry<String, List<PlayerResult>> entry : teamPlayers.entrySet()) {
+            String teamName = entry.getKey();
+            Map<String, Double> teamScores = teamItemCounts.get(teamName);
+
+            for (PlayerResult pr : entry.getValue()) {
+                // Add personal items to team score
+                for (Map.Entry<String, List<ItemEntry>> invEntry : pr.personalInventory.entrySet()) {
+                    double totalPoints = invEntry.getValue().stream().mapToDouble(e -> e.points).sum();
+                    teamScores.merge(invEntry.getKey(), totalPoints, Double::sum);
+                }
+
+                // Kills Calculation
+                int killCount = pr.kills;
+                double killValue = baseKillPoints;
+                double killScore = 0.0;
+                while (killCount > 0 && killValue > 1) {
+                    killScore += killValue;
+                    killCount--;
+                    killValue /= pointsReductionFactor;
+                }
+                teamScores.merge("kills", killScore, Double::sum);
+                Bukkit.broadcast(Component.text(pr.name + " got " + pr.kills + " kills, earning " + String.format("%.1f", killScore) + " points for team " + teamName, NamedTextColor.YELLOW));
+
+                // Deaths Calculation
+                int deathCount = pr.deaths;
+                double deathValue = baseDeathPoints;
+                double deathScore = 0.0;
+                while (deathCount > 0 && deathValue > 1) {
+                    deathScore -= deathValue;
+                    deathCount--;
+                    deathValue /= pointsReductionFactor;
+                }
+                teamScores.merge("deaths", deathScore, Double::sum);
+                Bukkit.broadcast(Component.text(pr.name + " got " + pr.deaths + " deaths, losing " + Math.abs(deathScore) + " points for team " + teamName, NamedTextColor.YELLOW));
+            }
+        }
+
+        // 4. Final Broadcast & Collection Bonuses
         Bukkit.broadcast(Component.text("=======================", NamedTextColor.GREEN));
         Bukkit.broadcast(Component.text("        RESULTS        ", NamedTextColor.GREEN));
         Bukkit.broadcast(Component.text("=======================", NamedTextColor.GREEN));
@@ -317,10 +341,10 @@ public class LootHunt {
         for (Map.Entry<String, Map<String, Double>> teamEntry : teamItemCounts.entrySet()) {
             String teamName = teamEntry.getKey();
             Map<String, Double> items = teamEntry.getValue();
-            double totalScore = items.values().stream().mapToDouble(Double::doubleValue).sum();
 
-            Bukkit.broadcast(Component.text(teamName + ": " + String.format("%.1f", totalScore), NamedTextColor.YELLOW));
-            // Collection bonuses
+            double totalScore = items.values().stream().mapToDouble(Double::doubleValue).sum();
+            List<Component> collectionLines = new ArrayList<>();
+
             for (Collection coll : collections.values()) {
                 long uniqueCollected = coll.items.stream()
                         .filter(items::containsKey)
@@ -328,29 +352,27 @@ public class LootHunt {
 
                 if ("progressive".equals(coll.type)) {
                     int count = (int) uniqueCollected;
-                    if (!coll.progressiveScores.isEmpty()) {
-                        int bonus = 0;
-                        if (count > 0) {
-                            bonus = coll.progressiveScores.get(Math.min(count - 1, coll.progressiveScores.size() - 1));
-                        }
-                        totalScore += bonus;
-
-                        Component hover = Component.text("Collected " + coll.name + ":", NamedTextColor.AQUA)
-                                .append(Component.newline()).append(Component.newline());
-                        for (String item : coll.items) {
-                            boolean has = items.containsKey(item);
-                            hover = hover.append(Component.text((has ? "✓ " : "✗ ") + item, has ? NamedTextColor.GREEN : NamedTextColor.RED))
-                                    .append(Component.newline());
-                        }
-
-                        Bukkit.broadcast(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.items.size(), NamedTextColor.GRAY)
-                                .append(Component.text(" (+" + bonus + " bonus)", NamedTextColor.GREEN))
-                                .hoverEvent(HoverEvent.showText(hover)));
+                    int bonus = 0;
+                    if (count > 0 && !coll.progressiveScores.isEmpty()) {
+                        bonus = coll.progressiveScores.get(Math.min(count - 1, coll.progressiveScores.size() - 1));
                     }
-                } else { // complete
+                    totalScore += bonus;
+
+                    Component hover = Component.text("Collected " + coll.name + ":", NamedTextColor.AQUA)
+                            .append(Component.newline()).append(Component.newline());
+                    for (String item : coll.items) {
+                        boolean has = items.containsKey(item);
+                        hover = hover.append(Component.text((has ? "✓ " : "✗ ") + item, has ? NamedTextColor.GREEN : NamedTextColor.RED))
+                                .append(Component.newline());
+                    }
+
+                    collectionLines.add(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.items.size(), NamedTextColor.GRAY)
+                            .append(Component.text(" (+" + bonus + " bonus)", NamedTextColor.GREEN))
+                            .hoverEvent(HoverEvent.showText(hover)));
+                } else {
                     if (uniqueCollected >= coll.items.size()) {
                         totalScore += coll.completeBonus;
-                        Bukkit.broadcast(Component.text("  " + coll.name + ": COMPLETE (+" + coll.completeBonus + " bonus)", NamedTextColor.GREEN));
+                        collectionLines.add(Component.text("  " + coll.name + ": COMPLETE (+" + coll.completeBonus + " bonus)", NamedTextColor.GREEN));
                     } else {
                         Component hover = Component.text("Collected " + coll.name + ":", NamedTextColor.AQUA)
                                 .append(Component.newline()).append(Component.newline());
@@ -359,18 +381,23 @@ public class LootHunt {
                             hover = hover.append(Component.text((has ? "✓ " : "✗ ") + item, has ? NamedTextColor.GREEN : NamedTextColor.RED))
                                     .append(Component.newline());
                         }
-
-                        Bukkit.broadcast(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.items.size(), NamedTextColor.GRAY)
+                        collectionLines.add(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.items.size(), NamedTextColor.GRAY)
                                 .hoverEvent(HoverEvent.showText(hover)));
                     }
                 }
+            }
+
+            Bukkit.broadcast(Component.text(teamName + ": " + String.format("%.1f", totalScore), NamedTextColor.YELLOW));
+            for (Component line : collectionLines) {
+                Bukkit.broadcast(line);
             }
         }
 
         Bukkit.broadcast(Component.text("=======================", NamedTextColor.GREEN));
 
-        // Generate HTML
-        generateResultsHTML(teamItemCounts, teamPlayers, teamStorages);
+        // 5. Generate final HTML report
+        long seed = Bukkit.getWorlds().getFirst().getSeed();
+        generateResultsHTML(teamItemCounts, teamPlayers, teamStorages, seed);
     }
 
     public static String buildCollectionTooltip(Collection coll, Map<String, Double> items) {
@@ -550,7 +577,9 @@ public class LootHunt {
                     Component.text("R-CLICK: open team inventory", NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
                     Component.text("L-CLICK (cursor): put item inside", NamedTextColor.GRAY)
-                            .decoration(TextDecoration.ITALIC, false)
+                            .decoration(TextDecoration.ITALIC, false),
+                    Component.text("SHIFT + L-CLICK: put inventory inside", NamedTextColor.GRAY)
+                            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
             ));
             meta.setCustomModelData(900009);
 

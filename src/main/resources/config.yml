@@ -161,10 +161,7 @@ collections:
 
 # Shulker box colors for starting items (use valid Minecraft 1.21.11 material names)
 shulker-colors:
-  - BLUE_SHULKER_BOX
   - RED_SHULKER_BOX
-  - GREEN_SHULKER_BOX
-  - YELLOW_SHULKER_BOX
   - PURPLE_SHULKER_BOX
 
 # Item values for Loot Hunt scoring
@@ -205,7 +202,7 @@ item-values:
   GLOWSTONE: 4
   GLOWSTONE_DUST: 1
   LODESTONE: 1
-  AMETHYST_SHARD: 7
+  AMETHYST_SHARD: 2
   WITHER_SKELETON_SKULL: 300
   TRIDENT: 250
   ENDER_PEARL: 10
@@ -220,7 +217,7 @@ item-values:
   FEATHER: 2
   SPONGE: 20
   WET_SPONGE: 20
-  GOLDEN_APPLE: 20
+  GOLDEN_APPLE: 24
   ENCHANTED_GOLDEN_APPLE: 200
   IRON_HORSE_ARMOR: 25
   GOLDEN_HORSE_ARMOR: 25
@@ -251,7 +248,7 @@ item-values:
   CHAINMAIL_CHESTPLATE: 30
   CHAINMAIL_LEGGINGS: 25
   CHAINMAIL_BOOTS: 10
-  ENCHANTED_BOOK: 5
+  ENCHANTED_BOOK: 1
   MUSIC_DISC_13: 10
   MUSIC_DISC_CAT: 10
   MUSIC_DISC_BLOCKS: 25
@@ -437,6 +434,9 @@ item-values:
   AMETHYST_CLUSTER: 30
   BLAZE_ROD: 5
   HONEYCOMB: 3
+  ARROW: 0.5
+  CAKE: 10
+  SEA LANTERN: 20
 
 # Kill and death points
 pvp:
@@ -469,10 +469,10 @@ custom-pearls:
 
 # Enchantment scoring
 enchantments:
-  points-per-tier: 4
+  points-per-tier: 3
   special-enchantments:
-    MENDING: 15
-    FROST_WALKER: 15
+    MENDING: 11.3
+    FROST_WALKER: 11.3
     WIND_BURST: 100
 
 # Potion values for Loot Hunt scoring

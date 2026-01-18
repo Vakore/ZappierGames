@@ -5,9 +5,11 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -316,5 +318,67 @@ public class InfinibundleListener implements Listener {
         for (ItemStack item : storage) mergeIntoStorage(compressed, item.clone());
         storage.clear();
         storage.addAll(compressed);
+    }
+
+
+
+    @EventHandler
+    public void onQuickDepositShiftLeftClick(PlayerInteractEvent event) {
+        if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
+        if (!event.getPlayer().isSneaking()) return;
+
+        ItemStack held = event.getItem();
+        if (held == null || !isInfinibundle(held)) return;
+
+        event.setCancelled(true);
+
+        Player p = event.getPlayer();
+        String team = getTeamName(p);
+
+        if (viewingPlayer.containsKey(team) && viewingPlayer.get(team) != p) {
+            p.sendMessage(Component.text("Team storage is currently in use by another player!", NamedTextColor.RED));
+            return;
+        }
+
+        // ──────────────────────────────────────────────
+        // Decide target — same logic as normal deposit (cursor → bundle)
+        // ──────────────────────────────────────────────
+        final List<ItemStack> target;
+        final boolean usingBuffer = viewingPlayer.containsKey(team);
+
+        if (usingBuffer) {
+            target = depositBuffers.computeIfAbsent(team, k -> new ArrayList<>());
+        } else {
+            target = getTeamStorage(team);
+        }
+
+        int count = 0;
+
+        for (int i = 9; i <= 35; i++) {
+            ItemStack item = p.getInventory().getItem(i);
+            if (item == null || item.getType().isAir()) continue;
+
+            mergeIntoStorage(target, item.clone());
+            p.getInventory().setItem(i, null);
+            count++;
+        }
+
+        if (count == 0) {
+            p.sendActionBar(Component.text("Nothing to deposit", NamedTextColor.GRAY));
+            return;
+        }
+
+        // Only compress when it makes sense
+        compressStorage(target);
+
+        // Feedback
+        p.playSound(p.getLocation(), Sound.ITEM_BUNDLE_REMOVE_ONE, 0.9f, 1.15f);
+        p.sendActionBar(Component.text()
+                .append(Component.text("Deposited ", NamedTextColor.GREEN))
+                .append(Component.text(count, NamedTextColor.YELLOW))
+                .append(Component.text(" stacks → Team Storage", NamedTextColor.GREEN)));
+
+        // If someone is viewing (including possibly self), they will see update on next page change / reopen
+        // But when no one views → change is immediately visible on next open (which is what you want)
     }
 }

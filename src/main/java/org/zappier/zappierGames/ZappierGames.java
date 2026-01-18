@@ -125,6 +125,9 @@ public final class ZappierGames extends JavaPlugin {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(ChatColor.RED + "Only players can use this command!");
                 return true;
+            } else if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) {
+                sender.sendMessage(ChatColor.RED + "Only usable during manhunts!");
+                return true;
             }
 
             Player player = (Player) sender;
@@ -182,6 +185,9 @@ public final class ZappierGames extends JavaPlugin {
             return Collections.emptyList();
         }
     }
+
+
+
     public class LoadStateCommand implements TabExecutor {
 
         @Override
@@ -218,6 +224,113 @@ public final class ZappierGames extends JavaPlugin {
                 return Collections.singletonList("confirm");
             }
             return Collections.emptyList();
+        }
+    }
+
+    public class GetInfinibundleCommand implements TabExecutor {
+
+        @Override
+        public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ChatColor.RED + "Only players can use this command!");
+                return true;
+            }
+
+            // Optional: restrict to admins / ops (uncomment if desired)
+            // if (!player.hasPermission("zappiergames.getinfinibundle") && !player.isOp()) {
+            //     player.sendMessage(ChatColor.RED + "You don't have permission to get an Infinibundle!");
+            //     return true;
+            // }
+
+            String teamName = getTeamName(player);
+            NamedTextColor teamColor = getTeamColor(teamName); // We'll define this helper
+
+            ItemStack infinibundle = createInfinibundle(teamName, teamColor);
+
+            // Give to player (with overflow handling)
+            HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(infinibundle);
+            if (!leftovers.isEmpty()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), leftovers.get(0));
+                player.sendMessage(Component.text("Your inventory was full! Infinibundle dropped on the ground.", NamedTextColor.YELLOW));
+            }
+
+            player.sendMessage(Component.text()
+                    .append(Component.text("You received an ", NamedTextColor.GREEN))
+                    .append(Component.text("Infinibundle", teamColor))
+                    .append(Component.text(" for team: ", NamedTextColor.GREEN))
+                    .append(Component.text(teamName, teamColor))
+            );
+
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.9f, 1.2f);
+
+            return true;
+        }
+
+        @Override
+        public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+            return Collections.emptyList();
+        }
+
+        // Helper: Get team name (same as in InfinibundleListener)
+        private String getTeamName(Player player) {
+            Team team = player.getScoreboard().getEntryTeam(player.getName());
+            return team != null ? team.getName() : "(Solo) " + player.getName();
+        }
+
+        // Helper: Get color based on team name (adjust as needed)
+        private NamedTextColor getTeamColor(String teamName) {
+            String lower = teamName.toLowerCase(Locale.ROOT);
+            if (lower.contains("hunter") || lower.contains("red"))     return NamedTextColor.RED;
+            if (lower.contains("runner") || lower.contains("green"))   return NamedTextColor.GREEN;
+            if (lower.contains("president"))                           return NamedTextColor.GOLD;
+            if (lower.contains("bodyguard"))                           return NamedTextColor.DARK_AQUA;
+            if (lower.contains("spectator"))                           return NamedTextColor.GRAY;
+            return NamedTextColor.WHITE; // default
+        }
+
+        // Main bundle creation logic (copied/adapted from your existing code)
+        private ItemStack createInfinibundle(String teamName, NamedTextColor teamTextColor) {
+            Material bundleMaterial = Material.BUNDLE;
+            String lowerTeam = teamName.toLowerCase(Locale.ROOT);
+
+            // Your existing color detection logic
+            if (lowerTeam.contains("black"))      bundleMaterial = Material.BLACK_BUNDLE;
+            else if (lowerTeam.contains("red"))   bundleMaterial = Material.RED_BUNDLE;
+            else if (lowerTeam.contains("green")) bundleMaterial = Material.GREEN_BUNDLE;
+            else if (lowerTeam.contains("brown")) bundleMaterial = Material.BROWN_BUNDLE;
+            else if (lowerTeam.contains("blue"))  bundleMaterial = Material.BLUE_BUNDLE;
+            else if (lowerTeam.contains("purple")) bundleMaterial = Material.PURPLE_BUNDLE;
+            else if (lowerTeam.contains("cyan"))  bundleMaterial = Material.CYAN_BUNDLE;
+            else if (lowerTeam.contains("gray"))  bundleMaterial = Material.GRAY_BUNDLE;
+            else if (lowerTeam.contains("pink"))  bundleMaterial = Material.PINK_BUNDLE;
+            else if (lowerTeam.contains("lime"))  bundleMaterial = Material.LIME_BUNDLE;
+            else if (lowerTeam.contains("yellow")) bundleMaterial = Material.YELLOW_BUNDLE;
+            else if (lowerTeam.contains("light_blue")) bundleMaterial = Material.LIGHT_BLUE_BUNDLE;
+            else if (lowerTeam.contains("magenta")) bundleMaterial = Material.MAGENTA_BUNDLE;
+            else if (lowerTeam.contains("orange")) bundleMaterial = Material.ORANGE_BUNDLE;
+            else if (lowerTeam.contains("white")) bundleMaterial = Material.WHITE_BUNDLE;
+
+            ItemStack infinibundle = new ItemStack(bundleMaterial);
+
+            ItemMeta meta = infinibundle.getItemMeta();
+            if (meta != null) {
+                meta.displayName(Component.text("Infinibundle", teamTextColor)
+                        .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
+
+                meta.lore(List.of(
+                        Component.text("R-CLICK: open team inventory", NamedTextColor.GRAY)
+                                .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false),
+                        Component.text("L-CLICK (cursor): put item inside", NamedTextColor.GRAY)
+                                .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false),
+                        Component.text("SHIFT + L-CLICK: put inventory inside", NamedTextColor.GRAY)
+                                .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
+                ));
+
+                meta.setCustomModelData(900009);
+                infinibundle.setItemMeta(meta);
+            }
+
+            return infinibundle;
         }
     }
 
@@ -272,6 +385,8 @@ public final class ZappierGames extends JavaPlugin {
         this.getCommand("GUI").setExecutor(new openGUICommand());
         this.getCommand("loadstate").setExecutor(new LoadStateCommand());
         this.getCommand("loadstate").setTabCompleter(new LoadStateCommand());
+        this.getCommand("getinfinibundle").setExecutor(new GetInfinibundleCommand());
+        this.getCommand("getinfinibundle").setTabCompleter(new GetInfinibundleCommand());
 
         // Register events
         getServer().getPluginManager().registerEvents(new LootHuntKillListener(), this);
@@ -286,6 +401,7 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CompassTrackerListener(this), this);
         getServer().getPluginManager().registerEvents(new TrackerGUIListener(this), this);
         getServer().getPluginManager().registerEvents(new ManhuntEnforcement(), this);
+        getServer().getPluginManager().registerEvents(new ItemValueActionBarListener(), this);
 
         // Team colors
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();

@@ -102,7 +102,8 @@ public class LootHuntScorePage {
 
     public static void generateResultsHTML(Map<String, Map<String, Double>> teamItemCounts,
                                            Map<String, List<LootHunt.PlayerResult>> teamPlayers,
-                                           Map<String, Map<String, List<LootHunt.ItemEntry>>> teamStorages) {
+                                           Map<String, Map<String, List<LootHunt.ItemEntry>>> teamStorages,
+                                           long worldSeed) {
 
         String timestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         File htmlFile = new File(ZappierGames.getInstance().getDataFolder(),
@@ -146,12 +147,14 @@ public class LootHuntScorePage {
                 .append("        .slot img { width: 32px; height: 32px; }\n")
                 .append("        .slot span { position: absolute; bottom: 0; right: 0; color: white; text-shadow: 1px 1px black; font-size: 0.8em; }\n")
                 .append("        .armor-slots { display: grid; grid-template-columns: 32px; gap: 2px; }\n")
+                .append("        .seed-info { text-align: center; color: #aaaaff; font-size: 0.95em; margin-top: 5px; }\n")
                 .append("        .offhand-slot { width: 32px; height: 32px; }\n")
                 .append("    </style>\n")
                 .append("</head>\n")
                 .append("<body>\n")
                 .append("    <h1>Loot Hunt Results</h1>\n")
-                .append("    <p style=\"text-align:center\">Game finished at ").append(escapeHtml(timestamp)).append("</p>\n");
+                .append("    <p style=\"text-align:center\">Game finished at ").append(escapeHtml(timestamp)).append("</p>\n")
+                .append("    <p class=\"seed-info\">World Seed: ").append(worldSeed).append("</p>\n");
 
         List<Map.Entry<String, Map<String, Double>>> sortedTeams = teamItemCounts.entrySet().stream()
                 .sorted((a, b) -> Double.compare(
