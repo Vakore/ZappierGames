@@ -409,7 +409,7 @@ public class Manhunt {
             }
 
             //TWISTS
-            if (twists.get("Picky Eaters")) {
+            /*if (twists.get("Picky Eaters")) {
                 for (ItemStack item : p.getInventory().getContents()) {
                     if (item == null || item.getType() == Material.AIR) continue;
 
@@ -418,7 +418,7 @@ public class Manhunt {
                         p.getInventory().remove(item);
                     }
                 }
-            }
+            }*/
 
             if (funtimer % (20 * 10) == 0 && twists.get("TNT Run")) {
                 Location loc = p.getLocation();

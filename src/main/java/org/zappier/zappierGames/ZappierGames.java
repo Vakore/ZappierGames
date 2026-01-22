@@ -705,17 +705,29 @@ public final class ZappierGames extends JavaPlugin {
         gameStateConfig.createSection("loothunt.playerKillCounts", LootHunt.playerKillCounts);
         gameStateConfig.createSection("loothunt.playerDeathCounts", LootHunt.playerDeathCounts);
 
-        // Infinibundle teamStorages (now persisted with ItemStack serialization)
-        for (Map.Entry<String, List<ItemStack>> entry : InfinibundleListener.teamStorages.entrySet()) {
-            List<Map<String, Object>> serializedItems = new ArrayList<>();
-            for (ItemStack item : entry.getValue()) {
-                if (item != null) {
-                    serializedItems.add(item.serialize());
-                } else {
-                    serializedItems.add(null); // Handle null items if possible, though rare
+        gameStateConfig.set("infinibundle.teamStorages", null);
+
+        // Only re-create for teams that currently have data
+        if (!InfinibundleListener.teamStorages.isEmpty()) {
+            for (Map.Entry<String, List<ItemStack>> entry : InfinibundleListener.teamStorages.entrySet()) {
+                String teamKey = entry.getKey();
+                List<ItemStack> items = entry.getValue();
+
+                List<Map<String, Object>> serializedItems = new ArrayList<>();
+                for (ItemStack item : items) {
+                    if (item != null) {
+                        serializedItems.add(item.serialize());
+                    } else {
+                        serializedItems.add(null);
+                    }
                 }
+
+                gameStateConfig.set("infinibundle.teamStorages." + teamKey, serializedItems);
             }
-            gameStateConfig.set("infinibundle.teamStorages." + entry.getKey(), serializedItems);
+
+            getLogger().info("Saved " + InfinibundleListener.teamStorages.size() + " active team storages");
+        } else {
+            getLogger().info("No active team storages to save - section cleared");
         }
 
         // ZappierGames main fields

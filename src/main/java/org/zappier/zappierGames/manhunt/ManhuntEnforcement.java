@@ -10,11 +10,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.zappier.zappierGames.DamageHandler;
 import org.zappier.zappierGames.ZappierGames;
 import org.zappier.zappierGames.manhunt.Manhunt;
 import org.bukkit.event.block.BlockPlaceEvent;
+
+import java.util.stream.Collectors;
 
 public class ManhuntEnforcement implements Listener {
 
@@ -208,6 +211,40 @@ public class ManhuntEnforcement implements Listener {
                     return; // Stop after first valid enemy found
                 }
             }
+        }
+    }
+
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerConsumeItem(PlayerItemConsumeEvent event) {
+        Player player = event.getPlayer();
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) {
+            return;
+        }
+
+        if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) {
+            return;
+        }
+
+        if (!Manhunt.twists.getOrDefault("Picky Eaters", false)) {
+            return;
+        }
+
+        if (Manhunt.allowedFoods.isEmpty() || Manhunt.allowedFoods.size() != 5) {
+            return;
+        }
+
+        Material consumedType = event.getItem().getType();
+
+        if (!consumedType.isEdible()) {
+            return;
+        }
+
+        if (!Manhunt.allowedFoods.contains(consumedType)) {
+            event.setCancelled(true);
+
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.9f, 1.0f);
+            player.sendActionBar(ChatColor.RED + "Picky Eaters: that food is not allowed!");
         }
     }
 }
