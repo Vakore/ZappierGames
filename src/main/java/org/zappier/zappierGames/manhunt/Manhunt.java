@@ -1,6 +1,9 @@
 package org.zappier.zappierGames.manhunt;
 
 import org.bukkit.*;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
+import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
@@ -32,6 +35,10 @@ public class Manhunt {
     public static HashMap<String, Integer> playerDeaths = new HashMap<>();
     public static int funtimer = 0;
 
+    public static List<String> sideQuestAdvancementIds = new ArrayList<>();
+    public static List<String> sideQuestAdvancementDisplays = new ArrayList<>();
+    public static Set<String> completedSideQuests = new HashSet<>();
+
     public static class manhuntTwist {
         public String name;
         public String desc1;
@@ -60,7 +67,7 @@ public class Manhunt {
             new manhuntTwist(Material.DIAMOND_SWORD, "Axeless and Shieldless", "Combat is limited to swords", "and basic blocking."),
             new manhuntTwist(Material.IRON_AXE, "Axeless", "Axes are disabled for", "all players."),
             new manhuntTwist(Material.TOTEM_OF_UNDYING, "Hunter Lives", "Hunters have 3 lives.", "Game ends when all are lost."),
-            //new manhuntTwist(Material.KNOWLEDGE_BOOK, "Hidden Advancements", "Advancement popups are", "hidden from the chat."),
+            new manhuntTwist(Material.KNOWLEDGE_BOOK, "Hidden Advancements", "Advancement popups are", "hidden from the chat."),
             new manhuntTwist(Material.PLAYER_HEAD, "Runner Lives", "The runner has 2 lives", "instead of just one."),
             new manhuntTwist(Material.CHEST, "Keep Inventory", "Players keep their items", "and XP upon death."),
             new manhuntTwist(Material.SUGAR, "Speed IV", "Everyone has permanent", "Speed IV effect."),
@@ -85,8 +92,9 @@ public class Manhunt {
             new manhuntTwist(Material.TNT, "TNT Run", "TNT spawns at your", "feet every 10 seconds."),
             new manhuntTwist(Material.LEATHER_CHESTPLATE, "Armorless Runner", "The runner is not", "allowed to wear armor."),
             new manhuntTwist(Material.ENDER_EYE, "Sixth Sense", "Runners can also track", "hunters with a compass."),
-            //new manhuntTwist(Material.WRITABLE_BOOK, "Side Quest", "Runner must complete 4", "random advancements to win."),
-            new manhuntTwist(Material.COOKED_BEEF, "Picky Eaters", "You can only eat 5", "specific random foods.")
+            new manhuntTwist(Material.WRITABLE_BOOK, "Side Quest", "Runner must complete 4", "random advancements to win."),
+            new manhuntTwist(Material.COOKED_BEEF, "Picky Eaters", "You can only eat 5", "specific random foods."),
+            new manhuntTwist(Material.SPIDER_EYE, "Toxic Waters", "If your head is in water,", "get poisoned.")
     };
 
     public static void giveKit(Player p) {
@@ -191,6 +199,16 @@ public class Manhunt {
             p.clearActivePotionEffects();
             p.setCollidable(true);
 
+            Iterator<Advancement> it = Bukkit.advancementIterator();
+            while (it.hasNext()) {
+                Advancement advancement = it.next();
+                AdvancementProgress progress = p.getAdvancementProgress(advancement);
+
+                for (String criteria : progress.getAwardedCriteria()) {
+                    progress.revokeCriteria(criteria);
+                }
+            }
+
             switch (ZappierGames.gameMode) {
                 case 1:
                     p.sendTitle(ChatColor.RED + "Manhunt", ChatColor.RED + "Beat the game, or die trying.");
@@ -232,6 +250,196 @@ public class Manhunt {
             netherLavaPvP = 1;
             anchorBombing = 1;
             bedBombing = 1;
+        }
+
+        // Side Quest twist setup
+        sideQuestAdvancementIds.clear();
+        sideQuestAdvancementDisplays.clear();
+        completedSideQuests.clear();
+
+        if (twists.get("Side Quest")) {
+        // Parallel lists: IDs must match display names in order
+            List<String> possibleIds = Arrays.asList(
+                    "minecraft:story/upgrade_tools",                    // Getting an Upgrade
+                    "minecraft:story/smelt_iron",                       // Acquire Hardware
+                    "minecraft:story/obtain_armor",                     // Suit Up
+                    "minecraft:story/lava_bucket",                      // Hot Stuff
+                    "minecraft:story/iron_tools",                        // Isn't It Iron Pick
+                    "minecraft:story/deflect_arrow",                    // Not Today, Thank You
+                    "minecraft:story/form_obsidian",                    // Ice Bucket Challenge
+                    "minecraft:story/mine_diamond",                     // Diamonds!
+                    "minecraft:story/shiny_gear",                       // Cover Me With Diamonds
+                    "minecraft:story/enchant_item",                     // Enchanter
+                    "minecraft:story/cure_zombie_villager",             // Zombie Doctor
+                    "minecraft:nether/return_to_sender",                // Return to Sender
+                    "minecraft:nether/find_bastion",                    // Those Were the Days
+                    "minecraft:nether/explore_nether",                  // Hot Tourist Destinations
+                    "minecraft:nether/obtain_crying_obsidian",          // Who is Cutting Onions?
+                    "minecraft:nether/obtain_blaze_rod",                // Oh Shiny
+                    "minecraft:nether/ride_strider",                    // This Boat Has Legs
+                    "minecraft:nether/uneasy_alliance",                 // Uneasy Alliance
+                    "minecraft:nether/war_pigs",                        // War Pigs
+                    "minecraft:nether/netherite_armor",                 // Cover Me in Debris
+                    "minecraft:adventure/spooky_scary_skeleton",        // Spooky Scary Skeleton
+                    "minecraft:nether/charge_respawn_anchor",                   // Not Quite "Nine" Lives
+                    "minecraft:nether/obtain_ancient_debris",           // Hidden in the Depths
+                    "minecraft:nether/summon_wither",                   // Withering Heights
+                    "minecraft:nether/brew_potion",                     // Local Brewery
+                    "minecraft:nether/create_beacon",                   // Bring Home the Beacon
+                    "minecraft:end/dragon_breath",                      // You Need a Mint
+                    "minecraft:end/find_end_city",                      // The City at the End of the Game
+                    "minecraft:end/elytra",                             // Sky's the Limit
+                    "minecraft:end/levitate",                           // Great View From Up Here
+                    "minecraft:adventure/voluntary_exile",              // Voluntary Exile
+                    "minecraft:adventure/country_lode_take_me_home",    // Country Lode, Take Me Home
+                    "minecraft:adventure/is_it_a_bird",                 // Is It a Bird?
+                    "minecraft:adventure/read_power_from_chiseled_bookshelf", // The Power of Books
+                    "minecraft:adventure/trade",                        // What a Deal!
+                    "minecraft:adventure/trim_with_any_armor_pattern",  // Crafting a New Look (closest match)
+                    "minecraft:adventure/honey_block_slide",            // Sticky Situation
+                    "minecraft:adventure/ol_betsy",                     // Ol' Betsy
+                    "minecraft:adventure/fall_from_world_height",       // Caves & Cliffs (closest match)
+                    "minecraft:adventure/respecting_the_remnants",      // Respecting the Remnants
+                    "minecraft:adventure/sneak_100",                    // Sneak 100
+                    "minecraft:adventure/sleep_in_bed",                 // Sweet Dreams
+                    "minecraft:adventure/hero_of_the_village",          // Hero of the Village
+                    "minecraft:adventure/is_it_a_balloon",              // Is It a Balloon?
+                    "minecraft:adventure/throw_trident",                // A Throwaway Joke
+                    "minecraft:adventure/it_spreads",                   // It Spreads
+                    "minecraft:adventure/take_aim",                     // Take Aim
+                    "minecraft:adventure/postmortal",                   // Postmortal
+                    "minecraft:adventure/summon_iron_golem",            // Hired Help
+                    "minecraft:adventure/whos_the_pillager_now",        // Who's the Pillager Now?
+                    "minecraft:adventure/sound_of_music",               // Sound of Music
+                    "minecraft:adventure/light_as_a_rabbit",            // Light as a Rabbit
+                    "minecraft:adventure/is_it_a_plane",                // Is It a Plane?
+                    "minecraft:adventure/sniper_duel",                  // Sniper Duel
+                    "minecraft:adventure/bullseye",                     // Bullseye
+                    "minecraft:adventure/brush_armadillo",              // Isn't It Scute?
+                    "minecraft:adventure/minecraft_trials_edition",     // Minecraft: Trial(s) Edition
+                    "minecraft:adventure/lighten_up",                   // Lighten Up
+                    "minecraft:adventure/who_needs_rockets",            // Who Needs Rockets?
+                    "minecraft:adventure/under_lock_and_key",           // Under Lock and Key
+                    "minecraft:adventure/blowback",                     // Blowback
+                    "minecraft:husbandry/safely_harvest_honey",         // Bee Our Guest
+                    "minecraft:husbandry/breed_an_animal",              // The Parrots and the Bats
+                    "minecraft:husbandry/tame_an_animal",               // Best Friends Forever
+                    "minecraft:husbandry/make_a_sign_glow",             // Glow and Behold!
+                    "minecraft:husbandry/fishy_business",               // Fishy Business
+                    "minecraft:husbandry/plant_seed",                   // A Seedy Place
+                    "minecraft:husbandry/wax_on",                       // Wax On
+                    "minecraft:husbandry/tactical_fishing",             // Tactical Fishing
+                    "minecraft:husbandry/wax_off",                      // Wax Off
+                    "minecraft:husbandry/balanced_diet",                // A Balanced Diet
+                    "minecraft:husbandry/obtain_netherite_hoe",         // Serious Dedication
+                    "minecraft:husbandry/axolotl_in_a_bucket",           // The Cutest Predator
+                    "minecraft:husbandry/repair_wolf_armor",            // Good as New
+                    "minecraft:husbandry/remove_wolf_armor"             // Shear Brilliance
+            );
+
+            List<String> possibleDisplays = Arrays.asList(
+                    "Getting an Upgrade",
+                    "Acquire Hardware",
+                    "Suit Up",
+                    "Hot Stuff",
+                    "Isn't It Iron Pick",
+                    "Not Today, Thank You",
+                    "Ice Bucket Challenge",
+                    "Diamonds!",
+                    "Cover Me With Diamonds",
+                    "Enchanter",
+                    "Zombie Doctor",
+                    "Return to Sender",
+                    "Those Were the Days",
+                    "Hot Tourist Destinations",
+                    "Who is Cutting Onions?",
+                    "Oh Shiny",
+                    "This Boat Has Legs",
+                    "Uneasy Alliance",
+                    "War Pigs",
+                    "Cover Me in Debris",
+                    "Spooky Scary Skeleton",
+                    "Not Quite \"Nine\" Lives",
+                    "Hidden in the Depths",
+                    "Withering Heights",
+                    "Local Brewery",
+                    "Bring Home the Beacon",
+                    "You Need a Mint",
+                    "The City at the End of the Game",
+                    "Sky's the Limit",
+                    "Great View From Up Here",
+                    "Voluntary Exile",
+                    "Country Lode, Take Me Home",
+                    "Is It a Bird?",
+                    "The Power of Books",
+                    "What a Deal!",
+                    "Crafting a New Look",
+                    "Sticky Situation",
+                    "Ol' Betsy",
+                    "Caves & Cliffs",
+                    "Respecting the Remnants",
+                    "Sneak 100",
+                    "Sweet Dreams",
+                    "Hero of the Village",
+                    "Is It a Balloon?",
+                    "A Throwaway Joke",
+                    "It Spreads",
+                    "Take Aim",
+                    "Postmortal",
+                    "Hired Help",
+                    "Who's the Pillager Now?",
+                    "Sound of Music",
+                    "Light as a Rabbit",
+                    "Is It a Plane?",
+                    "Sniper Duel",
+                    "Bullseye",
+                    "Isn't It Scute?",
+                    "Minecraft: Trial(s) Edition",
+                    "Lighten Up",
+                    "Who Needs Rockets?",
+                    "Under Lock and Key",
+                    "Blowback",
+                    "Bee Our Guest",
+                    "The Parrots and the Bats",
+                    "Best Friends Forever",
+                    "Glow and Behold!",
+                    "Fishy Business",
+                    "A Seedy Place",
+                    "Wax On",
+                    "Tactical Fishing",
+                    "Wax Off",
+                    "A Balanced Diet",
+                    "Serious Dedication",
+                    "The Cutest Predator",
+                    "Good as New",
+                    "Shear Brilliance"
+            );
+
+            // Optional: Defensive check (lists must match in length)
+            if (possibleIds.size() != possibleDisplays.size()) {
+                Bukkit.broadcastMessage(ChatColor.RED + "Side Quest lists mismatch! Check code.");
+                return;
+            }
+
+            // Shuffle indices to randomize fairly
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i < possibleIds.size(); i++) indices.add(i);
+            Collections.shuffle(indices, new Random());
+
+            int toTake = Math.min(4, possibleIds.size());
+            for (int i = 0; i < toTake; i++) {
+                int idx = indices.get(i);
+                sideQuestAdvancementIds.add(possibleIds.get(idx));
+                sideQuestAdvancementDisplays.add(possibleDisplays.get(idx));
+            }
+
+            // Announce
+            Bukkit.broadcastMessage(ChatColor.GOLD + "══════════════════════════════════════");
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Side Quest Active! Runners must collectively complete:");
+            for (String display : sideQuestAdvancementDisplays) {
+                Bukkit.broadcastMessage(ChatColor.WHITE + " • " + ChatColor.GREEN + display);
+            }
+            Bukkit.broadcastMessage(ChatColor.GOLD + "══════════════════════════════════════");
         }
 
 
@@ -323,6 +531,9 @@ public class Manhunt {
                 p.getInventory().addItem(new ItemStack(Material.IRON_SHOVEL));
                 p.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 16)); // Give them some food too
             }
+        }
+        for (World world : Bukkit.getWorlds()) {
+            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, !twists.get("Hidden Advancements"));
         }
     }
 
@@ -423,7 +634,7 @@ public class Manhunt {
             if (funtimer % (20 * 10) == 0 && twists.get("TNT Run")) {
                 Location loc = p.getLocation();
 
-                TNTPrimed tnt = (TNTPrimed) loc.getWorld().spawnEntity(loc.add(0, 0.5, 0), EntityType.TNT);
+                TNTPrimed tnt = (TNTPrimed) loc.getWorld().spawnEntity(loc.add(0, 0.05, 0), EntityType.TNT);
 
                 tnt.setFuseTicks(60);
                 tnt.setYield(4.0f);
@@ -453,6 +664,16 @@ public class Manhunt {
 
             if (twists.get("Jump Boost X")) {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 410, 9, false, false));
+            }
+
+            if (twists.get("Toxic Waters")) {
+                if (p.isInsideVehicle()) continue;
+                Block headBlock = p.getEyeLocation().getBlock();
+                if (headBlock.getType() == Material.WATER) {
+                    if (!p.hasPotionEffect(PotionEffectType.POISON)) {
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 80, 0));
+                    }
+                }
             }
 
             if (twists.get("1.8 Healing")) {

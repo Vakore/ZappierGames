@@ -1,5 +1,7 @@
 package org.zappier.zappierGames.survivalgames;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -1039,6 +1041,7 @@ public class SurvivalGames {
             Location tpLocation = new Location(world, 10000, centerY + 4, 0);
             for (Player p : Bukkit.getOnlinePlayers()) {
                 p.teleport(tpLocation);
+                p.sendMessage(Component.text("WARNING: Gamemode not made yet. WIP", NamedTextColor.DARK_RED));
             }
             ZappierGames.gameMode = 1000;
         };

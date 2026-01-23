@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -18,6 +19,8 @@ import org.zappier.zappierGames.manhunt.Manhunt;
 import org.bukkit.event.block.BlockPlaceEvent;
 
 import java.util.stream.Collectors;
+
+import static org.zappier.zappierGames.skybattle.Skybattle.getPlayerTeam;
 
 public class ManhuntEnforcement implements Listener {
 
@@ -163,9 +166,9 @@ public class ManhuntEnforcement implements Listener {
         ItemStack itemInHand = event.getItem();
 
         // Always disable charging respawn anchors (glowstone right-click), everywhere
-        if (type == Material.RESPAWN_ANCHOR && itemInHand != null && itemInHand.getType() == Material.GLOWSTONE) {
+        if (Manhunt.anchorBombing <= 0 && (env != World.Environment.NETHER) && type == Material.RESPAWN_ANCHOR && itemInHand != null && itemInHand.getType() == Material.GLOWSTONE) {
             event.setCancelled(true);
-            player.sendMessage("§cRespawn anchor charging is disabled!");
+            player.sendMessage("§cRespawn anchor charging outside the nether is disabled!");
             return;
         }
 
@@ -245,6 +248,43 @@ public class ManhuntEnforcement implements Listener {
 
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.9f, 1.0f);
             player.sendActionBar(ChatColor.RED + "Picky Eaters: that food is not allowed!");
+        }
+    }
+
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onAdvancementDone(PlayerAdvancementDoneEvent event) {
+        if (!Manhunt.twists.get("Side Quest")) return;
+
+        Player player = event.getPlayer();
+        String team = getPlayerTeam(player);
+        if (!team.equals("Runners") && !team.equals("Runner_Suppliers") && !team.equals("Bodyguard") && !team.equals("President")) {
+            return; // only runners count
+        }
+
+        String advancementId = event.getAdvancement().getKey().toString(); // e.g. "minecraft:adventure/trade"
+        //Bukkit.broadcastMessage("ADVANCEMENT: " + advancementId);
+        if (Manhunt.sideQuestAdvancementIds.contains(advancementId) &&
+                !Manhunt.completedSideQuests.contains(advancementId)) {
+
+            Manhunt.completedSideQuests.add(advancementId);
+
+            String friendly = Manhunt.sideQuestAdvancementDisplays.get(
+                    Manhunt.sideQuestAdvancementIds.indexOf(advancementId)
+            );
+            Bukkit.broadcastMessage(ChatColor.GREEN + "Side Quest progress: " + ChatColor.YELLOW + friendly +
+                    ChatColor.GREEN + " completed! (" +
+                    Manhunt.completedSideQuests.size() + "/" + Manhunt.sideQuestAdvancementIds.size() + ")");
+
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+
+            // Check if all are done → runners win
+            if (Manhunt.completedSideQuests.size() >= Manhunt.sideQuestAdvancementIds.size()) {
+                Bukkit.broadcastMessage(ChatColor.GREEN + "§lSIDE QUEST COMPLETE!");
+                // → trigger win condition for runners here
+                // e.g. ZappierGames.endGame("Runners", "completed side quests");
+                // or call your existing win method
+            }
         }
     }
 }

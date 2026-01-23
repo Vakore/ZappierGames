@@ -5,6 +5,8 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.boss.BarColor;
@@ -189,6 +191,7 @@ public class LootHunt {
         for (World world : Bukkit.getWorlds()) {
             world.setGameRule(GameRule.KEEP_INVENTORY, true);
             world.setTime(0);
+            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
         }
         Bukkit.broadcast(Component.text("Keep inventory set to true across all dimensions", NamedTextColor.YELLOW));
         playerKillCounts.clear();
@@ -210,12 +213,24 @@ public class LootHunt {
             p.sendTitle(ChatColor.GREEN + "Loot Hunt", ChatColor.GREEN + "Collect items, score points!", 10, 70, 20);
             p.sendActionBar(Component.text("Use /getscore <item> to find how much it's worth!", NamedTextColor.GREEN));
             p.sendMessage(Component.text("Use /getscore <item> to find how much it's worth!", NamedTextColor.GREEN));
+            p.sendMessage(Component.text("Use /getinfinibundle if you lose it.", NamedTextColor.GREEN));
             p.setHealth(20.0);
             p.setFoodLevel(20);
             p.setSaturation(20.0f);
             p.setLevel(0);
             p.setExp(0.0f);
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+
+
+            Iterator<Advancement> it = Bukkit.advancementIterator();
+            while (it.hasNext()) {
+                Advancement advancement = it.next();
+                AdvancementProgress progress = p.getAdvancementProgress(advancement);
+
+                for (String criteria : progress.getAwardedCriteria()) {
+                    progress.revokeCriteria(criteria);
+                }
+            }
         }
         ZappierGames.gameMode = ZappierGames.LOOTHUNT;
         ZappierGames.timer = (int) Math.ceil(startTimer);

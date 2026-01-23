@@ -852,7 +852,7 @@ public class GUIListener implements Listener {
                 if (skybattleWorld != null) {
                     SurvivalGames.start(skybattleWorld, 5000);
                     player.closeInventory();
-                    player.sendMessage(ChatColor.GREEN + "Survival Games started!");
+                    player.sendMessage(ChatColor.GREEN + "Loading Map!");
                 } else {
                     player.sendMessage(ChatColor.RED + "Skybattle world not found!");
                 }

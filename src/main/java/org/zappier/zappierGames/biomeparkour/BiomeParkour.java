@@ -1,5 +1,7 @@
 package org.zappier.zappierGames.biomeparkour;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -55,6 +57,7 @@ public class BiomeParkour {
 
         ZappierGames.resetPlayers(true, false);
         for (Player p : Bukkit.getOnlinePlayers()) {
+            p.sendMessage(Component.text("WARNING: Gamemode not made yet. WIP", NamedTextColor.DARK_RED));
             p.getInventory().clear();
             p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
             p.clearActivePotionEffects();
