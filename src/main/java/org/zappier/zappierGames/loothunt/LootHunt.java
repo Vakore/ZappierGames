@@ -50,11 +50,13 @@ public class LootHunt {
     private static Map<String, Integer> specialEnchantments = new HashMap<>();
     private static List<Map<String, Object>> customPearls = new ArrayList<>();
     public static boolean paused = false;
+    public static Map<String, Integer> bundleSlots = new HashMap<>();
+    public static Map<String, Integer> lastPages = new HashMap<>();
 
     public static class Collection {
         public String name;
         public String type; // "progressive" or "complete"
-        public List<String> items = new ArrayList<>();
+        public List<List<String>> itemGroups = new ArrayList<>();
         List<Integer> progressiveScores = new ArrayList<>();
         int completeBonus;
     }
@@ -168,7 +170,16 @@ public class LootHunt {
                 Collection coll = new Collection();
                 coll.name = collSec.getString("name", key);
                 coll.type = collSec.getString("type", "complete").toLowerCase();
-                coll.items = collSec.getStringList("items");
+
+                List<String> rawItems = collSec.getStringList("items");
+                for (String raw : rawItems) {
+                    String[] alts = raw.split("\\|");
+                    List<String> group = new ArrayList<>();
+                    for (String alt : alts) {
+                        group.add(alt.trim().toUpperCase());
+                    }
+                    coll.itemGroups.add(group);
+                }
 
                 if ("progressive".equals(coll.type)) {
                     coll.progressiveScores = collSec.getIntegerList("scores");
@@ -184,6 +195,7 @@ public class LootHunt {
     }
 
     public static void start(double duration) {
+        bundleSlots.clear();
         InfinibundleListener.clearAll();
         LootHunt.paused = false;
         ZappierGames.resetPlayers(false, true);
@@ -361,8 +373,8 @@ public class LootHunt {
             List<Component> collectionLines = new ArrayList<>();
 
             for (Collection coll : collections.values()) {
-                long uniqueCollected = coll.items.stream()
-                        .filter(items::containsKey)
+                long uniqueCollected = coll.itemGroups.stream()
+                        .filter(group -> group.stream().anyMatch(items::containsKey))
                         .count();
 
                 if ("progressive".equals(coll.type)) {
@@ -375,28 +387,30 @@ public class LootHunt {
 
                     Component hover = Component.text("Collected " + coll.name + ":", NamedTextColor.AQUA)
                             .append(Component.newline()).append(Component.newline());
-                    for (String item : coll.items) {
-                        boolean has = items.containsKey(item);
-                        hover = hover.append(Component.text((has ? "✓ " : "✗ ") + item, has ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    for (List<String> group : coll.itemGroups) {
+                        String rep = group.get(0);
+                        boolean has = group.stream().anyMatch(items::containsKey);
+                        hover = hover.append(Component.text((has ? "✓ " : "✗ ") + rep + (group.size() > 1 ? " (variants)" : ""), has ? NamedTextColor.GREEN : NamedTextColor.RED))
                                 .append(Component.newline());
                     }
 
-                    collectionLines.add(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.items.size(), NamedTextColor.GRAY)
+                    collectionLines.add(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.itemGroups.size(), NamedTextColor.GRAY)
                             .append(Component.text(" (+" + bonus + " bonus)", NamedTextColor.GREEN))
                             .hoverEvent(HoverEvent.showText(hover)));
                 } else {
-                    if (uniqueCollected >= coll.items.size()) {
+                    if (uniqueCollected >= coll.itemGroups.size()) {
                         totalScore += coll.completeBonus;
                         collectionLines.add(Component.text("  " + coll.name + ": COMPLETE (+" + coll.completeBonus + " bonus)", NamedTextColor.GREEN));
                     } else {
                         Component hover = Component.text("Collected " + coll.name + ":", NamedTextColor.AQUA)
                                 .append(Component.newline()).append(Component.newline());
-                        for (String item : coll.items) {
-                            boolean has = items.containsKey(item);
-                            hover = hover.append(Component.text((has ? "✓ " : "✗ ") + item, has ? NamedTextColor.GREEN : NamedTextColor.RED))
+                        for (List<String> group : coll.itemGroups) {
+                            String rep = group.get(0);
+                            boolean has = group.stream().anyMatch(items::containsKey);
+                            hover = hover.append(Component.text((has ? "✓ " : "✗ ") + rep + (group.size() > 1 ? " (variants)" : ""), has ? NamedTextColor.GREEN : NamedTextColor.RED))
                                     .append(Component.newline());
                         }
-                        collectionLines.add(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.items.size(), NamedTextColor.GRAY)
+                        collectionLines.add(Component.text("  " + coll.name + ": " + uniqueCollected + "/" + coll.itemGroups.size(), NamedTextColor.GRAY)
                                 .hoverEvent(HoverEvent.showText(hover)));
                     }
                 }
@@ -417,9 +431,10 @@ public class LootHunt {
 
     public static String buildCollectionTooltip(Collection coll, Map<String, Double> items) {
         StringBuilder tip = new StringBuilder(coll.name + ":\n\n");
-        for (String item : coll.items) {
-            boolean has = items.containsKey(item);
-            tip.append(has ? "✓ " : "✗ ").append(item).append("\n");
+        for (List<String> group : coll.itemGroups) {
+            String rep = group.get(0);
+            boolean has = group.stream().anyMatch(items::containsKey);
+            tip.append(has ? "✓ " : "✗ ").append(rep).append(group.size() > 1 ? " (variants)" : "").append("\n");
         }
         return tip.toString();
     }
@@ -440,6 +455,7 @@ public class LootHunt {
                             item.getType() == Material.LINGERING_POTION ? "LINGERING_" : "";
                     String key = prefix + (pt != null ? pt.name() : "WATER");
                     baseValue = potionValues.getOrDefault(key, 0.0);
+                    itemId = key; // Use the specific potion ID for scoring and collections
                 }
             }
 
@@ -452,7 +468,11 @@ public class LootHunt {
             }
 
             // Tiny default for collection items
-            boolean isCollectionItem = collections.values().stream().anyMatch(c -> c.items.contains(itemId));
+            final String effectiveItemId = itemId;   // ← capture this instead
+
+            boolean isCollectionItem = collections.values().stream()
+                    .anyMatch(c -> c.itemGroups.stream()
+                            .anyMatch(g -> g.contains(effectiveItemId)));
             if (isCollectionItem && baseValue == 0.0) {
                 baseValue = 0.001;
             }
@@ -594,6 +614,8 @@ public class LootHunt {
                     Component.text("L-CLICK (cursor): put item inside", NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
                     Component.text("SHIFT + L-CLICK: put inventory inside", NamedTextColor.GRAY)
+                            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false),
+                    Component.text("SHIFT + R-CLICK: toggle inventory slots", NamedTextColor.GRAY)
                             .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
             ));
             meta.setCustomModelData(900009);

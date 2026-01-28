@@ -50,7 +50,7 @@ public class GetScoreCommand implements TabExecutor {
         // Check which collections this item belongs to
         List<LootHunt.Collection> itemCollections = new ArrayList<>();
         for (LootHunt.Collection coll : LootHunt.collections.values()) {
-            if (coll.items.contains(itemName)) {
+            if (coll.itemGroups.stream().anyMatch(group -> group.contains(itemName))) {
                 itemCollections.add(coll);
             }
         }
@@ -105,7 +105,7 @@ public class GetScoreCommand implements TabExecutor {
                     }
                 } else { // complete
                     message.append(coll.completeBonus).append("-point bonus for all ")
-                            .append(coll.items.size()).append(" types");
+                            .append(coll.itemGroups.size()).append(" types");
                 }
                 message.append(")");
             }

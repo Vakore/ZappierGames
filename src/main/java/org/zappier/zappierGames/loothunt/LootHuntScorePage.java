@@ -49,7 +49,7 @@ public class LootHuntScorePage {
             while (m.find()) {
                 try {
                     int id = Integer.parseInt(m.group(1));
-                    String name = m.group(2);
+                    String name = m.group(2).toLowerCase(Locale.ROOT);
                     itemNameToId.put(name, id);
                 } catch (NumberFormatException ignored) {}
             }
@@ -172,12 +172,14 @@ public class LootHuntScorePage {
                     .append("        <h2>").append(escapeHtml(teamName))
                     .append(" – <span class=\"score\">").append(String.format("%.1f", totalScore)).append("</span></h2>\n");
 
-            // Collections
+            // Collections - updated for itemGroups
             sb.append("        <h3>Collections</h3>\n");
             for (LootHunt.Collection coll : collections.values()) {
-                long count = coll.items.stream().filter(items::containsKey).count();
-                String status = (coll.type.equals("complete") && count >= coll.items.size())
-                        ? "COMPLETE" : count + "/" + coll.items.size();
+                long count = coll.itemGroups.stream()
+                        .filter(group -> group.stream().anyMatch(items::containsKey))
+                        .count();
+                String status = (coll.type.equals("complete") && count >= coll.itemGroups.size())
+                        ? "COMPLETE" : count + "/" + coll.itemGroups.size();
                 int bonus = calculateCollectionBonus(coll, (int) count);
 
                 sb.append("        <p class=\"collection\" title=\"")
@@ -244,7 +246,6 @@ public class LootHuntScorePage {
                     String sources = entries.stream().map(e -> e.source).distinct().collect(Collectors.joining(", "));
                     sb.append("<tr class=\"item-row\"><td>").append(escapeHtml(itemId)).append("</td><td>x").append(totalQty)
                             .append("</td><td>").append(String.format("%.1f", totalPts)).append(" pts</td><td title=\"").append(escapeHtml(sources)).append("\">Sources</td></tr>");
-                    // For nested, if source has >, it's nested
                 }
                 sb.append("</table></td></tr>\n");
             }
@@ -295,18 +296,17 @@ public class LootHuntScorePage {
 
         Bukkit.broadcast(msg);
 
-
         ZappierGames.getInstance().startResultsWebServer(htmlFile.getName());
 
         ZappierGames.getInstance().getLogger().info("Results available at: " + url);
-
-
     }
 
     private static double calculateTotalScoreWithBonuses(Map<String, Double> items, String teamName) {
         double base = items.values().stream().mapToDouble(Double::doubleValue).sum();
         for (LootHunt.Collection coll : collections.values()) {
-            int count = (int) coll.items.stream().filter(items::containsKey).count();
+            int count = (int) coll.itemGroups.stream()
+                    .filter(group -> group.stream().anyMatch(items::containsKey))
+                    .count();
             base += calculateCollectionBonus(coll, count);
         }
         return base;
@@ -317,7 +317,7 @@ public class LootHuntScorePage {
             if (!coll.progressiveScores.isEmpty() && count > 0) {
                 return coll.progressiveScores.get(Math.min(count - 1, coll.progressiveScores.size() - 1));
             }
-        } else if (count >= coll.items.size()) {
+        } else if (count >= coll.itemGroups.size()) {
             return coll.completeBonus;
         }
         return 0;

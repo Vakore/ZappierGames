@@ -97,6 +97,11 @@ public class GUI {
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to Manhunt menu"));
         } else if (submenuType.equals("Combat Settings")) {
+            /*inv.setItem(8, createGuiItem(Material.SHIELD, 1, "§eTwo Sounds",
+                    "§7Plays both shield break and block sound on stun",
+                    "Implemented for a friend",
+                    ((Manhunt.bothSounds > 0) ? "§aENABLED" : "§cDISABLED"),
+                    "§aClick to toggle"));*/
             inv.setItem(10, createGuiItem(Material.LAVA_BUCKET, 1, "§eNether Lava PvP",
                     "§7Allow placing lava near enemies in Nether",
                     " ",
@@ -137,6 +142,8 @@ public class GUI {
 
 
 
+            inv.setItem(18, createGuiItem(Material.REDSTONE, 1, "§cToggle All " + ((Manhunt.netherLavaPvP > 0) ? "Off" : "On"),
+                    "§7Toggle all rules on/off"));
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to Manhunt menu"));
         } else if (submenuType.contains(MANHUNT_TWISTS_TOGGLE) || submenuType.contains(MANHUNT_TWISTS_ROLLABLE)) {
@@ -364,25 +371,9 @@ public class GUI {
                     "§7Current: " + BiomeParkour.borderSize + " blocks",
                     "§aClick to change."));
 
-            inv.setItem(11, createGuiItem(Material.BLAZE_POWDER, 1, "§eStarting Speed",
-                    "§7Current: " + String.format("%.3f", BiomeParkour.baseBorderSpeed),
-                    "§aClick to adjust."));
-
-            inv.setItem(12, createGuiItem(Material.FIREWORK_ROCKET, 1, "§6Speed Increase Rate",
-                    "§7Current: " + String.format("%.4f", BiomeParkour.speedIncreaseRate) + "/tick",
-                    "§aClick to adjust."));
-
-            inv.setItem(13, createGuiItem(Material.CLOCK, 1, "§bGame Duration",
-                    "§7Current: " + BiomeParkour.maxGameMinutes + " minutes",
-                    "§aClick to set."));
-
-            inv.setItem(14, createGuiItem(Material.TOTEM_OF_UNDYING, 1, "§cRespawn Penalty",
-                    "§7Lose 100 points on respawn: " + (BiomeParkour.respawnLosePoints ? "§aYes" : "§cNo"),
-                    "§aClick to toggle."));
-
-            inv.setItem(15, createGuiItem(Material.EMERALD, 1, "§2Start Biome Parkour",
-                    "§7Start the game with current settings!",
-                    "§aClick to begin."));
+            inv.setItem(9,  createGuiItem(Material.TOTEM_OF_UNDYING, 1, "§cMode: Lives",
+                    "§7Current: " + (BiomeParkour.currentMode == BiomeParkour.Mode.LIVES ? "§aYES" : "§7No"), "§aClick to toggle"));
+            inv.setItem(15, createGuiItem(Material.EMERALD, 1, "§aStart " + BiomeParkour.currentMode, "Begin Biome Parkour"));
 
             inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
                     "§7Return to the main menu."));

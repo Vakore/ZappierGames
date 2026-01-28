@@ -3,26 +3,157 @@ package org.zappier.zappierGames.manhunt;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.zappier.zappierGames.DamageHandler;
 import org.zappier.zappierGames.ZappierGames;
 import org.zappier.zappierGames.manhunt.Manhunt;
 import org.bukkit.event.block.BlockPlaceEvent;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import static org.zappier.zappierGames.skybattle.Skybattle.getPlayerTeam;
 
 public class ManhuntEnforcement implements Listener {
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) return;
+        if (!Manhunt.twists.getOrDefault("Hands Full", false)) return;
+
+        if (player.getGameMode() != GameMode.SURVIVAL &&
+                player.getGameMode() != GameMode.ADVENTURE) return;
+
+        // Only care about the player's own inventory
+        if (!(event.getClickedInventory() instanceof PlayerInventory)) return;
+
+        int slot = event.getSlot();
+
+        if (slot >= 9 && slot <= 35) {
+            event.setCancelled(true);
+            player.sendActionBar("§cHands Full: you can't manage your inventory right now!");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) return;
+        if (!Manhunt.twists.getOrDefault("Hands Full", false)) return;
+
+        if (player.getGameMode() != GameMode.SURVIVAL &&
+                player.getGameMode() != GameMode.ADVENTURE) return;
+
+        InventoryView view = event.getView();
+
+        // Cancel if ANY dragged slot touches the main inventory (9–35)
+        for (int slot : event.getRawSlots()) {
+            if (slot >= 9 && slot <= 35) {
+                event.setCancelled(true);
+                player.sendActionBar("§cHands Full: dragging items is disabled!");
+                return;
+            }
+        }
+    }
+
+    private static final Random random = new Random();
+
+    // List of hostile mobs that can spawn (no boss entities)
+    private static final List<EntityType> HOSTILE_MOBS = Arrays.asList(
+            EntityType.ZOMBIE,
+            EntityType.SKELETON,
+            EntityType.SPIDER,
+            EntityType.CAVE_SPIDER,
+            EntityType.CREEPER,
+            EntityType.ENDERMAN,
+            EntityType.BLAZE,
+            EntityType.WITCH,
+            EntityType.SILVERFISH,
+            EntityType.GUARDIAN,
+            EntityType.DROWNED,
+            EntityType.HUSK,
+            EntityType.STRAY,
+            EntityType.PHANTOM,
+            EntityType.PILLAGER,
+            EntityType.VINDICATOR,
+            EntityType.EVOKER,
+            //EntityType.RAVAGER, //actually nah
+            EntityType.VEX,
+            EntityType.HOGLIN,
+            EntityType.PIGLIN,
+            EntityType.PIGLIN_BRUTE,
+            EntityType.ZOGLIN,
+            EntityType.ZOMBIFIED_PIGLIN,
+            EntityType.MAGMA_CUBE,
+            EntityType.SLIME,
+            EntityType.WITHER_SKELETON,
+            EntityType.GHAST,
+            EntityType.ENDERMITE,
+            EntityType.SHULKER
+    );
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5) {
+            return;
+        }
+
+        if (!Manhunt.twists.getOrDefault("Mob Mayhem", false)) {
+            return;
+        }
+
+        // Check if a player damaged another player
+        if (!(event.getDamager() instanceof Player)) {
+            return;
+        }
+
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+
+        Player victim = (Player) event.getEntity();
+
+        // Only spawn mobs if victim is in survival/adventure mode
+        if (victim.getGameMode() != GameMode.SURVIVAL && victim.getGameMode() != GameMode.ADVENTURE) {
+            return;
+        }
+
+        // Spawn a random hostile mob at the victim's location
+        EntityType mobType = HOSTILE_MOBS.get(random.nextInt(HOSTILE_MOBS.size()));
+        Location spawnLoc = victim.getLocation();
+
+        try {
+            Entity spawnedMob = victim.getWorld().spawnEntity(spawnLoc, mobType);
+
+            // Play a sound effect
+            victim.playSound(spawnLoc, Sound.ENTITY_ZOMBIE_VILLAGER_CONVERTED, 0.8f, 0.7f);
+
+        } catch (IllegalArgumentException e) {
+            // If mob type can't spawn in this dimension, try a different one
+            Bukkit.getLogger().warning("Failed to spawn " + mobType + " for Mob Mayhem twist");
+        }
+    }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onLavaPlace(PlayerBucketEmptyEvent event) {

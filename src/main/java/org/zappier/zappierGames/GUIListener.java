@@ -67,12 +67,14 @@ public class GUIListener implements Listener {
                     gui.open(player);
                     break;
                 case 12: // Biome Parkour
-                    gui = new GUI("Biome Parkour");
-                    gui.open(player);
+                    //gui = new GUI("Biome Parkour");
+                    //gui.open(player);
+                    player.sendMessage(ChatColor.RED + "Biome Parkour is WIP!");
                     break;
                 case 13: // Survival Games
-                    gui = new GUI("Survival Games");
-                    gui.open(player);
+                    //gui = new GUI("Survival Games");
+                    //gui.open(player);
+                    player.sendMessage(ChatColor.RED + "Survival Games is WIP");
                     break;
                 case 14: // Skybattle
                     gui = new GUI("Skybattle");
@@ -276,14 +278,16 @@ public class GUIListener implements Listener {
 
                                 for (Map.Entry<String, LootHunt.Collection> collEntry : sortedCollections.entrySet()) {
                                     LootHunt.Collection coll = collEntry.getValue();
-                                    long uniqueCollected = coll.items.stream()
-                                            .filter(playerItems::containsKey)
+                                    long uniqueCollected = coll.itemGroups.stream()
+                                            .filter(group -> group.stream().anyMatch(playerItems::containsKey))
                                             .count();
 
                                     if ("progressive".equals(coll.type)) {
-                                        player.sendMessage(ChatColor.GRAY + coll.name + ": " + uniqueCollected + "/" + coll.items.size());
+                                        player.sendMessage(ChatColor.GRAY + coll.name + ": " + uniqueCollected + "/" + coll.itemGroups.size());
                                     } else { // complete
-                                        String status = uniqueCollected >= coll.items.size() ? ("" + ChatColor.GREEN + "COMPLETE") : ("" + ChatColor.GRAY + uniqueCollected + "/" + coll.items.size());
+                                        String status = uniqueCollected >= coll.itemGroups.size()
+                                                ? ("" + ChatColor.GREEN + "COMPLETE")
+                                                : ("" + ChatColor.GRAY + uniqueCollected + "/" + coll.itemGroups.size());
                                         player.sendMessage(ChatColor.GRAY + coll.name + ": " + status);
                                     }
                                 }
@@ -470,6 +474,10 @@ public class GUIListener implements Listener {
             }
         } else if (title.equals("Combat Settings Menu")) {
             switch (slot) {
+                /*case 8: // Toggle both sounds
+                    Manhunt.bothSounds = -Manhunt.bothSounds;
+                    player.sendMessage("§eTwo Sounds: " + ((Manhunt.bothSounds > 0) ? "§aEnabled" : "§cDisabled"));
+                    break;*/
                 case 10: // Toggle Nether Lava
                     Manhunt.netherLavaPvP = -Manhunt.netherLavaPvP;
                     player.sendMessage("§eNether Lava PvP: " + ((Manhunt.netherLavaPvP > 0) ? "§aEnabled" : "§cDisabled"));
@@ -494,6 +502,17 @@ public class GUIListener implements Listener {
                     Manhunt.netherCobwebPvP = -Manhunt.netherCobwebPvP;
                     player.sendMessage("§eNether Cobweb PvP: " + ((Manhunt.netherCobwebPvP > 0) ? "§aEnabled" : "§cDisabled"));
                     break;
+                case 18:
+                    Manhunt.allowSpears = -Manhunt.netherLavaPvP;
+                    Manhunt.anchorBombing = -Manhunt.netherLavaPvP;
+                    Manhunt.neverBedBomb = -Manhunt.netherLavaPvP;
+                    Manhunt.bedBombing = -Manhunt.netherLavaPvP;
+                    Manhunt.netherCobwebPvP = -Manhunt.netherLavaPvP;
+                    Manhunt.netherLavaPvP = -Manhunt.netherLavaPvP;
+                    player.sendMessage("§eAll Combat Settings: " + ((Manhunt.netherLavaPvP > 0) ? "§aEnabled" : "§cDisabled"));
+                    gui = new GUI("Combat Settings");
+                    gui.open(player);
+                    return;
                 case 26: // Back
                     gui = new GUI("Manhunt");
                     gui.open(player);
@@ -758,38 +777,19 @@ public class GUIListener implements Listener {
             }
         } else if (title.equals("Biome Parkour Menu")) {
             switch (slot) {
-                case 10: // Border Size
-                    gui = new GUI("Biome Parkour Border Size");
-                    gui.open(player);
-                    break;
-                case 11: // Starting Speed
-                    gui = new GUI("Biome Parkour Speed");
-                    gui.open(player);
-                    break;
-                case 12: // Speed Increase
-                    gui = new GUI("Biome Parkour Acceleration");
-                    gui.open(player);
-                    break;
-                case 13: // Duration
-                    gui = new GUI("Biome Parkour Duration");
-                    gui.open(player);
-                    break;
-                case 14: // Respawn Penalty Toggle
-                    BiomeParkour.respawnLosePoints = !BiomeParkour.respawnLosePoints;
-                    player.sendMessage(ChatColor.YELLOW + "Respawn point loss: " + (BiomeParkour.respawnLosePoints ? "§aEnabled" : "§cDisabled"));
+                case 9: // toggle mode
+                    BiomeParkour.currentMode = BiomeParkour.currentMode == BiomeParkour.Mode.LIVES ? BiomeParkour.Mode.POINTS : BiomeParkour.Mode.LIVES;
+                    player.sendMessage("§eBiome Parkour mode → " + BiomeParkour.currentMode);
                     gui = new GUI("Biome Parkour");
                     gui.open(player);
                     break;
-                case 15: // Start Game
-                    BiomeParkour.start(
-                            BiomeParkour.borderSize,
-                            player.getLocation().getX(),
-                            player.getLocation().getZ(),
-                            BiomeParkour.baseBorderSpeed,
-                            BiomeParkour.speedIncreaseRate,
-                            BiomeParkour.respawnLosePoints,
-                            BiomeParkour.maxGameMinutes
-                    );
+                case 10:
+                    gui = new GUI("Biome Parkour Border Size");
+                    gui.open(player);
+                    break;
+
+                case 11: // start
+                    BiomeParkour.start(BiomeParkour.currentMode, player.getLocation().getX(), player.getLocation().getZ(), BiomeParkour.borderSize);
                     player.closeInventory();
                     break;
                 case 26: // Back
@@ -810,42 +810,6 @@ public class GUIListener implements Listener {
                 gui.open(player);
             }
 
-        } else if (title.equals("Biome Parkour Speed Menu")) {
-            double[] speeds = {0.05, 0.1, 0.15, 0.2, 0.3};
-            if (slot >= 10 && slot < 10 + speeds.length) {
-                BiomeParkour.baseBorderSpeed = speeds[slot - 10];
-                BiomeParkour.currentBorderSpeed = BiomeParkour.baseBorderSpeed;
-                player.sendMessage(ChatColor.YELLOW + "Starting speed set to " + String.format("%.3f", BiomeParkour.baseBorderSpeed));
-                gui = new GUI("Biome Parkour");
-                gui.open(player);
-            } else if (slot == 26) {
-                gui = new GUI("Biome Parkour");
-                gui.open(player);
-            }
-
-        } else if (title.equals("Biome Parkour Acceleration Menu")) {
-            double[] rates = {0.0, 0.002, 0.005, 0.01, 0.02};
-            if (slot >= 10 && slot < 10 + rates.length) {
-                BiomeParkour.speedIncreaseRate = rates[slot - 10];
-                player.sendMessage(ChatColor.YELLOW + "Speed increase rate set to " + String.format("%.4f", BiomeParkour.speedIncreaseRate));
-                gui = new GUI("Biome Parkour");
-                gui.open(player);
-            } else if (slot == 26) {
-                gui = new GUI("Biome Parkour");
-                gui.open(player);
-            }
-
-        } else if (title.equals("Biome Parkour Duration Menu")) {
-            int[] mins = {10, 20, 30, 45, 60, 120};
-            if (slot >= 10 && slot < 10 + mins.length) {
-                BiomeParkour.maxGameMinutes = mins[slot - 10];
-                player.sendMessage(ChatColor.YELLOW + "Game duration set to " + BiomeParkour.maxGameMinutes + " minutes");
-                gui = new GUI("Biome Parkour");
-                gui.open(player);
-            } else if (slot == 26) {
-                gui = new GUI("Biome Parkour");
-                gui.open(player);
-            }
         } else if (title.equals("Survival Games Menu")) {
             if (slot == 13) {
                 World skybattleWorld = Bukkit.getWorld("skybattle_world");

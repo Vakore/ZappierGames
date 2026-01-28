@@ -323,6 +323,8 @@ public final class ZappierGames extends JavaPlugin {
                         Component.text("L-CLICK (cursor): put item inside", NamedTextColor.GRAY)
                                 .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false),
                         Component.text("SHIFT + L-CLICK: put inventory inside", NamedTextColor.GRAY)
+                                .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false),
+                        Component.text("SHIFT + R-CLICK: toggle inventory slots", NamedTextColor.GRAY)
                                 .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
                 ));
 
@@ -401,6 +403,7 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CompassTrackerListener(this), this);
         getServer().getPluginManager().registerEvents(new TrackerGUIListener(this), this);
         getServer().getPluginManager().registerEvents(new ManhuntEnforcement(), this);
+        getServer().getPluginManager().registerEvents(new ShieldSoundEnforcement(), this);
         getServer().getPluginManager().registerEvents(new ItemValueActionBarListener(), this);
 
         // Team colors
@@ -413,6 +416,7 @@ public final class ZappierGames extends JavaPlugin {
                 team = scoreboard.registerNewTeam(teamList[i]);
             }
             team.color(teamColors[i]);
+            team.allowFriendlyFire();
         }
 
         // Main game loop
@@ -688,6 +692,7 @@ public final class ZappierGames extends JavaPlugin {
         gameStateConfig.set("manhunt.bedBombing",           Manhunt.bedBombing);
         gameStateConfig.set("manhunt.neverBedBomb",           Manhunt.neverBedBomb);
         gameStateConfig.set("manhunt.anchorBombing",        Manhunt.anchorBombing);
+        gameStateConfig.set("manhunt.bothSounds",        Manhunt.bothSounds);
         gameStateConfig.set("manhunt.funtimer",             Manhunt.funtimer);
 
         // Twists enabled state
@@ -795,6 +800,7 @@ public final class ZappierGames extends JavaPlugin {
         Manhunt.bedBombing           = gameStateConfig.getInt("manhunt.bedBombing",           -1);
         Manhunt.neverBedBomb           = gameStateConfig.getInt("manhunt.neverBedBomb",           -1);
         Manhunt.anchorBombing        = gameStateConfig.getInt("manhunt.anchorBombing",        -1);
+        Manhunt.bothSounds        = gameStateConfig.getInt("manhunt.bothSounds",        -1);
         Manhunt.funtimer             = gameStateConfig.getInt("manhunt.funtimer",             0);
 
         // Twists

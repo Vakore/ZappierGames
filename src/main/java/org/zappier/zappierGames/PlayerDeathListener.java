@@ -1,6 +1,7 @@
 package org.zappier.zappierGames;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -254,34 +255,26 @@ public class PlayerDeathListener implements Listener {
                 event.setCancelled(true);
                 break;
             case 30: // Biome Parkour
-                UUID uuid = player.getUniqueId();
-                int lives = BiomeParkour.playerLives.getOrDefault(uuid, 0) - 1;
-                BiomeParkour.playerLives.put(uuid, lives);
+                event.setCancelled(true); // We handle death ourselves (no death screen / drops by default)
 
-                if (lives <= 0) {
-                    player.setGameMode(GameMode.SPECTATOR);
-                    Bukkit.broadcastMessage(ChatColor.RED + player.getName() + " is out of lives and is now spectating!");
-                    // Check win condition will be handled in BiomeParkour.run()
-                } else {
-                    // Respawn with penalty
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            player.spigot().respawn();
-                            player.teleport(player.getWorld().getSpawnLocation());
-
-                            if (BiomeParkour.respawnLosePoints) {
-                                String key = player.getName().toUpperCase();
-                                double score = BiomeParkour.playerScores.getOrDefault(key, 0.0) - 100.0;
-                                BiomeParkour.playerScores.put(key, Math.max(0, score));
-                                player.sendMessage(ChatColor.RED + "You lost 100 points for dying!");
-                            }
-                            player.sendMessage(ChatColor.YELLOW + "Lives remaining: " + ChatColor.RED + lives);
-                        }
-                    }.runTaskLater(plugin, 20L); // 1 second delay
-                }
-                event.setKeepInventory(true);
+                // Prevent vanilla drops and death message (we broadcast our own)
                 event.getDrops().clear();
+
+                // Call the BiomeParkour death handler
+                BiomeParkour.onPlayerDeath(player);
+
+                // Optional: small visual/sound feedback
+                player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.9f);
+                player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 40, 0.4, 0.8, 0.4, 0.15);
+
+                // If player is now out of lives (in Lives mode), set to spectator
+                if (BiomeParkour.currentMode == BiomeParkour.Mode.LIVES) {
+                    int remainingLives = BiomeParkour.lives.getOrDefault(player.getUniqueId(), 0);
+                    if (remainingLives <= 0) {
+                        player.setGameMode(GameMode.SPECTATOR);
+                        player.sendTitle(ChatColor.RED + "You are ded", ChatColor.GRAY + "Not big soup rice");
+                    }
+                }
                 break;
         }
     }

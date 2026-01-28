@@ -3,6 +3,7 @@ package org.zappier.zappierGames.loothunt;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -34,6 +35,20 @@ public class ItemValueActionBarListener implements Listener {
         // Clear if switching to empty slot
         if (newItem == null || newItem.getType() == Material.AIR || newItem.getType().toString().toLowerCase().contains("bundle")) {
             lastHeldItem.remove(player.getName());
+            if (newItem != null && newItem.getType() != Material.AIR) {
+                int pInfData = LootHunt.bundleSlots.getOrDefault(player.getName().toUpperCase(), 0);
+                if (pInfData == 0) {
+                    LootHunt.bundleSlots.put(player.getName().toUpperCase(), 0b111);
+                    pInfData = 0b111;
+                }
+                LootHunt.bundleSlots.put(player.getName().toUpperCase(), pInfData);
+                //□■
+                String shiftL[] = {"□", "□", "□"};
+                if ((pInfData & 0b001) > 0) {shiftL[0] = "■";}
+                if ((pInfData & 0b010) > 0) {shiftL[1] = "■";}
+                if ((pInfData & 0b100) > 0) {shiftL[2] = "■";}
+                player.sendActionBar(ChatColor.GREEN + "SHIFT-L Slots: " + shiftL[0] + shiftL[1] + shiftL[2]);
+            }
             return;
         }
 
@@ -50,7 +65,8 @@ public class ItemValueActionBarListener implements Listener {
 
         // Determine collection status
         boolean isCollectionItem = LootHunt.collections.values().stream()
-                .anyMatch(c -> c.items.contains(itemId));
+                .anyMatch(c -> c.itemGroups.stream()
+                        .anyMatch(group -> group.contains(itemId)));
 
         Component star = Component.text(
                 isCollectionItem ? "⭐ " : "☆ ",
@@ -121,7 +137,8 @@ public class ItemValueActionBarListener implements Listener {
 
         // Tiny default for collection items
         boolean isCollectionItem = LootHunt.collections.values().stream()
-                .anyMatch(c -> c.items.contains(itemId));
+                .anyMatch(c -> c.itemGroups.stream()
+                        .anyMatch(group -> group.contains(itemId)));
         if (isCollectionItem && baseValue == 0.0) {
             baseValue = 0.001;
         }

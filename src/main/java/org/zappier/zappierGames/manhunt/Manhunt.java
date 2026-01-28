@@ -8,6 +8,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.zappier.zappierGames.ZappierGames;
@@ -30,6 +31,7 @@ public class Manhunt {
     public static int bedBombing = -1;
     public static int anchorBombing = -1;
     public static int neverBedBomb = -1;
+    public static int bothSounds = -1;
     public static HashMap<String, Boolean> twists = new HashMap<>();
     public static ArrayList<Material> allowedFoods = new ArrayList<>();
     public static HashMap<String, Integer> playerDeaths = new HashMap<>();
@@ -58,6 +60,8 @@ public class Manhunt {
 
     public static manhuntTwist[] manhuntTwists = {
             new manhuntTwist(Material.GRASS_BLOCK, "No Placing Blocks", "Building and tower-upping", "is strictly forbidden."),
+            new manhuntTwist(Material.ZOMBIE_HEAD, "Mob Mayhem", "Each PvP hit spawns a", "random mob on the victim."),
+            new manhuntTwist(Material.BLACK_STAINED_GLASS_PANE, "Hands Full", "Only 9 inventory slots are", "usable (hotbar only)."),
             new manhuntTwist(Material.ELYTRA, "Permanent Elytra", "Everyone has an unbreakable", "elytra equipped permanently."),
             new manhuntTwist(Material.DIAMOND_CHESTPLATE, "Diamond Juggernaut", "The hunter gets full", "diamond armor."),
             new manhuntTwist(Material.NETHERITE_CHESTPLATE, "Netherite Juggernaut", "The hunter gets full", "netherite armor."),
@@ -104,6 +108,19 @@ public class Manhunt {
         }
 
         String playerTeam = getPlayerTeam(p);
+
+        if (twists.get("Hands Full")) {
+            for (int i = 9; i <= 35; i++) {
+                ItemStack glassPane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+                ItemMeta meta = glassPane.getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName(" ");
+                    glassPane.setItemMeta(meta);
+                }
+                glassPane.addUnsafeEnchantment(Enchantment.VANISHING_CURSE, 1);
+                p.getInventory().setItem(i, glassPane);
+            }
+        }
 
 
         if (twists.get("Sixth Sense") || "Hunters".equals(playerTeam) || "Runner_Suppliers".equals(playerTeam) || "Hunter_Suppliers".equals(playerTeam)) {
@@ -530,6 +547,19 @@ public class Manhunt {
                 p.getInventory().addItem(new ItemStack(Material.IRON_AXE));
                 p.getInventory().addItem(new ItemStack(Material.IRON_SHOVEL));
                 p.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 16)); // Give them some food too
+            }
+
+            if (twists.get("Hands Full")) {
+                for (int i = 9; i <= 35; i++) {
+                    ItemStack glassPane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+                    ItemMeta meta = glassPane.getItemMeta();
+                    if (meta != null) {
+                        meta.setDisplayName(" ");
+                        glassPane.setItemMeta(meta);
+                    }
+                    glassPane.addUnsafeEnchantment(Enchantment.VANISHING_CURSE, 1);
+                    p.getInventory().setItem(i, glassPane);
+                }
             }
         }
         for (World world : Bukkit.getWorlds()) {
