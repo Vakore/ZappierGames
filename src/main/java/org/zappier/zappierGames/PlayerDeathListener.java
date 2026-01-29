@@ -41,7 +41,7 @@ public class PlayerDeathListener implements Listener {
         if (gameMode > 0 && gameMode <= 5) {
             int deathCount = Manhunt.playerDeaths.getOrDefault(player.getName().toLowerCase(), 0) + 1;
             Manhunt.playerDeaths.put(player.getName().toLowerCase(), deathCount);
-            if (Manhunt.twists.get("Hunter Lives") && playerTeam.equals("Hunters")) {
+            if (Manhunt.twists.getOrDefault("Hunter Lives", false) && playerTeam.equals("Hunters")) {
                 if (deathCount < 3) {
                     String livesVlife = (3 - deathCount) == 1 ? "life" : "lives";
                     Bukkit.broadcastMessage(player.getName() + " has died and has " + (3 - deathCount) + " " + livesVlife + " left!");
@@ -55,7 +55,7 @@ public class PlayerDeathListener implements Listener {
                 }
             }
 
-            if (Manhunt.twists.get("Runner Lives") && (playerTeam.equals("Runners") || playerTeam.equals("President") || playerTeam.equals("Bodyguard"))) {
+            if (Manhunt.twists.getOrDefault("Runner Lives", false) && (playerTeam.equals("Runners") || playerTeam.equals("President") || playerTeam.equals("Bodyguard"))) {
                 if (deathCount < 2) {
                     String livesVlife = (2 - deathCount) == 1 ? "life" : "lives";
                     Bukkit.broadcastMessage(player.getName() + " has died and has " + (2 - deathCount) + " " + livesVlife + " left!");
@@ -110,7 +110,7 @@ public class PlayerDeathListener implements Listener {
                 break;
 
             case 1: // Manhunt
-                if (Manhunt.twists.get("Runner Lives")) {break;}
+                if (Manhunt.twists.getOrDefault("Runner Lives", false)) {break;}
                 if ("Runners".equals(playerTeam)) {
                     movePlayerToTeam(player, "Spectator", scoreboard);
                     Bukkit.broadcastMessage(player.getName() + " has been eliminated as a Runner!");
@@ -133,7 +133,7 @@ public class PlayerDeathListener implements Listener {
                 break;
 
             case 2: // Infection Manhunt
-                if (Manhunt.twists.get("Runner Lives")) {break;}
+                if (Manhunt.twists.getOrDefault("Runner Lives", false)) {break;}
                 if ("Runners".equals(playerTeam)) {
                     int runnerCount = 0;
                     movePlayerToTeam(player, "Hunters", scoreboard);
@@ -155,7 +155,7 @@ public class PlayerDeathListener implements Listener {
                 break;
 
             case 3: // President Manhunt
-                if (Manhunt.twists.get("Runner Lives")) {break;}
+                if (Manhunt.twists.getOrDefault("Runner Lives", false)) {break;}
                 if ("Bodyguard".equals(playerTeam) && Manhunt.bodyguardRespawn <= 0) {
                     movePlayerToTeam(player, "Spectator", scoreboard);
                     Bukkit.broadcastMessage(player.getName() + " has been eliminated as a Bodyguard!");

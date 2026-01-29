@@ -385,7 +385,7 @@ public class ManhuntEnforcement implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAdvancementDone(PlayerAdvancementDoneEvent event) {
-        if (!Manhunt.twists.get("Side Quest")) return;
+        if (ZappierGames.gameMode <= 0 || ZappierGames.gameMode > 5 || !Manhunt.twists.getOrDefault("Side Quest", false)) return;
 
         Player player = event.getPlayer();
         String team = getPlayerTeam(player);
