@@ -4,6 +4,7 @@ package org.zappier.zappierGames.manhunt;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -40,8 +41,10 @@ public class TrackerInventory implements InventoryHolder {
         int end   = Math.min(start + SLOTS_PER_PAGE, allPlayers.size());
 
         // ---- player heads -------------------------------------------------
+        int curSlot = 0;
         for (int i = start; i < end; i++) {
             Player target = allPlayers.get(i);
+            if (target.getGameMode() == GameMode.SPECTATOR) {continue;}
             ItemStack head = new ItemStack(Material.PLAYER_HEAD);
             SkullMeta meta = (SkullMeta) head.getItemMeta();
 
@@ -62,7 +65,8 @@ public class TrackerInventory implements InventoryHolder {
             meta.setOwningPlayer(target);
             head.setItemMeta(meta);
 
-            inv.setItem(i - start, head);
+            inv.setItem(curSlot - start, head);
+            curSlot++;
         }
 
         // ---- navigation --------------------------------------------------

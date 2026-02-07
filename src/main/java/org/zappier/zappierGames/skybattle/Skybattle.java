@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -113,6 +114,7 @@ public class Skybattle {
         borderRadius = 135.0;
         ZappierGames.gameMode = 10;
         ZappierGames.resetPlayers(false, false);
+        ZappierGames.hpObjective.setDisplaySlot(DisplaySlot.BELOW_NAME);
 
         clearArea(world, -120, -120, 240, 240, 148, 180);
 

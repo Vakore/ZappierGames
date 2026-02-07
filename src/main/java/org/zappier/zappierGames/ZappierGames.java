@@ -32,8 +32,7 @@ import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
+import org.bukkit.scoreboard.*;
 import org.jetbrains.annotations.NotNull;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.loothunt.*;
@@ -83,6 +82,7 @@ public final class ZappierGames extends JavaPlugin {
     public static void resetPlayers(boolean clearInv, boolean clearAdvancements) {
         ZappierGames.getInstance().stopResultsWebServer();
         ZappierGames.noPvP = false;
+        hpObjective.setDisplaySlot(null);
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (clearInv) {p.getInventory().clear();}
             p.setHealth(20.0);
@@ -347,6 +347,8 @@ public final class ZappierGames extends JavaPlugin {
     private File gameStateFile;
     private FileConfiguration gameStateConfig;
 
+    public static Objective hpObjective;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
@@ -374,6 +376,17 @@ public final class ZappierGames extends JavaPlugin {
 
         Skybattle.init(instance);
         ParkourRace.init(instance);
+
+        Objective oldObj = Bukkit.getScoreboardManager().getMainScoreboard().getObjective("playerhp");
+        if (oldObj != null) {
+            hpObjective = oldObj;
+        } else {
+            hpObjective = Bukkit.getScoreboardManager().getMainScoreboard().registerNewObjective(
+                    "playerhp",
+                    Criteria.HEALTH,
+                    Component.text("❤", NamedTextColor.RED)
+            );
+        }
 
         // Register commands
         this.getCommand("loothunt").setExecutor(new LoothuntCommand());
@@ -499,7 +512,10 @@ public final class ZappierGames extends JavaPlugin {
                                     }
                                 }
                                 if (holdingTracker) {
-                                    if (Manhunt.showTrackerDimension > 0) {
+                                    if (trackingPairs.get(player.getName()) == null) {
+                                    } else if (Bukkit.getPlayer(trackingPairs.get(player.getName())) != null && Bukkit.getPlayer(trackingPairs.get(player.getName())).getGameMode() == GameMode.SPECTATOR) {
+                                        player.sendActionBar(ChatColor.GRAY + "" + trackingPairs.get(player.getName()) + " is in spectator mode");
+                                    } else if (Manhunt.showTrackerDimension > 0) {
                                         player.sendActionBar(leTrackColor + "Distance to " + trackingPairs.get(player.getName()) + " (" + targetDimension + "): " + (int) player.getLocation().distance(trackedLocation));
                                     } else {
                                         player.sendActionBar(leTrackColor + "Distance to " + trackingPairs.get(player.getName()) + ": " + (int) player.getLocation().distance(trackedLocation));

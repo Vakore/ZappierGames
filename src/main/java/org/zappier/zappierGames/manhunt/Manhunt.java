@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scoreboard.DisplaySlot;
 import org.zappier.zappierGames.ZappierGames;
 import org.bukkit.entity.EntityType;
 
@@ -61,15 +62,17 @@ public class Manhunt {
     public static manhuntTwist[] manhuntTwists = {
             new manhuntTwist(Material.GRASS_BLOCK, "No Placing Blocks", "Building and tower-upping", "is strictly forbidden."),
             new manhuntTwist(Material.ZOMBIE_HEAD, "Mob Mayhem", "Each PvP hit spawns a", "random mob on the victim."),
+            new manhuntTwist(Material.DIAMOND_SWORD, "Axeless and Shieldless", "Combat is limited to swords", "and basic blocking."),
+            new manhuntTwist(Material.IRON_AXE, "Axeless", "Axes are disabled for", "all players."),
+            new manhuntTwist(Material.IRON_SWORD, "Swordless", "Swords are disabled for", "all players."),
+            new manhuntTwist(Material.HEART_POTTERY_SHERD, "HP Visible", "Shows health beneath", "all players."),
             new manhuntTwist(Material.BLACK_STAINED_GLASS_PANE, "Hands Full", "Only 9 inventory slots are", "usable (hotbar only)."),
             new manhuntTwist(Material.ELYTRA, "Permanent Elytra", "Everyone has an unbreakable", "elytra equipped permanently."),
             new manhuntTwist(Material.DIAMOND_CHESTPLATE, "Diamond Juggernaut", "The hunter gets full", "diamond armor."),
             new manhuntTwist(Material.NETHERITE_CHESTPLATE, "Netherite Juggernaut", "The hunter gets full", "netherite armor."),
             new manhuntTwist(Material.BARRIER, "Shieldless", "Shields are disabled and", "cannot be used or crafted."),
             new manhuntTwist(Material.BEDROCK, "No Rules", "Anything goes in this", "chaotic classic match."),
-            new manhuntTwist(Material.COMPASS, "Normal Manhunt", "The standard manhunt", "experience with no twists."),
-            new manhuntTwist(Material.DIAMOND_SWORD, "Axeless and Shieldless", "Combat is limited to swords", "and basic blocking."),
-            new manhuntTwist(Material.IRON_AXE, "Axeless", "Axes are disabled for", "all players."),
+            new manhuntTwist(Material.COMPASS, "Normal Manhunt", "Activates no twist.", "Play regularly."),
             new manhuntTwist(Material.TOTEM_OF_UNDYING, "Hunter Lives", "Hunters have 3 lives.", "Game ends when all are lost."),
             new manhuntTwist(Material.KNOWLEDGE_BOOK, "Hidden Advancements", "Advancement popups are", "hidden from the chat."),
             new manhuntTwist(Material.PLAYER_HEAD, "Runner Lives", "The runner has 2 lives", "instead of just one."),
@@ -128,6 +131,10 @@ public class Manhunt {
             compass.addEnchantment(Enchantment.VANISHING_CURSE, 1);
 
             p.getInventory().addItem(compass);
+        }
+
+        if (twists.get("HP Visible")) {
+            ZappierGames.hpObjective.setDisplaySlot(DisplaySlot.BELOW_NAME);
         }
 
 
@@ -724,6 +731,19 @@ public class Manhunt {
 
             if (twists.get("Armorless Runner") && (playerTeam.equals("Runner") || playerTeam.equals("Runner_Suppliers") || playerTeam.equals("Bodyguard"))) {
                 preventArmor(p, "§cTwist says no armor for runners!!");
+            }
+
+
+            if (twists.get("Swordless")) {
+                //preventArmor(p, "§cCurrent twist prevents armor (no armor)!");
+                for (ItemStack i : p.getInventory().getContents()) {
+                    if (i == null) continue;
+                    String t = i.getType().name().toLowerCase();
+                    if (t.contains("_sword")) {
+                        p.sendMessage(ChatColor.RED + "No swords in swordless!");
+                        p.getInventory().remove(i);
+                    }
+                }
             }
 
             if (twists.get("Axeless") || twists.get("Axeless and Shieldless")) {

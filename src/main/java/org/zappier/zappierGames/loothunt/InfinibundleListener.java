@@ -152,6 +152,15 @@ public class InfinibundleListener implements Listener {
 
         Component titleComp = view.title();
         String title = PlainTextComponentSerializer.plainText().serialize(titleComp);
+        if (title.contains(" Team Collections")) {
+            if (event.getClickedInventory() == view.getBottomInventory() ||
+                event.getClickedInventory() != view.getBottomInventory() &&
+                event.getSlot() != 45 && event.getSlot() != 49 && event.getSlot() != 53) {
+                event.setCancelled(true);
+                player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_FAIL, 1.0f, 0.5f);
+                return;
+            }
+        }
         if (!title.contains(" Team Inventory") && !title.contains(" Team Collections")) return;
 
         if (event.getClickedInventory() == view.getBottomInventory() && involvesBundle) {
@@ -189,9 +198,11 @@ public class InfinibundleListener implements Listener {
             if (slot == 49) {
                 newPage = 0;
                 newIsCollections = !isCollections;
+                player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
             } else {
                 newPage = slot == 45 ? currentPage - 1 : currentPage + 1;
                 newIsCollections = isCollections;
+                player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
             }
 
             // 4. Open new page immediately (replaces current inventory)
