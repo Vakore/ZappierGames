@@ -60,7 +60,8 @@ public class ItemValueActionBarListener implements Listener {
         }
         lastHeldItem.put(player.getName(), newMaterial);
 
-        String itemId = newItem.getType().toString();
+        String specialItemId = LootHunt.getSpecialItemId(newItem);
+        String itemId = specialItemId != null ? specialItemId : newItem.getType().toString();
         String itemName = formatItemName(newItem);
 
         // Determine collection status
@@ -119,6 +120,12 @@ public class ItemValueActionBarListener implements Listener {
     private static double getBaseItemValue(ItemStack item) {
         String itemId = item.getType().toString();
         double baseValue = LootHunt.itemValues.getOrDefault(itemId, 0.0);
+
+        // Special item variants (Ominous Banner, Explorer Map, etc.)
+        String specialId = LootHunt.getSpecialItemId(item);
+        if (specialId != null) {
+            return LootHunt.specialItemValues.getOrDefault(specialId, 0.0);
+        }
 
         // Handle potions
         if (item.getType() == Material.POTION ||

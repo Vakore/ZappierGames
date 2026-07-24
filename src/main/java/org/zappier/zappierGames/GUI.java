@@ -52,6 +52,8 @@ public class GUI {
                 "§7Fight in the skies!", "§aClick to configure."));
         inv.setItem(15, createGuiItem(Material.LEATHER_BOOTS, 1, "§eParkour Race",
                 "§7Fastest parkourer wins!", "§aClick to configure."));
+        inv.setItem(16, createGuiItem(Material.IRON_BARS, 1, "§eDungeon Rush",
+                "§7Survive a roguelike dungeon!", "§aClick to configure."));
 
         ItemStack filler = createFillerItem();
         for (int i = 0; i < 27; i++) {
@@ -62,7 +64,10 @@ public class GUI {
     }
 
     private void initializeSubmenu(String submenuType) {
-        if (submenuType.equals("Manhunt")) {
+        if (submenuType.equals("Dungeon Rush")) {
+            inv.setItem(13, createGuiItem(Material.EMERALD, 1, "§2Start Dungeon Rush",
+                    "§7Start the game with current settings!", "§aClick to begin."));
+        } else if (submenuType.equals("Manhunt")) {
             inv.setItem(10, createGuiItem(Material.BOOK, 1, "§eSet Game Mode",
                     "§7Current: " + getGameModeName(), "§aClick to select mode."));
             inv.setItem(11, createGuiItem(Material.MAP, 1, "§bSet Border Size",

@@ -35,6 +35,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
 import org.jetbrains.annotations.NotNull;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
+import org.zappier.zappierGames.dungeonrush.DungeonRush;
 import org.zappier.zappierGames.loothunt.*;
 import org.zappier.zappierGames.manhunt.*;
 import org.zappier.zappierGames.skybattle.CreeperSpawnListener;
@@ -114,9 +115,12 @@ public final class ZappierGames extends JavaPlugin {
             world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
             world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
             world.setGameRule(GameRule.DO_WEATHER_CYCLE, true);
+            Bukkit.getServer().getServerTickManager().setFrozen(false);
             world.setTime(0);
         }
     }
+
+
 
 
     //COMMANDS
@@ -376,6 +380,7 @@ public final class ZappierGames extends JavaPlugin {
 
         Skybattle.init(instance);
         ParkourRace.init(instance);
+        DungeonRush.init(instance);
 
         Objective oldObj = Bukkit.getScoreboardManager().getMainScoreboard().getObjective("playerhp");
         if (oldObj != null) {
@@ -404,6 +409,7 @@ public final class ZappierGames extends JavaPlugin {
         this.getCommand("getinfinibundle").setTabCompleter(new GetInfinibundleCommand());
 
         // Register events
+        getServer().getPluginManager().registerEvents(new AdvancementListener(), this);
         getServer().getPluginManager().registerEvents(new LootHuntKillListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
@@ -418,6 +424,8 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ManhuntEnforcement(), this);
         getServer().getPluginManager().registerEvents(new ShieldSoundEnforcement(), this);
         getServer().getPluginManager().registerEvents(new ItemValueActionBarListener(), this);
+        getServer().getPluginManager().registerEvents(new LootHuntSpectatorListener(), this);
+
 
         // Team colors
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
@@ -542,6 +550,11 @@ public final class ZappierGames extends JavaPlugin {
                     }
                 } else if (gameMode == 30) {
                     BiomeParkour.run();
+                } else if (gameMode == 2000) {
+                    World skybattleWorld = Bukkit.getWorld("skybattle_world");
+                    if (skybattleWorld != null) {
+                        DungeonRush.run(skybattleWorld);
+                    }
                 }
             }
         };
@@ -791,6 +804,25 @@ public final class ZappierGames extends JavaPlugin {
         }
         gameStateConfig.set("core.startTimerTicks", LootHunt.startTimer);
 
+        gameStateConfig.set("loothunt.scoreHistory", null);
+        for (Map.Entry<String, List<LootHunt.ScoreSnapshot>> entry : LootHunt.scoreHistory.entrySet()) {
+            String playerKey = entry.getKey();
+            List<Map<String, Object>> serializedSnapshots = new ArrayList<>();
+            for (LootHunt.ScoreSnapshot snap : entry.getValue()) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("tick", snap.tick);
+                m.put("score", snap.score);
+                m.put("biomes", snap.biomes);
+                m.put("structures", snap.structures);
+                m.put("x", snap.x);
+                m.put("z", snap.z);
+                m.put("dimension", snap.dimension);
+                serializedSnapshots.add(m);
+            }
+            gameStateConfig.set("loothunt.scoreHistory." + playerKey, serializedSnapshots);
+        }
+
+
         try {
             gameStateConfig.save(gameStateFile);
             getLogger().info("Game state saved to gamestate.yml");
@@ -970,6 +1002,49 @@ public final class ZappierGames extends JavaPlugin {
         progress = Math.max(0.0, Math.min(1.0, progress));
 
         ZappierGames.globalBossBar.setProgress(progress);
+
+        if (gameStateConfig.isConfigurationSection("loothunt.scoreHistory")) {
+            LootHunt.scoreHistory.clear();
+            for (String playerKey : gameStateConfig.getConfigurationSection("loothunt.scoreHistory").getKeys(false)) {
+                List<Map<?, ?>> rawList = gameStateConfig.getMapList("loothunt.scoreHistory." + playerKey);
+                List<LootHunt.ScoreSnapshot> snapshots = new ArrayList<>();
+
+                for (Map<?, ?> rawMap : rawList) {
+                    if (rawMap == null) continue;
+                    try {
+                        long tick = ((Number) rawMap.get("tick")).longValue();
+                        double score = ((Number) rawMap.get("score")).doubleValue();
+
+                        List<String> biomes;
+                        List<String> structures;
+                        if (rawMap.get("biomes") instanceof java.util.List<?> rawBiomes) {
+                            biomes = rawBiomes.stream().map(String::valueOf).collect(Collectors.toList());
+                        } else {
+                            // Older save format had a single "biome" string - wrap it for compatibility
+                            Object legacyBiome = rawMap.get("biome");
+                            biomes = legacyBiome != null ? new ArrayList<>(List.of(String.valueOf(legacyBiome))) : new ArrayList<>();
+                        }
+                        if (rawMap.get("structures") instanceof java.util.List<?> rawStructures) {
+                            structures = rawStructures.stream().map(String::valueOf).collect(Collectors.toList());
+                        } else {
+                            Object legacyStructure = rawMap.get("structure");
+                            structures = legacyStructure != null ? new ArrayList<>(List.of(String.valueOf(legacyStructure))) : new ArrayList<>();
+                        }
+
+                        double x = rawMap.get("x") instanceof Number n ? n.doubleValue() : 0.0;
+                        double z = rawMap.get("z") instanceof Number n ? n.doubleValue() : 0.0;
+                        String dimension = rawMap.get("dimension") instanceof String s ? s
+                                : (Bukkit.getWorlds().isEmpty() ? "world" : Bukkit.getWorlds().get(0).getName());
+
+                        snapshots.add(new LootHunt.ScoreSnapshot(tick, score, biomes, structures, x, z, dimension));
+                    } catch (Exception e) {
+                        getLogger().warning("Failed to deserialize score snapshot for " + playerKey + ": " + e.getMessage());
+                    }
+                }
+                LootHunt.scoreHistory.put(playerKey, snapshots);
+            }
+        }
+
 
         getLogger().info("Game state loaded from gamestate.yml");
     }

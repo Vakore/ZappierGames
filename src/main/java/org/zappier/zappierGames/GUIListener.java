@@ -16,6 +16,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
+import org.zappier.zappierGames.dungeonrush.DungeonRush;
 import org.zappier.zappierGames.loothunt.LootHunt;
 import org.zappier.zappierGames.manhunt.Manhunt;
 import org.zappier.zappierGames.skybattle.Skybattle;
@@ -84,8 +85,27 @@ public class GUIListener implements Listener {
                     gui = new GUI("Parkour Race");
                     gui.open(player);
                     break;
+                case 16: // Dungeon Rush
+                    gui = new GUI("Dungeon Rush");
+                    gui.open(player);
+                    break;
                 default:
                     validClick = false;
+            }
+        } else if (title.equals("Dungeon Rush Menu")) {
+            switch (slot) {
+                case 13:
+                    player.closeInventory();
+                    World skybattleWorld = Bukkit.getWorld("skybattle_world");
+                    if (skybattleWorld != null) {
+                        //DungeonRush.start(skybattleWorld);
+                        player.closeInventory();
+                        //player.sendMessage(ChatColor.GREEN + "Loading Map!");
+                        player.sendMessage(ChatColor.RED + "Mode not yet created.");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Skybattle world not found!");
+                    }
+                    break;
             }
         } else if (title.equals("Loothunt Menu")) {
             switch (slot) {

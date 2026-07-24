@@ -27,7 +27,7 @@ public class CustomPearlsListener implements Listener {
         this.plugin = plugin;
         this.sbitemKey = new NamespacedKey(plugin, "sbitem");
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        plugin.getLogger().info("CustomPearlsListener registered for Minecraft 1.21.3!");
+        plugin.getLogger().info("CustomPearlsListener registered for Minecraft 1.21.11!");
     }
 
     @EventHandler(priority = EventPriority.HIGH)

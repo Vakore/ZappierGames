@@ -5,12 +5,14 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.zappier.zappierGames.ZappierGames;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,6 +58,9 @@ public class LoothuntCommand implements TabExecutor {
             case "endscore":
                 if (args.length < 3) {
                     player.sendMessage(ChatColor.RED + "Usage: /loothunt endscore <all|item_id> <player_name>");
+                    return true;
+                } else if (ZappierGames.timer > 0 && (player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE)) {
+                    player.sendMessage(ChatColor.RED + "Cannot use 'endscore' while loothunt is running! (Unless you're a spectator)");
                     return true;
                 }
 
@@ -237,6 +242,7 @@ public class LoothuntCommand implements TabExecutor {
                     .collect(Collectors.toList());
         } else if (args.length == 2 && args[0].equalsIgnoreCase("endscore")) {
             List<String> options = new ArrayList<>(LootHunt.itemValues.keySet());
+            options.addAll(LootHunt.specialItemValues.keySet());
             options.add("ALL");
             return options.stream()
                     .filter(option -> option.startsWith(args[1].toUpperCase()))

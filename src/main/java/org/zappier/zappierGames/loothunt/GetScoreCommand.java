@@ -37,20 +37,39 @@ public class GetScoreCommand implements TabExecutor {
             itemName = args[0].toUpperCase();
             Material material = Material.getMaterial(itemName);
             if (material == null) {
-                player.sendMessage(ChatColor.RED + itemName + " is not a valid item!");
-                return true;
+                // Not a real Material - could still be a special item ID (Ominous Banner, etc.)
+                if (LootHunt.specialItemValues.containsKey(itemName)) {
+                    item = new ItemStack(Material.AIR);
+                } else {
+                    player.sendMessage(ChatColor.RED + itemName + " is not a valid item!");
+                    return true;
+                }
+            } else {
+                item = new ItemStack(material);
             }
-            item = new ItemStack(material);
         }
 
         // Get the base item value
         double value = LootHunt.getItemValue(itemName);
+
+        // A special variant (Ominous Banner, Explorer Map, etc.) overrides the plain material
+        // value/name - either because we're checking a held item that matches, or the player
+        // looked it up directly by its special ID.
+        String specialId = (args.length == 0)
+                ? LootHunt.getSpecialItemId(item)
+                : (LootHunt.specialItemValues.containsKey(itemName) ? itemName : null);
+        if (specialId != null) {
+            itemName = specialId;
+            value = LootHunt.specialItemValues.getOrDefault(specialId, 0.0);
+        }
+
         StringBuilder message = new StringBuilder(ChatColor.GREEN + itemName);
 
         // Check which collections this item belongs to
         List<LootHunt.Collection> itemCollections = new ArrayList<>();
         for (LootHunt.Collection coll : LootHunt.collections.values()) {
-            if (coll.itemGroups.stream().anyMatch(group -> group.contains(itemName))) {
+            String finalItemName = itemName;
+            if (coll.itemGroups.stream().anyMatch(group -> group.contains(finalItemName))) {
                 itemCollections.add(coll);
             }
         }
@@ -132,8 +151,10 @@ public class GetScoreCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.stream(Material.values())
-                    .map(Material::name)
+            List<String> options = new ArrayList<>();
+            for (Material m : Material.values()) options.add(m.name());
+            options.addAll(LootHunt.specialItemValues.keySet());
+            return options.stream()
                     .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
                     .sorted() // This ensures the list is alphabetical in-game
                     .collect(Collectors.toList());
