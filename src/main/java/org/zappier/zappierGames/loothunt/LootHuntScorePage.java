@@ -16,6 +16,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
@@ -88,8 +89,8 @@ public class LootHuntScorePage {
             if (numericId >= 0 && numericId < 1296) {
                 int col = numericId % 36;
                 int row = numericId / 36;
-                int offsetX = -col * 16;
-                int offsetY = -row * 16;
+                int offsetX = -col * 32;
+                int offsetY = -row * 32;
 
                 sb.append("<div class=\"item-sprite\" ")
                         .append("style=\"background-position: ").append(offsetX).append("px ").append(offsetY).append("px;\" ")
@@ -101,7 +102,7 @@ public class LootHuntScorePage {
                             .append("</span>");
                 }
             } else {
-                sb.append("<div style=\"width:16px;height:16px;background:#333;color:#c66;font-size:9px;line-height:16px;text-align:center;\">?</div>");
+                sb.append("<div style=\"width:32px;height:32px;background:#333;color:#c66;font-size:12px;line-height:32px;text-align:center;\">?</div>");
             }
         }
 
@@ -111,7 +112,7 @@ public class LootHuntScorePage {
     public static void generateResultsHTML(Map<String, Map<String, Double>> teamItemCounts,
                                            Map<String, List<LootHunt.PlayerResult>> teamPlayers,
                                            Map<String, Map<String, List<LootHunt.ItemEntry>>> teamStorages,
-                                           long worldSeed) {
+                                           long worldSeed, String csvContent) {
 
         String timestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         File htmlFile = new File(ZappierGames.getInstance().getDataFolder(),
@@ -124,14 +125,14 @@ public class LootHuntScorePage {
                 .append("<head>\n")
                 .append("    <meta charset=\"UTF-8\">\n")
                 .append("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n")
-                .append("    <title>Loot Hunt Results - ").append(escapeHtml(timestamp)).append("</title>\n")
+                .append("    <title>Loothunt Results - ").append(escapeHtml(timestamp)).append("</title>\n")
                 .append("    <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n")
                 .append("    <style>\n")
                 .append("        .item-sprite {\n")
-                .append("            width: 16px;\n")
-                .append("            height: 16px;\n")
+                .append("            width: 32px;\n")
+                .append("            height: 32px;\n")
                 .append("            background-image: url('").append(getItemSpriteBase64()).append("');\n")
-                .append("            background-size: 576px 576px;\n")   // adjust if your sheet is different size
+                .append("            background-size: 1152px 1152px;\n")   // 2x the 576px sheet, matching the 32px cells below
                 .append("            image-rendering: pixelated;\n")
                 .append("        }\n")
                 .append("        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0ff; margin: 0; padding: 20px; }\n")
@@ -159,12 +160,68 @@ public class LootHuntScorePage {
                 .append("        .seed-info { text-align: center; color: #aaaaff; font-size: 0.95em; margin-top: 5px; }\n")
                 .append("        .offhand-slot { width: 32px; height: 32px; }\n")
                 .append("        .chart-container { background: #12122a; border: 1px solid #333366; border-radius: 6px; padding: 15px; margin-top: 10px; }\n")
+                .append("        #lh-tooltip { position: fixed; display: none; background: #1a1a2e; color: #ffd700; border: 1px solid #333366; border-radius: 4px; padding: 6px 10px; font-size: 0.85em; pointer-events: none; z-index: 9999; white-space: nowrap; box-shadow: 0 0 10px rgba(0,0,0,0.5); }\n")
+                .append("        .lh-team-nav { text-align: center; margin: 15px auto; max-width: 1200px; }\n")
+                .append("        .lh-team-tab { display: inline-block; margin: 3px; padding: 8px 14px; border-radius: 6px; background: #1a1a2e; border: 1px solid #333366; cursor: pointer; font-weight: bold; }\n")
+                .append("        .lh-team-tab.active { box-shadow: 0 0 8px currentColor; }\n")
+                .append("        .lh-nav-btn { background: #2a2a4a; color: #ffd700; border: 1px solid #333366; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: bold; font-size: 0.95em; margin: 0 8px; }\n")
+                .append("        .lh-nav-btn:hover { background: #3a3a5a; }\n")
+                .append("        .lh-scroll-section { max-height: 320px; overflow-y: auto; border: 1px solid #333366; border-radius: 6px; }\n")
                 .append("    </style>\n")
                 .append("</head>\n")
                 .append("<body>\n")
-                .append("    <h1>Loot Hunt Results</h1>\n")
+                .append("    <div id=\"lh-tooltip\"></div>\n")
+                .append("    <script>\n")
+                .append("        function lhShowTooltip(evt, text) {\n")
+                .append("            const tip = document.getElementById('lh-tooltip');\n")
+                .append("            tip.textContent = text;\n")
+                .append("            tip.style.display = 'block';\n")
+                .append("            tip.style.left = (evt.clientX + 14) + 'px';\n")
+                .append("            tip.style.top = (evt.clientY + 14) + 'px';\n")
+                .append("        }\n")
+                .append("        function lhHideTooltip() {\n")
+                .append("            document.getElementById('lh-tooltip').style.display = 'none';\n")
+                .append("        }\n")
+                .append("        let lhCurrentTeam = 0;\n")
+                .append("        let lhTeamNames = [];\n")
+                .append("        function lhShowTeam(idx) {\n")
+                .append("            const pages = document.querySelectorAll('.team-page');\n")
+                .append("            if (pages.length === 0) return;\n")
+                .append("            if (idx < 0) idx = pages.length - 1;\n")
+                .append("            if (idx >= pages.length) idx = 0;\n")
+                .append("            pages.forEach((el, i) => { el.style.display = (i === idx) ? '' : 'none'; });\n")
+                .append("            document.querySelectorAll('.lh-team-tab').forEach((el, i) => { el.classList.toggle('active', i === idx); });\n")
+                .append("            document.querySelectorAll('.lh-team-label').forEach(el => {\n")
+                .append("                el.textContent = lhTeamNames[idx] + ' (' + (idx + 1) + ' / ' + pages.length + ')';\n")
+                .append("            });\n")
+                .append("            lhCurrentTeam = idx;\n")
+                .append("            window.scrollTo({ top: document.getElementById('lh-team-nav-top').offsetTop - 10, behavior: 'smooth' });\n")
+                .append("        }\n")
+                .append("    </script>\n")
+                .append("    <h1>Loothunt Results</h1>\n")
                 .append("    <p style=\"text-align:center\">Game finished at ").append(escapeHtml(timestamp)).append("</p>\n")
                 .append("    <p class=\"seed-info\">World Seed: ").append(worldSeed).append("</p>\n");
+
+        if ((LootHunt.gameVersion != null && !LootHunt.gameVersion.isBlank()) ||
+                (LootHunt.loothuntSeason != null && !LootHunt.loothuntSeason.isBlank())) {
+            List<String> infoParts = new ArrayList<>();
+            if (LootHunt.loothuntSeason != null && !LootHunt.loothuntSeason.isBlank()) {
+                infoParts.add(escapeHtml(LootHunt.loothuntSeason));
+            }
+            if (LootHunt.gameVersion != null && !LootHunt.gameVersion.isBlank()) {
+                infoParts.add("Minecraft " + escapeHtml(LootHunt.gameVersion));
+            }
+            sb.append("    <p class=\"seed-info\">").append(String.join(" - ", infoParts)).append("</p>\n");
+        }
+
+        if (csvContent != null && !csvContent.isBlank()) {
+            String base64Csv = Base64.getEncoder().encodeToString(csvContent.getBytes(StandardCharsets.UTF_8));
+            sb.append("    <p style=\"text-align:center;\">")
+                    .append("<a download=\"loothunt-item-breakdown-").append(escapeHtml(timestamp)).append(".csv\" ")
+                    .append("href=\"data:text/csv;base64,").append(base64Csv).append("\" ")
+                    .append("style=\"display:inline-block;background:#2a2a4a;color:#ffd700;border:1px solid #333366;border-radius:6px;padding:10px 18px;text-decoration:none;font-weight:bold;\">")
+                    .append("\u2b07 Download Item Breakdown (CSV)</a></p>\n");
+        }
 
         List<Map.Entry<String, Map<String, Double>>> sortedTeams = teamItemCounts.entrySet().stream()
                 .sorted((a, b) -> Double.compare(
@@ -176,18 +233,37 @@ public class LootHuntScorePage {
         appendPositionMap(sb, teamPlayers);
         appendCombinedScoreChart(sb, teamPlayers, sortedTeams.stream().map(Map.Entry::getKey).toList());
 
+        List<String> teamNamesInOrder = sortedTeams.stream().map(Map.Entry::getKey).toList();
+        if (!teamNamesInOrder.isEmpty()) {
+            sb.append("    <div class=\"lh-team-nav\" id=\"lh-team-nav-top\">\n");
+            for (String teamName : teamNamesInOrder) {
+                String teamColor = getTeamColorHex(teamName);
+                String colorStyle = teamColor != null ? " color:" + teamColor + ";" : "";
+                sb.append("        <span class=\"lh-team-tab\" style=\"").append(colorStyle)
+                        .append("\" onclick=\"lhShowTeam(").append(teamNamesInOrder.indexOf(teamName)).append(")\">")
+                        .append(escapeHtml(teamName)).append("</span>\n");
+            }
+            sb.append("    </div>\n")
+                    .append("    <script>lhTeamNames = [")
+                    .append(teamNamesInOrder.stream().map(t -> "\"" + escapeJs(t) + "\"").collect(Collectors.joining(",")))
+                    .append("]; document.addEventListener('DOMContentLoaded', function() { lhShowTeam(0); });</script>\n");
+        }
+
+        int teamIdx = 0;
         for (var teamEntry : sortedTeams) {
             String teamName = teamEntry.getKey();
             Map<String, Double> items = teamEntry.getValue();
             double totalScore = calculateTotalScoreWithBonuses(items, teamName);
 
-            sb.append("    <div class=\"team\">\n")
+            sb.append("    <div class=\"team team-page\" id=\"team-page-").append(teamIdx).append("\"")
+                    .append(teamIdx == 0 ? "" : " style=\"display:none;\"").append(">\n")
                     .append("        <h2>").append(escapeHtml(teamName))
                     .append(" – <span class=\"score\">").append(String.format("%.1f", totalScore)).append("</span></h2>\n");
 
             // Collections - updated for itemGroups
-            sb.append("        <h3>Collections</h3>\n");
-            for (LootHunt.Collection coll : collections.values()) {
+            StringBuilder collectionLines = new StringBuilder();
+            int totalCollectionPoints = 0;
+            for (LootHunt.Collection coll : LootHunt.getSortedCollections()) {
                 long count = coll.itemGroups.stream()
                         .filter(group -> group.stream().anyMatch(items::containsKey))
                         .count();
@@ -198,13 +274,18 @@ public class LootHuntScorePage {
                 String status = (coll.type.equals("complete") && complete)
                         ? "COMPLETE" : count + "/" + coll.itemGroups.size();
                 int bonus = calculateCollectionBonus(coll, (int) count);
+                totalCollectionPoints += bonus;
 
-                sb.append("        <p class=\"collection\" title=\"")
+                collectionLines.append("        <p class=\"collection\" title=\"")
                         .append(escapeHtml(buildCollectionTooltip(coll, items)))
                         .append("\">")
                         .append(escapeHtml(coll.name)).append(": ").append(status)
                         .append(" (+").append(bonus).append(" bonus)</p>\n");
             }
+            sb.append("        <h3>Collections</h3>\n")
+                    .append("        <p style=\"text-align:center;color:#55ff55;font-weight:bold;\">Total Collection Points \u2014 ")
+                    .append(totalCollectionPoints).append("</p>\n")
+                    .append(collectionLines);
 
             // Players
             sb.append("        <h3>Players</h3>\n")
@@ -253,7 +334,7 @@ public class LootHuntScorePage {
                 sb.append("</td><td>");
 
                 // Inventory list (alphabetical)
-                sb.append("<table class=\"inventory-table\">");
+                sb.append("<div class=\"lh-scroll-section\"><table class=\"inventory-table\">");
                 List<String> sortedPersonal = new ArrayList<>(pr.personalInventory.keySet());
                 Collections.sort(sortedPersonal);
                 for (String itemId : sortedPersonal) {
@@ -264,15 +345,23 @@ public class LootHuntScorePage {
                     sb.append("<tr class=\"item-row\"><td>").append(escapeHtml(itemId)).append("</td><td>x").append(totalQty)
                             .append("</td><td>").append(String.format("%.1f", totalPts)).append(" pts</td><td title=\"").append(escapeHtml(sources)).append("\">Sources</td></tr>");
                 }
-                sb.append("</table></td></tr>\n");
+                sb.append("</table></div></td></tr>\n");
             }
             sb.append("        </table>\n");
 
             // Score History Chart
             appendScoreHistoryChart(sb, teamName, players);
 
+            // Team navigation - cycle back and forth between teams without scrolling the whole page
+            sb.append("        <p style=\"text-align:center;margin-top:15px;\">")
+                    .append("<button class=\"lh-nav-btn\" onclick=\"lhShowTeam(lhCurrentTeam - 1)\">\u25c0 Prev Team</button>")
+                    .append("<span class=\"lh-team-label\" style=\"color:#ffd700;font-weight:bold;\"></span>")
+                    .append("<button class=\"lh-nav-btn\" onclick=\"lhShowTeam(lhCurrentTeam + 1)\">Next Team \u25b6</button>")
+                    .append("</p>\n");
+
             // Team Storage (alphabetical, with sources)
             sb.append("        <h3>Team Infinibundle Storage</h3>\n")
+                    .append("        <div class=\"lh-scroll-section\">\n")
                     .append("        <table><tr><th>Item</th><th>Quantity</th><th>Points</th><th>Sources</th></tr>\n");
             Map<String, List<LootHunt.ItemEntry>> storage = teamStorages.getOrDefault(teamName, new HashMap<>());
             List<String> sortedStorage = new ArrayList<>(storage.keySet());
@@ -287,9 +376,11 @@ public class LootHuntScorePage {
                         .append("</td><td>").append(String.format("%.1f", totalPts))
                         .append("</td><td>").append(sources).append("</td></tr>\n");
             }
-            sb.append("        </table>\n");
+            sb.append("        </table>\n")
+                    .append("        </div>\n");
 
             sb.append("    </div>\n");
+            teamIdx++;
         }
 
         sb.append("</body>\n")
@@ -420,6 +511,8 @@ public class LootHuntScorePage {
         return worldName;
     }
 
+    private static int positionMapCounter = 0;
+
     private static void appendPositionMapForDimension(StringBuilder sb, String dimension,
                                                       Map<String, List<LootHunt.ScoreSnapshot>> perPlayerHistory,
                                                       Map<String, String[]> styles) {
@@ -459,12 +552,26 @@ public class LootHuntScorePage {
         }
 
         World world = Bukkit.getWorld(dimension);
-        BufferedImage img = renderWorldMapBackground(world, imgW, imgH, minX, maxX, minZ, maxZ);
-        Graphics2D g = img.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        MapBackgroundResult bgResult = renderWorldMapBackground(world, imgW, imgH, minX, maxX, minZ, maxZ);
 
-        StringBuilder legend = new StringBuilder();
+        String base64Bg;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(bgResult.image, "png", baos);
+            base64Bg = Base64.getEncoder().encodeToString(baos.toByteArray());
+        } catch (IOException e) {
+            ZappierGames.getInstance().getLogger().warning("Failed to render position map background for " + dimension + ": " + e.getMessage());
+            sb.append("        <p style=\"text-align:center;color:#8888aa;\">Position map failed to render.</p>\n");
+            return;
+        }
+
+        String mapId = "posmap-" + sanitizeId(dimension) + "-" + (positionMapCounter++);
+        String containerId = mapId + "-container";
+        StringBuilder checkboxes = new StringBuilder();
+        StringBuilder overlayImgs = new StringBuilder();
+        StringBuilder hoverDivs = new StringBuilder();
         double finalMinX = minX, finalMinZ = minZ, finalSpanX = spanX, finalSpanZ = spanZ;
+        int playerIdx = 0;
 
         for (Map.Entry<String, List<LootHunt.ScoreSnapshot>> entry : perPlayerHistory.entrySet()) {
             String playerName = entry.getKey();
@@ -472,72 +579,176 @@ public class LootHuntScorePage {
             String hex = styles.getOrDefault(playerName, new String[]{"#aaaaaa", "[]"})[0];
             Color color = Color.decode(hex);
 
-            g.setStroke(new BasicStroke(2f));
-            g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 170));
+            // Each player's path/dots render onto their own transparent image so a checkbox can
+            // toggle that one player on/off without needing to re-render anything.
+            BufferedImage overlay = new BufferedImage(imgW, imgH, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D go = overlay.createGraphics();
+            go.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            go.setStroke(new BasicStroke(2f));
+            go.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 170));
             int prevPx = -1, prevPy = -1;
             for (LootHunt.ScoreSnapshot snap : history) {
                 int px = (int) ((snap.x - finalMinX) / finalSpanX * imgW);
                 int py = (int) ((snap.z - finalMinZ) / finalSpanZ * imgH);
-                if (prevPx >= 0) g.drawLine(prevPx, prevPy, px, py);
+                if (prevPx >= 0) go.drawLine(prevPx, prevPy, px, py);
                 prevPx = px;
                 prevPy = py;
             }
 
             double maxScore = history.stream().mapToDouble(s -> s.score).max().orElse(0.0);
-            g.setColor(color);
+            go.setColor(color);
             for (LootHunt.ScoreSnapshot snap : history) {
                 int px = (int) ((snap.x - finalMinX) / finalSpanX * imgW);
                 int py = (int) ((snap.z - finalMinZ) / finalSpanZ * imgH);
                 double frac = maxScore > 0 ? Math.max(0.15, snap.score / maxScore) : 0.15;
                 int radius = (int) (3 + frac * 5);
-                g.fillOval(px - radius, py - radius, radius * 2, radius * 2);
+                go.fillOval(px - radius, py - radius, radius * 2, radius * 2);
+
+                // Hover target for points where the player was inside a structure. Uses a data
+                // attribute (read by the shared mousemove listener below) instead of the native
+                // "title" tooltip - title tooltips only show the browser's help-cursor glyph
+                // immediately and the actual text after a long hover delay, which read as broken.
+                if (!snap.structures.isEmpty()) {
+                    double leftPct = px * 100.0 / imgW;
+                    double topPct = py * 100.0 / imgH;
+                    String structLabel = escapeHtml(playerName + ": " + String.join(", ", snap.structures));
+                    hoverDivs.append("<div class=\"lh-structure-dot\" data-tip=\"").append(structLabel)
+                            .append("\" style=\"position:absolute; left:")
+                            .append(String.format("%.3f", leftPct)).append("%; top:")
+                            .append(String.format("%.3f", topPct)).append("%; width:14px; height:14px; ")
+                            .append("margin-left:-7px; margin-top:-7px; border-radius:50%; cursor:pointer; z-index:5; ")
+                            .append("border:1px dashed rgba(255,255,255,0.45);\"></div>\n");
+                }
+            }
+            go.dispose();
+
+            String imgId = mapId + "-p" + playerIdx;
+            String base64Overlay;
+            try {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(overlay, "png", baos);
+                base64Overlay = Base64.getEncoder().encodeToString(baos.toByteArray());
+            } catch (IOException e) {
+                ZappierGames.getInstance().getLogger().warning("Failed to render position map overlay for " + playerName + ": " + e.getMessage());
+                playerIdx++;
+                continue;
             }
 
-            legend.append("<span style=\"color:").append(hex).append(";font-weight:bold;\">\u25CF ")
-                    .append(escapeHtml(playerName)).append("</span>&nbsp;&nbsp;");
-        }
-        g.dispose();
+            overlayImgs.append("<img id=\"").append(imgId).append("\" src=\"data:image/png;base64,").append(base64Overlay)
+                    .append("\" style=\"position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none;\">\n");
 
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(img, "png", baos);
-            String base64Png = Base64.getEncoder().encodeToString(baos.toByteArray());
+            checkboxes.append("<label style=\"color:").append(hex).append(";font-weight:bold;margin-right:14px;cursor:pointer;\">")
+                    .append("<input type=\"checkbox\" checked onchange=\"document.getElementById('").append(imgId)
+                    .append("').style.display = this.checked ? 'block' : 'none';\"> ")
+                    .append(escapeHtml(playerName)).append("</label>");
 
-            sb.append("        <p style=\"text-align:center;\">").append(legend).append("</p>\n")
-                    .append("        <p style=\"text-align:center;color:#aaaaff;font-size:0.85em;\">Dot size reflects that player's score at the time it was recorded; background is colored by biome (approximate, based on currently loaded chunks). Line color matches team color.</p>\n")
-                    .append("        <div style=\"text-align:center;\">\n")
-                    .append("        <img src=\"data:image/png;base64,").append(base64Png)
-                    .append("\" style=\"max-width:100%;border:1px solid #333366;border-radius:6px;\">\n")
-                    .append("        </div>\n");
-        } catch (IOException e) {
-            ZappierGames.getInstance().getLogger().warning("Failed to render position map for " + dimension + ": " + e.getMessage());
-            sb.append("        <p style=\"text-align:center;color:#8888aa;\">Position map failed to render.</p>\n");
+            playerIdx++;
         }
+
+        // Biome palette + grid for the hover lookup - built from the exact same grid used to
+        // paint the background, so hovering anywhere on the map (that isn't a structure dot)
+        // shows that tile's biome name.
+        Map<String, Integer> paletteIndex = new LinkedHashMap<>();
+        StringBuilder gridJs = new StringBuilder("[");
+        for (int row = 0; row < bgResult.gridRows; row++) {
+            if (row > 0) gridJs.append(",");
+            gridJs.append("[");
+            for (int col = 0; col < bgResult.gridCols; col++) {
+                if (col > 0) gridJs.append(",");
+                String key = bgResult.biomeKeys[row][col];
+                gridJs.append(key == null ? -1 : paletteIndex.computeIfAbsent(key, k -> paletteIndex.size()));
+            }
+            gridJs.append("]");
+        }
+        gridJs.append("]");
+
+        StringBuilder paletteJs = new StringBuilder("[");
+        boolean firstPalette = true;
+        for (String key : paletteIndex.keySet()) {
+            if (!firstPalette) paletteJs.append(",");
+            firstPalette = false;
+            paletteJs.append("\"").append(escapeJs(formatBiomeName(key))).append("\"");
+        }
+        paletteJs.append("]");
+
+        sb.append("        <p style=\"text-align:center;\">").append(checkboxes).append("</p>\n")
+                .append("        <p style=\"text-align:center;color:#aaaaff;font-size:0.85em;\">Dot size reflects that player's score at the time it was recorded. Hover the map for biome names, or a dashed circle for the structure a player was in at that point. Use the checkboxes above to show/hide individual players.</p>\n")
+                .append("        <div id=\"").append(containerId).append("\" style=\"position:relative;display:inline-block;max-width:100%;\">\n")
+                .append("        <img src=\"data:image/png;base64,").append(base64Bg)
+                .append("\" style=\"display:block;width:100%;height:auto;border:1px solid #333366;border-radius:6px;\">\n")
+                .append(overlayImgs)
+                .append(hoverDivs)
+                .append("        </div>\n")
+                .append("        <script>\n")
+                .append("        (function() {\n")
+                .append("            const container = document.getElementById('").append(containerId).append("');\n")
+                .append("            const biomePalette = ").append(paletteJs).append(";\n")
+                .append("            const biomeGrid = ").append(gridJs).append(";\n")
+                .append("            const gridCols = ").append(bgResult.gridCols).append(", gridRows = ").append(bgResult.gridRows).append(";\n")
+                .append("            container.addEventListener('mousemove', function(e) {\n")
+                .append("                const dot = e.target.closest('.lh-structure-dot');\n")
+                .append("                if (dot) { lhShowTooltip(e, dot.dataset.tip); return; }\n")
+                .append("                const rect = container.getBoundingClientRect();\n")
+                .append("                const relX = (e.clientX - rect.left) / rect.width;\n")
+                .append("                const relY = (e.clientY - rect.top) / rect.height;\n")
+                .append("                if (relX < 0 || relX > 1 || relY < 0 || relY > 1) { lhHideTooltip(); return; }\n")
+                .append("                const col = Math.min(gridCols - 1, Math.floor(relX * gridCols));\n")
+                .append("                const row = Math.min(gridRows - 1, Math.floor(relY * gridRows));\n")
+                .append("                const idx = biomeGrid[row][col];\n")
+                .append("                lhShowTooltip(e, idx >= 0 ? biomePalette[idx] : 'Unexplored');\n")
+                .append("            });\n")
+                .append("            container.addEventListener('mouseleave', lhHideTooltip);\n")
+                .append("        })();\n")
+                .append("        </script>\n");
     }
 
     private static final Map<String, Color> biomeColorCache = new HashMap<>();
 
     /**
-     * Paints a coarse biome-colored background for a position map. Only samples chunks that are
-     * already loaded (skips unloaded ones with a neutral gray) so this can't force a burst of
-     * synchronous chunk generation/loading on the main thread right after a game ends.
+     * Paints a coarse biome-colored background for a position map from LootHunt.visitedChunkBiomes
+     * - biome samples collected as chunks loaded throughout the game (see LootHuntChunkListener),
+     * not sampled live at report time (which could only ever cover whatever tiny sliver of the
+     * explored area happened to still be loaded once the game ended).
      */
-    private static BufferedImage renderWorldMapBackground(World world, int imgW, int imgH, double minX, double maxX, double minZ, double maxZ) {
+    /** Result of rendering a position map background: the image itself, plus the same-resolution
+     * biome-key grid used to paint it, so JS can do hover lookups without one DOM element per cell. */
+    private static class MapBackgroundResult {
+        BufferedImage image;
+        String[][] biomeKeys; // [row][col], null = never-visited chunk
+        int gridCols;
+        int gridRows;
+    }
+
+    private static MapBackgroundResult renderWorldMapBackground(World world, int imgW, int imgH, double minX, double maxX, double minZ, double maxZ) {
         BufferedImage img = new BufferedImage(imgW, imgH, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
         g.setColor(new Color(20, 20, 35));
         g.fillRect(0, 0, imgW, imgH);
 
+        MapBackgroundResult result = new MapBackgroundResult();
+        // No longer bottlenecked by live Bukkit calls (just map lookups), so a finer grid is cheap
+        int gridCols = Math.min(imgW, 150);
+        int gridRows = Math.min(imgH, 150);
+        result.gridCols = gridCols;
+        result.gridRows = gridRows;
+        result.biomeKeys = new String[gridRows][gridCols];
+
         if (world == null) {
             g.dispose();
-            return img;
+            result.image = img;
+            return result;
+        }
+
+        Map<Long, String> chunkBiomes = LootHunt.visitedChunkBiomes.get(world.getName());
+        if (chunkBiomes == null || chunkBiomes.isEmpty()) {
+            g.dispose();
+            result.image = img;
+            return result;
         }
 
         double spanX = maxX - minX;
         double spanZ = maxZ - minZ;
-
-        int gridCols = Math.min(imgW, 100);
-        int gridRows = Math.min(imgH, 100);
         double cellW = (double) imgW / gridCols;
         double cellH = (double) imgH / gridRows;
 
@@ -545,21 +756,12 @@ public class LootHuntScorePage {
             for (int gz = 0; gz < gridRows; gz++) {
                 double worldX = minX + (gx + 0.5) / gridCols * spanX;
                 double worldZ = minZ + (gz + 0.5) / gridRows * spanZ;
-                int blockX = (int) Math.floor(worldX);
-                int blockZ = (int) Math.floor(worldZ);
+                int chunkX = ((int) Math.floor(worldX)) >> 4;
+                int chunkZ = ((int) Math.floor(worldZ)) >> 4;
 
-                Color color;
-                if (world.isChunkLoaded(blockX >> 4, blockZ >> 4)) {
-                    try {
-                        int blockY = world.getHighestBlockYAt(blockX, blockZ);
-                        String biomeKey = world.getBlockAt(blockX, blockY, blockZ).getBiome().getKey().getKey();
-                        color = biomeToColor(biomeKey);
-                    } catch (Throwable t) {
-                        color = new Color(40, 40, 55);
-                    }
-                } else {
-                    color = new Color(30, 30, 45); // unloaded chunk - don't force it to load just for the map
-                }
+                String biomeKey = chunkBiomes.get(LootHunt.packChunkKey(chunkX, chunkZ));
+                result.biomeKeys[gz][gx] = biomeKey;
+                Color color = biomeKey != null ? biomeToColor(biomeKey) : new Color(30, 30, 45); // never-visited chunk
 
                 g.setColor(color);
                 g.fillRect((int) (gx * cellW), (int) (gz * cellH), (int) Math.ceil(cellW), (int) Math.ceil(cellH));
@@ -567,7 +769,8 @@ public class LootHuntScorePage {
         }
 
         g.dispose();
-        return img;
+        result.image = img;
+        return result;
     }
 
     /**
@@ -580,6 +783,19 @@ public class LootHuntScorePage {
             float hue = (Math.abs(hash) % 360) / 360f;
             return Color.getHSBColor(hue, 0.45f, 0.55f);
         });
+    }
+
+    /** Turns "minecraft:frozen_river" into "Frozen River" for display. */
+    private static String formatBiomeName(String biomeKey) {
+        String name = biomeKey.contains(":") ? biomeKey.substring(biomeKey.indexOf(':') + 1) : biomeKey;
+        String[] parts = name.toLowerCase(Locale.ROOT).split("_");
+        StringBuilder result = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            if (result.length() > 0) result.append(" ");
+            result.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+        }
+        return result.toString();
     }
 
     /**
@@ -613,13 +829,13 @@ public class LootHuntScorePage {
     }
 
     /**
-     * Appends a Chart.js line chart showing score history over time for the given players
-     * (teammates share their team's color, distinguished from each other via line dash pattern),
-     * with biome/structure context available in the tooltip on hover.
+     * Appends a Chart.js line chart showing each team's aggregate score over time (one line per
+     * team, using their real team color). This uses the team-level score history rather than
+     * summing/plotting individual players, since a per-player line double-counts shared team
+     * storage (it's counted in full for every teammate).
      */
-    private static void appendScoreHistoryChartGeneric(StringBuilder sb, String chartId, String heading,
-                                                       List<LootHunt.PlayerResult> players,
-                                                       Map<String, String> playerTeam, String noDataMessage) {
+    private static void appendTeamScoreHistoryChart(StringBuilder sb, String chartId, String heading,
+                                                    List<String> teamNames, String noDataMessage) {
         if (!heading.isEmpty()) {
             sb.append("        <h3>").append(escapeHtml(heading)).append("</h3>\n");
         }
@@ -631,41 +847,44 @@ public class LootHuntScorePage {
                 .append("            const ctx = document.getElementById('").append(chartId).append("').getContext('2d');\n")
                 .append("            const datasets = [];\n");
 
-        Map<String, String[]> styles = computePlayerStyles(players, playerTeam);
+        String[] palette = {"#ff5555", "#55ff55", "#5599ff", "#ffaa00", "#aa55ff", "#00ffcc", "#ff55aa", "#ffff55"};
+        int paletteIdx = 0;
         boolean anyData = false;
 
-        for (LootHunt.PlayerResult pr : players) {
-            List<LootHunt.ScoreSnapshot> history = LootHunt.scoreHistory.getOrDefault(pr.name, Collections.emptyList());
+        for (String teamName : teamNames) {
+            List<LootHunt.TeamScoreSnapshot> history = LootHunt.teamScoreHistory.getOrDefault(teamName, Collections.emptyList());
             if (history.isEmpty()) continue;
             anyData = true;
 
             StringBuilder dataPoints = new StringBuilder("[");
             StringBuilder metaPoints = new StringBuilder("[");
             for (int i = 0; i < history.size(); i++) {
-                LootHunt.ScoreSnapshot snap = history.get(i);
+                LootHunt.TeamScoreSnapshot snap = history.get(i);
                 if (i > 0) { dataPoints.append(","); metaPoints.append(","); }
                 double minutes = snap.tick / 60.0;
                 dataPoints.append("{x:").append(minutes).append(",y:").append(snap.score).append("}");
                 String biomeLabel = snap.biomes.isEmpty() ? "unknown" : escapeJs(String.join(", ", snap.biomes));
                 String structLabel = snap.structures.isEmpty() ? "none" : escapeJs(String.join(", ", snap.structures));
-                String dimLabel = escapeJs(dimensionDisplayName(snap.dimension));
+                String dimLabel = snap.dimensions.isEmpty() ? "unknown" :
+                        escapeJs(snap.dimensions.stream().map(LootHuntScorePage::dimensionDisplayName).collect(Collectors.joining(", ")));
                 metaPoints.append("{biome:\"").append(biomeLabel).append("\",structure:\"").append(structLabel)
                         .append("\",dimension:\"").append(dimLabel).append("\"}");
             }
             dataPoints.append("]");
             metaPoints.append("]");
 
-            String[] style = styles.getOrDefault(pr.name, new String[]{"#aaaaaa", "[]"});
-            String color = style[0];
-            String dash = style[1];
+            String color = getTeamColorHex(teamName);
+            if (color == null) {
+                color = palette[paletteIdx % palette.length];
+                paletteIdx++;
+            }
 
             sb.append("            datasets.push({\n")
-                    .append("                label: \"").append(escapeJs(pr.name)).append("\",\n")
+                    .append("                label: \"").append(escapeJs(teamName)).append("\",\n")
                     .append("                data: ").append(dataPoints).append(",\n")
                     .append("                meta: ").append(metaPoints).append(",\n")
                     .append("                borderColor: \"").append(color).append("\",\n")
                     .append("                backgroundColor: \"").append(color).append("\",\n")
-                    .append("                borderDash: ").append(dash).append(",\n")
                     .append("                fill: false,\n")
                     .append("                tension: 0.2,\n")
                     .append("                pointRadius: 3\n")
@@ -709,29 +928,17 @@ public class LootHuntScorePage {
     }
 
     private static void appendScoreHistoryChart(StringBuilder sb, String teamName, List<LootHunt.PlayerResult> players) {
-        Map<String, String> playerTeam = new HashMap<>();
-        for (LootHunt.PlayerResult pr : players) playerTeam.put(pr.name, teamName);
-        appendScoreHistoryChartGeneric(sb, "chart-" + sanitizeId(teamName), "Score History", players, playerTeam,
-                "No score history recorded for this team.");
+        appendTeamScoreHistoryChart(sb, "chart-" + sanitizeId(teamName), "Score History",
+                List.of(teamName), "No score history recorded for this team.");
     }
 
     /**
-     * A single combined chart at the top of the page with every player's score line, colored by
-     * team so it's easy to see how teams are trending relative to each other at a glance.
+     * A single combined chart at the top of the page with every team's aggregate score line.
      */
     private static void appendCombinedScoreChart(StringBuilder sb, Map<String, List<LootHunt.PlayerResult>> teamPlayers, List<String> teamOrder) {
-        List<LootHunt.PlayerResult> allPlayers = new ArrayList<>();
-        Map<String, String> playerTeam = new HashMap<>();
-        for (String team : teamOrder) {
-            for (LootHunt.PlayerResult pr : teamPlayers.getOrDefault(team, Collections.emptyList())) {
-                allPlayers.add(pr);
-                playerTeam.put(pr.name, team);
-            }
-        }
-
         sb.append("    <div class=\"team\">\n")
-                .append("        <h2>All Players \u2014 Score History</h2>\n");
-        appendScoreHistoryChartGeneric(sb, "chart-all-players", "", allPlayers, playerTeam,
+                .append("        <h2>All Teams \u2014 Score History</h2>\n");
+        appendTeamScoreHistoryChart(sb, "chart-all-players", "", teamOrder,
                 "No score history recorded.");
         sb.append("    </div>\n");
     }

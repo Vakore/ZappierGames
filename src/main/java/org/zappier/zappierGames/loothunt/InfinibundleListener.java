@@ -34,6 +34,27 @@ import java.util.stream.Collectors;
 
 public class InfinibundleListener implements Listener {
 
+    private enum ViewMode {
+        INVENTORY("Inventory"), COLLECTIONS("Collections"), QUESTS("Quests");
+
+        final String label;
+        ViewMode(String label) { this.label = label; }
+
+        ViewMode next() {
+            return switch (this) {
+                case INVENTORY -> COLLECTIONS;
+                case COLLECTIONS -> QUESTS;
+                case QUESTS -> INVENTORY;
+            };
+        }
+
+        static ViewMode fromTitle(String title) {
+            if (title.contains("Collections")) return COLLECTIONS;
+            if (title.contains("Quests")) return QUESTS;
+            return INVENTORY;
+        }
+    }
+
     private static final int CUSTOM_MODEL_DATA = 900009;
     private static final int SLOTS_PER_PAGE = 45;
 
@@ -114,7 +135,7 @@ public class InfinibundleListener implements Listener {
             lastPageToGo = lastOccupiedPage;
             LootHunt.lastPages.put(player.getName().toLowerCase(), lastPageToGo);
         }
-        openTeamInventory(player, team, lastPageToGo, false);
+        openTeamInventory(player, team, lastPageToGo, ViewMode.INVENTORY);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -152,16 +173,17 @@ public class InfinibundleListener implements Listener {
 
         Component titleComp = view.title();
         String title = PlainTextComponentSerializer.plainText().serialize(titleComp);
-        if (title.contains(" Team Collections")) {
+        if (title.contains(" Team Collections") || title.contains(" Team Quests")) {
             if (event.getClickedInventory() == view.getBottomInventory() ||
-                event.getClickedInventory() != view.getBottomInventory() &&
-                event.getSlot() != 45 && event.getSlot() != 49 && event.getSlot() != 53) {
+                    event.getClickedInventory() != view.getBottomInventory() &&
+                            event.getSlot() != 45 && event.getSlot() != 46 && event.getSlot() != 49
+                            && event.getSlot() != 52 && event.getSlot() != 53) {
                 event.setCancelled(true);
                 player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_FAIL, 1.0f, 0.5f);
                 return;
             }
         }
-        if (!title.contains(" Team Inventory") && !title.contains(" Team Collections")) return;
+        if (!title.contains(" Team Inventory") && !title.contains(" Team Collections") && !title.contains(" Team Quests")) return;
 
         if (event.getClickedInventory() == view.getBottomInventory() && involvesBundle) {
             event.setCancelled(true);
@@ -174,18 +196,18 @@ public class InfinibundleListener implements Listener {
         int slot = event.getSlot();
 
         // === NAVIGATION AND SWITCH LOGIC (NO FLICKER) ===
-        if (slot == 45 || slot == 53 || slot == 49) {
+        if (slot == 45 || slot == 46 || slot == 52 || slot == 53 || slot == 49) {
             if (current == null) return;
-            if (slot == 45 && current.getType() != Material.ARROW) return;
-            if (slot == 53 && current.getType() != Material.ARROW) return;
+            if ((slot == 45 || slot == 53) && current.getType() != Material.SPECTRAL_ARROW) return;
+            if ((slot == 46 || slot == 52) && current.getType() != Material.ARROW) return;
             if (slot == 49 && current.getType() != Material.BARRIER) return;
 
             String team = title.split(" Team ")[0];
             int currentPage = Integer.parseInt(title.split("Page ")[1]) - 1;
-            boolean isCollections = title.contains("Collections");
+            ViewMode mode = ViewMode.fromTitle(title);
 
             // 1. Save current page items manually if in storage mode
-            if (!isCollections) {
+            if (mode == ViewMode.INVENTORY) {
                 savePage(player, event.getInventory(), title);
             }
 
@@ -194,26 +216,32 @@ public class InfinibundleListener implements Listener {
 
             // 3. Determine new page and mode
             int newPage;
-            boolean newIsCollections;
+            ViewMode newMode;
             if (slot == 49) {
                 newPage = 0;
-                newIsCollections = !isCollections;
+                newMode = mode.next();
                 player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
             } else {
-                newPage = slot == 45 ? currentPage - 1 : currentPage + 1;
-                newIsCollections = isCollections;
+                newMode = mode;
+                if (slot == 45) {
+                    newPage = 0; // first page
+                } else if (slot == 53) {
+                    newPage = Integer.MAX_VALUE; // clamped down to the last page in openTeamInventory
+                } else {
+                    newPage = slot == 46 ? currentPage - 1 : currentPage + 1;
+                }
                 player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
             }
 
             // 4. Open new page immediately (replaces current inventory)
-            openTeamInventory(player, team, newPage, newIsCollections);
+            openTeamInventory(player, team, newPage, newMode);
 
             // 5. Clean up flag
             switchingPages.remove(player.getUniqueId());
             return;
         }
 
-        if (title.contains("Collections")) return; // No item interactions in collections view
+        if (title.contains("Collections") || title.contains("Quests")) return; // No item interactions in read-only views
 
         if (slot >= SLOTS_PER_PAGE) return;
 
@@ -262,11 +290,30 @@ public class InfinibundleListener implements Listener {
         }
     }
 
-    private void openTeamInventory(Player player, String team, int page, boolean isCollections) {
+    private void openTeamInventory(Player player, String team, int page, ViewMode mode) {
         if (page < 0) page = 0;
 
+        int maxPage = 0;
+        List<ItemStack> displayItems = null; // only used in collections/quests mode
+
+        if (mode == ViewMode.COLLECTIONS || mode == ViewMode.QUESTS) {
+            // Collections tab shows only non-quest collections; Quests tab shows only quest
+            // collections (always, regardless of completion, so progress can be tracked there).
+            displayItems = buildCollectionDisplayItems(team, mode == ViewMode.QUESTS);
+            maxPage = displayItems.isEmpty() ? 0 : (displayItems.size() - 1) / SLOTS_PER_PAGE;
+        } else {
+            List<ItemStack> storage = getTeamStorage(team);
+            maxPage = storage.isEmpty() ? 0 : (storage.size() / SLOTS_PER_PAGE) + 1;
+        }
+
+        // Clamp page BEFORE building the title/inventory below - the title is baked in at
+        // creation time, so clamping after would leave "First"/"Last" (which pass 0 or
+        // Integer.MAX_VALUE as a sentinel) showing a garbage page number, and every subsequent
+        // click would misnavigate since it re-parses the current page from that broken title.
+        if (page > maxPage) page = maxPage;
+
         Inventory inv = Bukkit.createInventory(null, 54,
-                Component.text(team + " Team " + (isCollections ? "Collections" : "Inventory") + " - Page " + (page + 1)));
+                Component.text(team + " Team " + mode.label + " - Page " + (page + 1)));
 
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta fm = filler.getItemMeta();
@@ -274,123 +321,8 @@ public class InfinibundleListener implements Listener {
         filler.setItemMeta(fm);
         for (int i = SLOTS_PER_PAGE; i < 54; i++) inv.setItem(i, filler);
 
-        int maxPage = 0;
-        List<ItemStack> displayItems = null; // only used in collections mode
-
-        if (isCollections) {
-            // Compute collected items
-            Set<String> collected = getTeamCollectedItems(team);
-
-            // Build display items
-            displayItems = new ArrayList<>();
-            for (LootHunt.Collection coll : LootHunt.collections.values()) {
-                int startOfColl = displayItems.size();
-
-                // Header
-                ItemStack header = new ItemStack(Material.WRITABLE_BOOK);
-                ItemMeta hm = header.getItemMeta();
-                hm.displayName(Component.text(coll.name, NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
-                long collectedCount = coll.itemGroups.stream()
-                        .filter(group -> group.stream().anyMatch(collected::contains))
-                        .count();
-                hm.lore(List.of(
-                        Component.text("Type: " + capitalize(coll.type), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-                        Component.text("Progress: " + collectedCount + "/" + coll.itemGroups.size(), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
-                ));
-                header.setItemMeta(hm);
-                displayItems.add(header);
-
-                // Collect item displays
-                List<ItemStack> collItems = new ArrayList<>();
-                for (List<String> group : coll.itemGroups) {
-                    String repId = group.get(0);
-                    Material repMat = Material.getMaterial(repId);
-                    boolean isPotionKey = false;
-
-                    if (repMat == null) {
-                        Pattern potionPattern = Pattern.compile("^(SPLASH_|LINGERING_)?(.+)$");
-                        Matcher m = potionPattern.matcher(repId);
-                        if (m.matches()) {
-                            String prefix = m.group(1) != null ? m.group(1) : "";
-                            String typeStr = m.group(2);
-                            try {
-                                PotionType.valueOf(typeStr);
-                                repMat = prefix.startsWith("SPLASH") ? Material.SPLASH_POTION :
-                                        prefix.startsWith("LING") ? Material.LINGERING_POTION : Material.POTION;
-                                isPotionKey = true;
-                            } catch (IllegalArgumentException ignored) {}
-                        }
-                        if (repMat == null) repMat = Material.BARRIER;
-                    }
-
-                    boolean has = group.stream().anyMatch(collected::contains);
-
-                    ItemStack disp;
-                    String dispName = capitalize(repId.replace("_", " ").toLowerCase());
-                    if (group.size() > 1) dispName += " (variants)";
-
-                    if (has) {
-                        disp = new ItemStack(Material.BARRIER);
-                        ItemMeta dm = disp.getItemMeta();
-                        dm.displayName(Component.text(dispName, NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
-                        dm.lore(List.of(Component.text("COLLECTED", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false)));
-                        disp.setItemMeta(dm);
-                    } else {
-                        disp = new ItemStack(repMat, 1);
-                        if (isPotionKey && disp.getType().name().contains("POTION")) {
-                            PotionMeta pm = (PotionMeta) disp.getItemMeta();
-                            String typeStr = repId.replaceFirst("^(SPLASH_|LINGERING_)", "");
-                            PotionType pt = PotionType.valueOf(typeStr);
-                            pm.setBasePotionType(pt);
-                            disp.setItemMeta(pm);
-                        }
-                        ItemMeta dm = disp.getItemMeta();
-                        dm.displayName(Component.text(dispName, NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
-                        List<Component> lore = new ArrayList<>();
-                        lore.add(Component.text("Not Collected", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
-                        if (group.size() > 1) {
-                            lore.add(Component.text("Any of: " + String.join(", ", group), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-                        }
-                        dm.lore(lore);
-                        disp.setItemMeta(dm);
-                    }
-                    collItems.add(disp);
-                }
-
-                // Add collItems in groups of 8, with null placeholder for col0 in subsequent "rows"
-                for (int g = 0; g < collItems.size(); g += 8) {
-                    if (g > 0) {
-                        displayItems.add(null); // Placeholder for reserved first column (empty slot)
-                    }
-                    int end = Math.min(g + 8, collItems.size());
-                    for (int j = g; j < end; j++) {
-                        displayItems.add(collItems.get(j));
-                    }
-                }
-
-                // Pad to next row for next collection
-                int currentSize = displayItems.size();
-                int remainder = currentSize % 9;
-                if (remainder != 0) {
-                    int toAdd = 9 - remainder;
-                    for (int f = 0; f < toAdd; f++) {
-                        displayItems.add(null);
-                    }
-                }
-            }
-
-            maxPage = displayItems.isEmpty() ? 0 : (displayItems.size() - 1) / SLOTS_PER_PAGE;
-
-        } else {
-            List<ItemStack> storage = getTeamStorage(team);
-            maxPage = storage.isEmpty() ? 0 : (storage.size() / SLOTS_PER_PAGE) + 1;
-        }
-
-        // Clamp page
-        if (page > maxPage) page = maxPage;
-
         // Fill items
-        if (isCollections && displayItems != null) {
+        if ((mode == ViewMode.COLLECTIONS || mode == ViewMode.QUESTS) && displayItems != null) {
             int start = page * SLOTS_PER_PAGE;
             int end = Math.min(start + SLOTS_PER_PAGE, displayItems.size());
             for (int i = start; i < end; i++) {
@@ -399,7 +331,7 @@ public class InfinibundleListener implements Listener {
                     inv.setItem(i - start, dispItem.clone());
                 }
             }
-        } else if (!isCollections) {
+        } else if (mode == ViewMode.INVENTORY) {
             List<ItemStack> storage = getTeamStorage(team);
             int start = page * SLOTS_PER_PAGE;
             int end = Math.min(start + SLOTS_PER_PAGE, storage.size());
@@ -410,33 +342,154 @@ public class InfinibundleListener implements Listener {
             }
         }
 
-        // Navigation buttons
+        // Navigation buttons - First/Last (spectral arrow) on the outside, Prev/Next (arrow) inside
         if (page > 0) {
+            ItemStack first = new ItemStack(Material.SPECTRAL_ARROW);
+            ItemMeta fpm = first.getItemMeta();
+            fpm.displayName(Component.text("\u00ab First Page", NamedTextColor.AQUA));
+            first.setItemMeta(fpm);
+            inv.setItem(45, first);
+
             ItemStack prev = new ItemStack(Material.ARROW);
             ItemMeta pm = prev.getItemMeta();
             pm.displayName(Component.text("Previous Page", NamedTextColor.GREEN));
             prev.setItemMeta(pm);
-            inv.setItem(45, prev);
+            inv.setItem(46, prev);
         }
 
-        // Next button: use the pre-calculated maxPage
+        // Next/Last buttons: use the pre-calculated maxPage
         if (page < maxPage) {
             ItemStack next = new ItemStack(Material.ARROW);
             ItemMeta nm = next.getItemMeta();
             nm.displayName(Component.text("Next Page", NamedTextColor.GREEN));
             next.setItemMeta(nm);
-            inv.setItem(53, next);
+            inv.setItem(52, next);
+
+            ItemStack last = new ItemStack(Material.SPECTRAL_ARROW);
+            ItemMeta lpm = last.getItemMeta();
+            lpm.displayName(Component.text("Last Page \u00bb", NamedTextColor.AQUA));
+            last.setItemMeta(lpm);
+            inv.setItem(53, last);
         }
 
-        // Switch view button
+        // Switch view button - cycles Inventory -> Collections -> Quests -> Inventory
         ItemStack switchView = new ItemStack(Material.BARRIER);
         ItemMeta sm = switchView.getItemMeta();
-        sm.displayName(Component.text("Switch to " + (isCollections ? "Storage" : "Collections"), NamedTextColor.GREEN));
+        sm.displayName(Component.text("Switch to " + mode.next().label, NamedTextColor.GREEN));
         switchView.setItemMeta(sm);
         inv.setItem(49, switchView);
 
         player.openInventory(inv);
         viewingPlayer.put(team, player);
+    }
+
+    /**
+     * Builds the flattened, paginated display-item list for either the Collections tab
+     * (questsOnly=false, non-quest collections only) or the Quests tab (questsOnly=true, quest
+     * collections only, shown regardless of completion so progress can be tracked).
+     */
+    private List<ItemStack> buildCollectionDisplayItems(String team, boolean questsOnly) {
+        Set<String> collected = getTeamCollectedItems(team);
+        List<ItemStack> displayItems = new ArrayList<>();
+
+        for (LootHunt.Collection coll : LootHunt.getSortedCollections()) {
+            if (coll.quest != questsOnly) continue;
+
+            long collectedCount = coll.itemGroups.stream()
+                    .filter(group -> group.stream().anyMatch(collected::contains))
+                    .count();
+
+            // Header
+            ItemStack header = new ItemStack(Material.WRITABLE_BOOK);
+            ItemMeta hm = header.getItemMeta();
+            hm.displayName(Component.text(coll.name, NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
+            hm.lore(List.of(
+                    Component.text("Type: " + capitalize(coll.type), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                    Component.text("Progress: " + collectedCount + "/" + coll.itemGroups.size(), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+            ));
+            header.setItemMeta(hm);
+            displayItems.add(header);
+
+            // Collect item displays
+            List<ItemStack> collItems = new ArrayList<>();
+            for (List<String> group : coll.itemGroups) {
+                String repId = group.get(0);
+                Material repMat = Material.getMaterial(repId);
+                boolean isPotionKey = false;
+
+                if (repMat == null) {
+                    Pattern potionPattern = Pattern.compile("^(SPLASH_|LINGERING_)?(.+)$");
+                    Matcher m = potionPattern.matcher(repId);
+                    if (m.matches()) {
+                        String prefix = m.group(1) != null ? m.group(1) : "";
+                        String typeStr = m.group(2);
+                        try {
+                            PotionType.valueOf(typeStr);
+                            repMat = prefix.startsWith("SPLASH") ? Material.SPLASH_POTION :
+                                    prefix.startsWith("LING") ? Material.LINGERING_POTION : Material.POTION;
+                            isPotionKey = true;
+                        } catch (IllegalArgumentException ignored) {}
+                    }
+                    if (repMat == null) repMat = Material.BARRIER;
+                }
+
+                boolean has = group.stream().anyMatch(collected::contains);
+
+                ItemStack disp;
+                String dispName = capitalize(repId.replace("_", " ").toLowerCase());
+                if (group.size() > 1) dispName += " (variants)";
+
+                if (has) {
+                    disp = new ItemStack(Material.BARRIER);
+                    ItemMeta dm = disp.getItemMeta();
+                    dm.displayName(Component.text(dispName, NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
+                    dm.lore(List.of(Component.text("COLLECTED", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false)));
+                    disp.setItemMeta(dm);
+                } else {
+                    disp = new ItemStack(repMat, 1);
+                    if (isPotionKey && disp.getType().name().contains("POTION")) {
+                        PotionMeta pm = (PotionMeta) disp.getItemMeta();
+                        String typeStr = repId.replaceFirst("^(SPLASH_|LINGERING_)", "");
+                        PotionType pt = PotionType.valueOf(typeStr);
+                        pm.setBasePotionType(pt);
+                        disp.setItemMeta(pm);
+                    }
+                    ItemMeta dm = disp.getItemMeta();
+                    dm.displayName(Component.text(dispName, NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                    List<Component> lore = new ArrayList<>();
+                    lore.add(Component.text("Not Collected", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                    if (group.size() > 1) {
+                        lore.add(Component.text("Any of: " + String.join(", ", group), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                    }
+                    dm.lore(lore);
+                    disp.setItemMeta(dm);
+                }
+                collItems.add(disp);
+            }
+
+            // Add collItems in groups of 8, with null placeholder for col0 in subsequent "rows"
+            for (int g = 0; g < collItems.size(); g += 8) {
+                if (g > 0) {
+                    displayItems.add(null); // Placeholder for reserved first column (empty slot)
+                }
+                int end = Math.min(g + 8, collItems.size());
+                for (int j = g; j < end; j++) {
+                    displayItems.add(collItems.get(j));
+                }
+            }
+
+            // Pad to next row for next collection
+            int currentSize = displayItems.size();
+            int remainder = currentSize % 9;
+            if (remainder != 0) {
+                int toAdd = 9 - remainder;
+                for (int f = 0; f < toAdd; f++) {
+                    displayItems.add(null);
+                }
+            }
+        }
+
+        return displayItems;
     }
 
     private Set<String> getTeamCollectedItems(String team) {
@@ -470,6 +523,15 @@ public class InfinibundleListener implements Listener {
         for (ItemStack item : items) {
             if (item == null || item.getType() == Material.AIR) continue;
 
+            // The Infinibundle itself never counts toward any collection - but its own physical
+            // bundle contents (separate from the plugin's virtual team storage) still should.
+            if (LootHunt.isInfinibundle(item)) {
+                if (item.hasItemMeta() && item.getItemMeta() instanceof BundleMeta bundleMeta) {
+                    processContainerForIds(ids, bundleMeta.getItems());
+                }
+                continue;
+            }
+
             String itemId = item.getType().toString();
 
             // Handle potions
@@ -495,8 +557,8 @@ public class InfinibundleListener implements Listener {
                 }
             }
 
-            // Recurse into bundles
-            if (item.getType() == Material.BUNDLE) {
+            // Recurse into bundles (any color). The Infinibundle is already handled/skipped above.
+            if (LootHunt.isBundle(item.getType())) {
                 if (item.hasItemMeta() && item.getItemMeta() instanceof BundleMeta bundleMeta) {
                     processContainerForIds(ids, bundleMeta.getItems());
                 }
@@ -517,12 +579,12 @@ public class InfinibundleListener implements Listener {
 
         Component titleComp = event.getView().title();
         String title = PlainTextComponentSerializer.plainText().serialize(titleComp);
-        if (!title.contains(" Team Inventory") && !title.contains(" Team Collections")) return;
+        if (!title.contains(" Team Inventory") && !title.contains(" Team Collections") && !title.contains(" Team Quests")) return;
 
         String team = title.split(" Team ")[0];
         viewingPlayer.remove(team);
 
-        if (title.contains("Collections")) return; // No saving for collections
+        if (title.contains("Collections") || title.contains("Quests")) return; // No saving for read-only views
 
         savePage(player, event.getInventory(), title);
     }

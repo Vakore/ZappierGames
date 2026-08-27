@@ -105,7 +105,7 @@ public class LoothuntCommand implements TabExecutor {
                             totalPoints += item.points;
                         }
 
-                        if (totalPoints > 0) {
+                        if (totalQuantity > 0) {
                             player.sendMessage(ChatColor.YELLOW + itemId + ": " +
                                     ChatColor.GRAY + "Quantity: " + totalQuantity + ", " +
                                     "Points: " + String.format("%.1f", totalPoints));
@@ -141,7 +141,7 @@ public class LoothuntCommand implements TabExecutor {
                         totalPoints += item.points;
                     }
 
-                    if (totalPoints > 0) {
+                    if (totalQuantity > 0) {
                         player.sendMessage(ChatColor.YELLOW + itemFilter + ": " +
                                 ChatColor.GRAY + "Quantity: " + totalQuantity + ", " +
                                 "Points: " + String.format("%.1f", totalPoints));

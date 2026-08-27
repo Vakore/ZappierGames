@@ -411,6 +411,7 @@ public final class ZappierGames extends JavaPlugin {
         // Register events
         getServer().getPluginManager().registerEvents(new AdvancementListener(), this);
         getServer().getPluginManager().registerEvents(new LootHuntKillListener(), this);
+        getServer().getPluginManager().registerEvents(new LootHuntChunkListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
         getServer().getPluginManager().registerEvents(new AutoTNTListener(this, "skybattle_world"), this);
@@ -822,6 +823,21 @@ public final class ZappierGames extends JavaPlugin {
             gameStateConfig.set("loothunt.scoreHistory." + playerKey, serializedSnapshots);
         }
 
+        gameStateConfig.set("loothunt.teamScoreHistory", null);
+        for (Map.Entry<String, List<LootHunt.TeamScoreSnapshot>> entry : LootHunt.teamScoreHistory.entrySet()) {
+            List<Map<String, Object>> serializedSnapshots = new ArrayList<>();
+            for (LootHunt.TeamScoreSnapshot snap : entry.getValue()) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("tick", snap.tick);
+                m.put("score", snap.score);
+                m.put("biomes", snap.biomes);
+                m.put("structures", snap.structures);
+                m.put("dimensions", snap.dimensions);
+                serializedSnapshots.add(m);
+            }
+            gameStateConfig.set("loothunt.teamScoreHistory." + entry.getKey(), serializedSnapshots);
+        }
+
 
         try {
             gameStateConfig.save(gameStateFile);
@@ -1042,6 +1058,32 @@ public final class ZappierGames extends JavaPlugin {
                     }
                 }
                 LootHunt.scoreHistory.put(playerKey, snapshots);
+            }
+        }
+
+        if (gameStateConfig.isConfigurationSection("loothunt.teamScoreHistory")) {
+            LootHunt.teamScoreHistory.clear();
+            for (String teamKey : gameStateConfig.getConfigurationSection("loothunt.teamScoreHistory").getKeys(false)) {
+                List<Map<?, ?>> rawList = gameStateConfig.getMapList("loothunt.teamScoreHistory." + teamKey);
+                List<LootHunt.TeamScoreSnapshot> snapshots = new ArrayList<>();
+
+                for (Map<?, ?> rawMap : rawList) {
+                    if (rawMap == null) continue;
+                    try {
+                        long tick = ((Number) rawMap.get("tick")).longValue();
+                        double score = ((Number) rawMap.get("score")).doubleValue();
+                        List<String> biomes = rawMap.get("biomes") instanceof List<?> rawBiomes
+                                ? rawBiomes.stream().map(String::valueOf).collect(Collectors.toList()) : new ArrayList<>();
+                        List<String> structures = rawMap.get("structures") instanceof List<?> rawStructures
+                                ? rawStructures.stream().map(String::valueOf).collect(Collectors.toList()) : new ArrayList<>();
+                        List<String> dimensions = rawMap.get("dimensions") instanceof List<?> rawDimensions
+                                ? rawDimensions.stream().map(String::valueOf).collect(Collectors.toList()) : new ArrayList<>();
+                        snapshots.add(new LootHunt.TeamScoreSnapshot(tick, score, biomes, structures, dimensions));
+                    } catch (Exception e) {
+                        getLogger().warning("Failed to deserialize team score snapshot for " + teamKey + ": " + e.getMessage());
+                    }
+                }
+                LootHunt.teamScoreHistory.put(teamKey, snapshots);
             }
         }
 
