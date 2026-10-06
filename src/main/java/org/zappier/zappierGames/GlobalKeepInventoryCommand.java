@@ -37,7 +37,7 @@ public class GlobalKeepInventoryCommand implements TabExecutor {
         }
 
         for (World world : Bukkit.getWorlds()) {
-            world.setGameRule(org.bukkit.GameRule.KEEP_INVENTORY, keepInv);
+            world.setGameRule(org.bukkit.GameRules.KEEP_INVENTORY, keepInv);
         }
 
         Bukkit.broadcastMessage(ChatColor.YELLOW + "Keep inventory set to " + keepInv + " across all dimensions");

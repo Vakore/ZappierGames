@@ -1,7 +1,7 @@
 name: ZappierGames
 version: '1.24-SNAPSHOT'
 main: org.zappier.zappierGames.ZappierGames
-api-version: '1.21'
+api-version: '26.3'
 authors: [ Vakore ]
 description: A mod to run ZappierGames
 commands:
@@ -40,6 +40,14 @@ commands:
     description: Gives you a new Infinibundle for your team in case you lose yours.
     usage: /getinfinibundle
     permission: zappiergames.getinfinibundle
+  lootrun:
+    description: Start/manage a Lootrun game (Manhunt teams, LootHunt scoring, a buff/nerf shop).
+    usage: /lootrun <start|jointeam|leaveteam|end>
+    permission: zappiergames.lootrun
+  shop:
+    description: Opens the Lootrun shop to spend your team's points on buffs and nerfs.
+    usage: /shop
+    permission: zappiergames.shop
 resources:
   config.yml:
     description: Configuration file for Loot Hunt item values, door scores, and other settings

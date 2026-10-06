@@ -18,6 +18,8 @@ import org.bukkit.scoreboard.Team;
 import org.zappier.zappierGames.biomeparkour.BiomeParkour;
 import org.zappier.zappierGames.dungeonrush.DungeonRush;
 import org.zappier.zappierGames.loothunt.LootHunt;
+import org.zappier.zappierGames.loothunt.LootHuntLoadout;
+import org.zappier.zappierGames.loothunt.LootHuntSpectatorListener;
 import org.zappier.zappierGames.manhunt.Manhunt;
 import org.zappier.zappierGames.skybattle.Skybattle;
 import org.zappier.zappierGames.survivalgames.SurvivalGames;
@@ -89,6 +91,10 @@ public class GUIListener implements Listener {
                     gui = new GUI("Dungeon Rush");
                     gui.open(player);
                     break;
+                case 17: // Lootrun
+                    gui = new GUI("Lootrun");
+                    gui.open(player);
+                    break;
                 default:
                     validClick = false;
             }
@@ -132,7 +138,7 @@ public class GUIListener implements Listener {
                     break;
                 case 14: // Toggle Pause
                     LootHunt.paused = !LootHunt.paused;
-                        Bukkit.broadcastMessage(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"));
+                    Bukkit.broadcastMessage(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"));
                     for (Player p : Bukkit.getOnlinePlayers()) {
                         p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
                         p.sendTitle(LootHunt.paused ? (ChatColor.RED + "Loothunt Paused") : (ChatColor.GREEN + "Loothunt Resumed"), "", 10, 70, 20);
@@ -149,6 +155,28 @@ public class GUIListener implements Listener {
                     }
                     gui = new GUI("Loothunt");
                     gui.open(player);
+                    break;
+
+                case 16: // Toggle live score to players
+                    LootHunt.showLiveScoreToPlayers = !LootHunt.showLiveScoreToPlayers;
+                    if (!LootHunt.showLiveScoreToPlayers) {
+                        // Turning it off doesn't just stop future updates - actively reset
+                        // everyone it was showing to back to their normal scoreboard/tab list,
+                        // same as what already happens when a spectator leaves spectator mode.
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            if (p.getGameMode() != GameMode.SPECTATOR) {
+                                LootHuntSpectatorListener.clearSpectatorDisplay(p);
+                            }
+                        }
+                    }
+                    player.sendMessage(LootHunt.showLiveScoreToPlayers
+                            ? ChatColor.GREEN + "Players will now see the live sidebar/tab score too."
+                            : ChatColor.YELLOW + "Live sidebar/tab score is spectators-only again.");
+                    gui = new GUI("Loothunt");
+                    gui.open(player);
+                    break;
+                case 17: // Customize starting loadout
+                    LootHuntLoadout.openEditor(player);
                     break;
                 case 26: // Back
                     gui = new GUI();
@@ -598,6 +626,43 @@ public class GUIListener implements Listener {
                 player.sendMessage(ChatColor.YELLOW + "Border set to " + borderSize + " blocks (" + ((int)(borderSize / 2)) + ") in each direction.");
                 gui = new GUI("Manhunt");
                 gui.open(player);
+            }
+        } else if (title.equals("Lootrun Menu")) {
+            switch (slot) {
+                case 11: // Join Team
+                    gui = new GUI("Lootrun Team Selection");
+                    gui.open(player);
+                    break;
+                case 13: // Start Lootrun
+                    org.zappier.zappierGames.lootrun.Lootrun.start();
+                    player.closeInventory();
+                    player.sendMessage(ChatColor.GREEN + "Lootrun started!");
+                    break;
+                case 26: // Back
+                    gui = new GUI();
+                    gui.open(player);
+                    break;
+                default:
+                    validClick = false;
+            }
+        } else if (title.equals("Lootrun Team Selection Menu")) {
+            if (slot == 26) { // Back
+                gui = new GUI("Lootrun");
+                gui.open(player);
+            } else if (slot >= 10 && slot < 10 + ZappierGames.teamList.length) {
+                String teamName = ZappierGames.teamList[slot - 10];
+                Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                Team team = scoreboard.getTeam(teamName);
+                if (team != null) {
+                    team.addEntry(player.getName());
+                    player.sendMessage(ChatColor.YELLOW + "Joined team " + teamName);
+                } else {
+                    player.sendMessage(ChatColor.RED + "Team " + teamName + " does not exist!");
+                }
+                gui = new GUI("Lootrun");
+                gui.open(player);
+            } else {
+                validClick = false;
             }
         } else if (title.equals("Team Selection Menu")) {
             if (slot == 26) { // Back

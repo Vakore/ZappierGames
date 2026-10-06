@@ -704,6 +704,21 @@ public class LootHuntScorePage {
     }
 
     private static final Map<String, Color> biomeColorCache = new HashMap<>();
+    private static final Map<String, Color> configuredBiomeColors = new HashMap<>();
+
+    /** Loads the biome-colors section of config.yml (Chunkbase Seed Map palette). Called from
+     * ZappierGames alongside LootHunt.loadConfig()/LootrunShop.loadConfig(). */
+    public static void loadBiomeColors(org.bukkit.configuration.ConfigurationSection section) {
+        configuredBiomeColors.clear();
+        if (section == null) return;
+        for (String biomeKey : section.getKeys(false)) {
+            try {
+                configuredBiomeColors.put(biomeKey, Color.decode(section.getString(biomeKey)));
+            } catch (Exception ignored) {
+                // Bad hex value for this biome - just fall through to the hash-based color for it
+            }
+        }
+    }
 
     /**
      * Paints a coarse biome-colored background for a position map from LootHunt.visitedChunkBiomes
@@ -774,10 +789,15 @@ public class LootHuntScorePage {
     }
 
     /**
-     * Deterministic pastel color derived from the biome name's hash, so the same biome always
-     * renders the same color on the map without needing a hand-maintained lookup table.
+     * Looks up the biome's color from config.yml's biome-colors section (the Chunkbase Seed Map
+     * palette) first. Falls back to a deterministic pastel color derived from the biome name's
+     * hash for anything not covered there (a modded biome, or a future Minecraft version adding
+     * new ones before the config gets updated), so the map never just goes blank for it.
      */
     private static Color biomeToColor(String biomeKey) {
+        Color configured = configuredBiomeColors.get(biomeKey);
+        if (configured != null) return configured;
+
         return biomeColorCache.computeIfAbsent(biomeKey, key -> {
             int hash = key.hashCode();
             float hue = (Math.abs(hash) % 360) / 360f;

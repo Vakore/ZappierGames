@@ -42,6 +42,9 @@ public class LootHunt {
     public static double startTimer;
     public static String gameVersion = "";
     public static String loothuntSeason = "";
+    // Off by default - mainly useful for testing that item scores/the shop are actually working
+    // without needing a separate spectator. Toggleable live via /gui (see GUIListener).
+    public static boolean showLiveScoreToPlayers = false;
     private static Material[] shulkerColors;
     public static Map<String, Double> itemValues = new HashMap<>();
     public static Map<String, Double> potionValues = new HashMap<>();
@@ -752,12 +755,17 @@ public class LootHunt {
         scoreHistoryTickCounter = 0;
         microSampleTickCounter = 0;
         totalUnpausedTicks = 0;
+        closingWindowTriggered = false;
         ZappierGames.resetPlayers(false, true);
         ZappierGames.noPvP = noPvP;
         for (World world : Bukkit.getWorlds()) {
-            world.setGameRule(GameRule.KEEP_INVENTORY, true);
-            world.setTime(0);
-            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
+            world.setGameRule(GameRules.KEEP_INVENTORY, true);
+            try {
+                world.setTime(0);
+            } catch (IllegalArgumentException e) {
+                Bukkit.getLogger().info("Skipping setTime() for world '" + world.getName() + "' - it has no world clock.");
+            }
+            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, true);
         }
         Bukkit.broadcast(Component.text("Keep inventory set to true across all dimensions", NamedTextColor.YELLOW));
         playerKillCounts.clear();
@@ -836,8 +844,8 @@ public class LootHunt {
             p.sendTitle(ChatColor.YELLOW + "Game Finished!", "", 10, 70, 20);
             p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.5f);
 
-            String teamName = p.getScoreboard().getEntryTeam(p.getName()) != null
-                    ? p.getScoreboard().getEntryTeam(p.getName()).getName()
+            String teamName = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(p.getName()) != null
+                    ? Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(p.getName()).getName()
                     : "(Solo) " + p.getName();
 
             // Process personal inventory
@@ -1141,7 +1149,7 @@ public class LootHunt {
         return tip.toString();
     }
 
-    private static void processContainer(Map<String, List<ItemEntry>> scoreMap, Iterable<ItemStack> items, String sourcePrefix) {
+    public static void processContainer(Map<String, List<ItemEntry>> scoreMap, Iterable<ItemStack> items, String sourcePrefix) {
         for (ItemStack item : items) {
             if (item == null || item.getType() == Material.AIR) continue;
 
@@ -1229,8 +1237,8 @@ public class LootHunt {
         processContainer(scoreMap, Arrays.asList(player.getInventory().getContents()), "Inventory");
 
         // Team infinibundle storage
-        String teamName = player.getScoreboard().getEntryTeam(player.getName()) != null
-                ? player.getScoreboard().getEntryTeam(player.getName()).getName()
+        String teamName = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName()) != null
+                ? Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName()).getName()
                 : "(Solo) " + player.getName();
 
         List<ItemStack> teamStorage = InfinibundleListener.getTeamStorage(teamName);
@@ -1256,11 +1264,26 @@ public class LootHunt {
         return points;
     }
 
+    // Ticks before the end at which the infinibundle gets force-closed (and can't be reopened) -
+    // 5 ticks = 0.25s. Without this, whatever a player had sitting in an open GUI when the timer
+    // hits 0 never gets saved (savePage only runs on close), so it just silently doesn't score.
+    private static final int CLOSING_WINDOW_TICKS = 5;
+    private static boolean closingWindowTriggered = false;
+
+    public static boolean inClosingWindow() {
+        return !paused && ZappierGames.timer > 0 && ZappierGames.timer <= CLOSING_WINDOW_TICKS;
+    }
+
     public static void run() {
         if (ZappierGames.timer <= 0) {
             ZappierGames.gameMode = -1;
             endGame();
             return;
+        }
+
+        if (inClosingWindow() && !closingWindowTriggered) {
+            closingWindowTriggered = true;
+            InfinibundleListener.forceCloseAllOpenGuis();
         }
 
         tickScoreHistory();
@@ -1281,8 +1304,8 @@ public class LootHunt {
             ZappierGames.globalBossBar.setProgress(ZappierGames.timer / startTimer);
             ZappierGames.timer--;
             for (World world : Bukkit.getWorlds()) {
-                world.setGameRule(GameRule.DO_WEATHER_CYCLE, true);
-                world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
+                world.setGameRule(GameRules.ADVANCE_WEATHER, true);
+                world.setGameRule(GameRules.ADVANCE_TIME, true);
                 Bukkit.getServer().getServerTickManager().setFrozen(false);
             }
             if (wasPausedLastTick) {
@@ -1295,8 +1318,8 @@ public class LootHunt {
             ZappierGames.globalBossBar.setTitle(String.format("(PAUSED) Time Left: %02d:%02d:%02d (PAUSED)", hours, minutes, seconds));
             ZappierGames.globalBossBar.setProgress(ZappierGames.timer / startTimer);
             for (World world : Bukkit.getWorlds()) {
-                world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-                world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+                world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                world.setGameRule(GameRules.ADVANCE_TIME, false);
                 Bukkit.getServer().getServerTickManager().setFrozen(true);
             }
             freezePotionEffects();
@@ -1323,18 +1346,22 @@ public class LootHunt {
         }
     }
 
-    public static void giveStartingItems(Player player) {
-        player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
-        player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
-        player.getInventory().addItem(new ItemStack(Material.STONE_PICKAXE));
-        player.getInventory().addItem(new ItemStack(Material.STONE_SHOVEL));
-        player.getInventory().addItem(new ItemStack(Material.STONE_HOE));
+    /**
+     * Creates and gives this player a fresh Infinibundle - colored to match their current
+     * scoreboard team where possible, falling back to a plain bundle otherwise. Used by both
+     * LootHunt's giveStartingItems() and Lootrun's start(), since every player needs one of
+     * these regardless of which mode is running (Lootrun just individualizes the storage each
+     * one points to - see InfinibundleListener#getTeamName()).
+     */
+    public static void giveInfinibundle(Player player) {
+        player.getInventory().addItem(createInfinibundleItem(player));
+    }
 
-        //Infinibundle
-        // Inside giveStartingItems(Player player) or wherever you give the super-bundle
-
-        String teamName = player.getScoreboard().getEntryTeam(player.getName()) != null
-                ? player.getScoreboard().getEntryTeam(player.getName()).getName()
+    /** Builds a fresh Infinibundle item for this player (colored to match their team) without
+     * giving it to them - lets callers like the loadout editor decide where it goes. */
+    public static ItemStack createInfinibundleItem(Player player) {
+        String teamName = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName()) != null
+                ? Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName()).getName()
                 : "(Solo) " + player.getName();
 
         ChatColor teamChatColor = getTeamColor(teamName);
@@ -1384,18 +1411,23 @@ public class LootHunt {
             infinibundle.setItemMeta(meta);
         }
 
-        player.getInventory().addItem(infinibundle);
-        //Infinibundle
+        return infinibundle;
+    }
 
-        if (shulkerColors != null && shulkerColors.length > 0) {
-            int pos = 8;
-            for (Material shulker : shulkerColors) {
-                ZappierGames.getInstance().getLogger().info("Giving shulker box " + shulker + " to " + player.getName());
-                player.getInventory().setItem(pos++, new ItemStack(shulker));
-            }
-        } else {
+    /** The configured starting shulker box colors (a copy - empty if none are configured). */
+    public static Material[] getShulkerColors() {
+        return shulkerColors == null ? new Material[0] : shulkerColors.clone();
+    }
+
+    public static void giveStartingItems(Player player) {
+        if (shulkerColors == null || shulkerColors.length == 0) {
             ZappierGames.getInstance().getLogger().warning("No shulker boxes given to " + player.getName() + ": shulkerColors is empty or null");
         }
+
+        // The stone tools, the Infinibundle and any shulker boxes - placed wherever this player
+        // chose in the loadout editor (see LootHuntLoadout), or in the original default spots
+        // (tools hotbar 1-5, Infinibundle 6, shulkers from slot 9) if they never customized it.
+        LootHuntLoadout.giveKit(player);
 
         /*
         for (Map<String, Object> pearl : customPearls) {
@@ -1673,7 +1705,9 @@ public class LootHunt {
             }
         }
 
-        if (spectators.isEmpty()) return;
+        List<Player> viewers = new ArrayList<>(spectators);
+        if (showLiveScoreToPlayers) viewers.addAll(livePlayers);
+        if (viewers.isEmpty()) return;
 
         List<Map.Entry<String, Double>> teamScores = new ArrayList<>(calculateLiveTeamScores(livePlayers).entrySet());
         teamScores.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
@@ -1681,9 +1715,9 @@ public class LootHunt {
         Component tabFooter = buildTabFooter(teamScores);
         Component tabHeader = Component.text("=== Loot Hunt ===", NamedTextColor.GOLD);
 
-        for (Player spec : spectators) {
-            applySidebar(spec, teamScores);
-            spec.sendPlayerListHeaderAndFooter(tabHeader, tabFooter);
+        for (Player viewer : viewers) {
+            applySidebar(viewer, teamScores);
+            viewer.sendPlayerListHeaderAndFooter(tabHeader, tabFooter);
         }
     }
 
@@ -1745,7 +1779,12 @@ public class LootHunt {
     }
 
     private static String getPlayerTeamName(Player p) {
-        org.bukkit.scoreboard.Team t = p.getScoreboard().getEntryTeam(p.getName());
+        // Always the MAIN scoreboard - p.getScoreboard() is whatever's currently active for this
+        // player, which this same live-display system swaps to an isolated per-viewer board (see
+        // applySidebar). A player who is themselves viewing the live score would otherwise look
+        // up their team on their own swapped board, find no team registrations there at all, and
+        // incorrectly fall back to "(Solo)" even though they're genuinely on a team.
+        org.bukkit.scoreboard.Team t = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(p.getName());
         return t != null ? t.getName() : "(Solo) " + p.getName();
     }
 
@@ -1764,9 +1803,22 @@ public class LootHunt {
      * color is baked in via legacy '§' color codes (which the client still renders correctly for
      * fake score-holder names) rather than left white.
      */
+    /** The team's prefix Component (the "[emoji] " set in /loothunt jointeam), or null if the
+     * team doesn't exist or has no prefix set. */
+    private static Component getTeamPrefix(String teamName) {
+        try {
+            org.bukkit.scoreboard.Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(teamName);
+            return team != null ? team.prefix() : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     private static String coloredSidebarEntry(String teamName) {
         TextColor color = getTeamColor2(teamName);
-        Component comp = Component.text(teamName, color != null ? color : NamedTextColor.WHITE);
+        Component prefix = getTeamPrefix(teamName);
+        Component comp = prefix != null ? prefix : Component.empty();
+        comp = comp.append(Component.text(teamName, color != null ? color : NamedTextColor.WHITE));
         String legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(comp);
         return legacy.length() > 40 ? legacy.substring(0, 40) : legacy;
     }
@@ -1816,8 +1868,10 @@ public class LootHunt {
             String teamName = teamScores.get(i).getKey();
             double score = teamScores.get(i).getValue();
             TextColor color = getTeamColor2(teamName);
+            Component prefix = getTeamPrefix(teamName);
             footer = footer.append(Component.newline())
                     .append(Component.text((i + 1) + ". ", NamedTextColor.GRAY))
+                    .append(prefix != null ? prefix : Component.empty())
                     .append(Component.text(teamName, color != null ? color : NamedTextColor.YELLOW))
                     .append(Component.text(" - ", NamedTextColor.DARK_GRAY))
                     .append(Component.text(String.format("%.1f", score), NamedTextColor.GREEN));

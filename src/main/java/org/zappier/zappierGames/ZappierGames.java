@@ -56,6 +56,7 @@ public final class ZappierGames extends JavaPlugin {
     public static double loothuntDuration = 0; // Default to 0, must be set before starting
     public static final int LOOTHUNT = 0;
     public static final int MANHUNT = 1;
+    public static final int LOOTRUN = 40;
     public static boolean shouldSave = false;
 
 
@@ -94,6 +95,8 @@ public final class ZappierGames extends JavaPlugin {
             p.clearActivePotionEffects();
             p.setCollidable(true);
             p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(20.0);
+            var fallDamageAttr = p.getAttribute(org.bukkit.attribute.Attribute.FALL_DAMAGE_MULTIPLIER);
+            if (fallDamageAttr != null) fallDamageAttr.setBaseValue(1.0);
             if (clearAdvancements) {
                 for (@NotNull Iterator<Advancement> it = Bukkit.advancementIterator(); it.hasNext(); ) {
                     Advancement advancement = it.next();
@@ -111,12 +114,20 @@ public final class ZappierGames extends JavaPlugin {
 
 
         for (World world : Bukkit.getWorlds()) {
-            world.setGameRule(GameRule.NATURAL_REGENERATION, true);
-            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
-            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
-            world.setGameRule(GameRule.DO_WEATHER_CYCLE, true);
+            world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, true);
+            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, true);
+            world.setGameRule(GameRules.ADVANCE_TIME, true);
+            world.setGameRule(GameRules.ADVANCE_WEATHER, true);
             Bukkit.getServer().getServerTickManager().setFrozen(false);
-            world.setTime(0);
+            try {
+                world.setTime(0);
+            } catch (IllegalArgumentException e) {
+                // 26.x: some dimension types define no "world clock" at all (e.g. certain custom/
+                // void worlds), and setTime() now throws instead of no-oping like it used to.
+                // That's fine - there's no time to reset there - but it must not abort the loop
+                // for every other world, or blow up whichever minigame called resetPlayers().
+                Bukkit.getLogger().info("Skipping setTime() for world '" + world.getName() + "' - it has no world clock.");
+            }
         }
     }
 
@@ -277,7 +288,7 @@ public final class ZappierGames extends JavaPlugin {
 
         // Helper: Get team name (same as in InfinibundleListener)
         private String getTeamName(Player player) {
-            Team team = player.getScoreboard().getEntryTeam(player.getName());
+            Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName());
             return team != null ? team.getName() : "(Solo) " + player.getName();
         }
 
@@ -357,6 +368,10 @@ public final class ZappierGames extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         LootHunt.loadConfig(getConfig());
+        org.zappier.zappierGames.lootrun.LootrunShop.loadConfig(getConfig().getConfigurationSection("lootrun.shop"));
+        LootHuntScorePage.loadBiomeColors(getConfig().getConfigurationSection("biome-colors"));
+        InfinibundleListener.loadPriorityOrder(getConfig());
+        LootHuntLoadout.load(getDataFolder());
 
         instance = this;
 
@@ -407,6 +422,9 @@ public final class ZappierGames extends JavaPlugin {
         this.getCommand("loadstate").setTabCompleter(new LoadStateCommand());
         this.getCommand("getinfinibundle").setExecutor(new GetInfinibundleCommand());
         this.getCommand("getinfinibundle").setTabCompleter(new GetInfinibundleCommand());
+        this.getCommand("lootrun").setExecutor(new org.zappier.zappierGames.lootrun.LootrunCommand());
+        this.getCommand("lootrun").setTabCompleter(new org.zappier.zappierGames.lootrun.LootrunCommand());
+        this.getCommand("shop").setExecutor(new org.zappier.zappierGames.lootrun.ShopCommand());
 
         // Register events
         getServer().getPluginManager().registerEvents(new AdvancementListener(), this);
@@ -420,12 +438,14 @@ public final class ZappierGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CreeperSpawnListener(), this);
         getServer().getPluginManager().registerEvents(new DamageHandler(), this);
         getServer().getPluginManager().registerEvents(new InfinibundleListener(), this);
+        getServer().getPluginManager().registerEvents(new org.zappier.zappierGames.lootrun.LootrunShop(), this);
         getServer().getPluginManager().registerEvents(new CompassTrackerListener(this), this);
         getServer().getPluginManager().registerEvents(new TrackerGUIListener(this), this);
         getServer().getPluginManager().registerEvents(new ManhuntEnforcement(), this);
         getServer().getPluginManager().registerEvents(new ShieldSoundEnforcement(), this);
         getServer().getPluginManager().registerEvents(new ItemValueActionBarListener(), this);
         getServer().getPluginManager().registerEvents(new LootHuntSpectatorListener(), this);
+        getServer().getPluginManager().registerEvents(new LootHuntLoadout(), this);
 
 
         // Team colors
@@ -551,6 +571,8 @@ public final class ZappierGames extends JavaPlugin {
                     }
                 } else if (gameMode == 30) {
                     BiomeParkour.run();
+                } else if (gameMode == LOOTRUN) {
+                    org.zappier.zappierGames.lootrun.Lootrun.run();
                 } else if (gameMode == 2000) {
                     World skybattleWorld = Bukkit.getWorld("skybattle_world");
                     if (skybattleWorld != null) {
@@ -569,6 +591,9 @@ public final class ZappierGames extends JavaPlugin {
         }
         // Stop web server if still running
         stopResultsWebServer();
+        LootHuntLoadout.commitOpenEditors();
+        LootHuntLoadout.saveAll();
+        InfinibundleListener.flushAllDepositBuffers(); // pending deposits would otherwise be lost
         saveGameState();
         getLogger().info("ZappierGames - Now disabled");
     }
@@ -667,11 +692,11 @@ public final class ZappierGames extends JavaPlugin {
         if (world != null) {
             // Configure world settings
             world.setPVP(true);
-            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-            world.setGameRule(GameRule.FALL_DAMAGE, true);
-            world.setGameRule(GameRule.KEEP_INVENTORY, false);
+            world.setGameRule(GameRules.ADVANCE_TIME, false);
+            world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+            world.setGameRule(GameRules.SPAWN_MOBS, false);
+            world.setGameRule(GameRules.FALL_DAMAGE, true);
+            world.setGameRule(GameRules.KEEP_INVENTORY, false);
 
             // Set spawn point at y=100 (safe height for platforms)
             world.setSpawnLocation(0, 100, 0);

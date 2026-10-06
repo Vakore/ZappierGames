@@ -534,13 +534,17 @@ public class Skybattle {
                 }
             }
         } else if (startTime == 0) {
-            world.setGameRule(GameRule.DO_TILE_DROPS, false);
-            world.setGameRule(GameRule.DO_ENTITY_DROPS, false);
-            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+            world.setGameRule(GameRules.BLOCK_DROPS, false);
+            world.setGameRule(GameRules.ENTITY_DROPS, false);
+            world.setGameRule(GameRules.ADVANCE_TIME, false);
+            world.setGameRule(GameRules.ADVANCE_WEATHER, false);
             world.setDifficulty(Difficulty.HARD);
-            world.setTime(6000);
-            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            try {
+                world.setTime(6000);
+            } catch (IllegalArgumentException e) {
+                Bukkit.getLogger().info("Skipping setTime() for world '" + world.getName() + "' - it has no world clock.");
+            }
+            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
             for (int i = 0; i < POSSIBLE_SPAWNS.length; i++) {
                 int[] pos = POSSIBLE_SPAWNS[i];
                 clearArea(world, pos[0] - 2, pos[2] - 2, 5, 5, pos[1] + 8, pos[1] + 16);

@@ -3,6 +3,7 @@ package org.zappier.zappierGames.loothunt;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -25,7 +26,9 @@ public class ItemValueActionBarListener implements Listener {
     @EventHandler
     public static void onItemHeld(PlayerItemHeldEvent event) {
         // Only show during Loot Hunt game
-        if (ZappierGames.gameMode != ZappierGames.LOOTHUNT) {
+        // Lootrun scores items exactly like LootHunt does (it's LootHunt's scoring + an economy
+        // layered on top, not Manhunt's), so this should run during both modes.
+        if (ZappierGames.gameMode != ZappierGames.LOOTHUNT && ZappierGames.gameMode != ZappierGames.LOOTRUN) {
             return;
         }
 
@@ -168,7 +171,7 @@ public class ItemValueActionBarListener implements Listener {
 
     private static String formatItemName(ItemStack item) {
         if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            return item.getItemMeta().displayName().toString();
+            return PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName());
         }
 
         String name = item.getType().toString();

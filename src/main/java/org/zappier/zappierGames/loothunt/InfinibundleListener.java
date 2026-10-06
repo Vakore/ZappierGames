@@ -4,7 +4,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.apache.commons.lang3.ObjectUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -24,8 +23,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionType;
+import org.zappier.zappierGames.ZappierGames;
+import org.zappier.zappierGames.lootrun.Lootrun;
+import org.zappier.zappierGames.lootrun.LootrunShop;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,23 +37,44 @@ import java.util.stream.Collectors;
 
 public class InfinibundleListener implements Listener {
 
+    private static InfinibundleListener instance;
+
+    public InfinibundleListener() {
+        instance = this;
+    }
+
+    /** Force-closes anyone's open Infinibundle/Collections/Quests/Shop GUI right now. Used when
+     * LootHunt is about to end - this routes through the normal InventoryCloseEvent handling, so
+     * whatever a player had sitting in an open Inventory tab (as the primary viewer) actually
+     * gets saved via savePage() instead of just vanishing when the game ends out from under them. */
+    public static void forceCloseAllOpenGuis() {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            InventoryView view = p.getOpenInventory();
+            if (view.getTopInventory().getSize() != 54) continue;
+            String title = PlainTextComponentSerializer.plainText().serialize(view.title());
+            if (titleIsMode(title, "Inventory") || titleIsMode(title, "Collections")
+                    || titleIsMode(title, "Quests") || titleIsMode(title, "Shop")) {
+                p.closeInventory();
+            }
+        }
+    }
+
+    /** Used by /shop to jump straight to the Shop tab without going through the Infinibundle item. */
+    public static void openShopDirect(Player player) {
+        if (instance == null) return;
+        instance.openTeamInventory(player, 0, ViewMode.SHOP);
+    }
+
     private enum ViewMode {
-        INVENTORY("Inventory"), COLLECTIONS("Collections"), QUESTS("Quests");
+        INVENTORY("Inventory"), COLLECTIONS("Collections"), QUESTS("Quests"), SHOP("Shop");
 
         final String label;
         ViewMode(String label) { this.label = label; }
 
-        ViewMode next() {
-            return switch (this) {
-                case INVENTORY -> COLLECTIONS;
-                case COLLECTIONS -> QUESTS;
-                case QUESTS -> INVENTORY;
-            };
-        }
-
         static ViewMode fromTitle(String title) {
             if (title.contains("Collections")) return COLLECTIONS;
             if (title.contains("Quests")) return QUESTS;
+            if (title.contains("Shop")) return SHOP;
             return INVENTORY;
         }
     }
@@ -76,6 +100,101 @@ public class InfinibundleListener implements Listener {
         switchingPages.clear();
     }
 
+    // ===== Priority ordering (infinibundle-priority-order in config.yml) =====
+    //
+    // NOT a "give these items" feature - this sorts whatever's ALREADY in the infinibundle so
+    // strategic items (tools, food, buckets, etc.) float to the front/earliest pages, instead of
+    // needing to page through everything to find them. Items matching an earlier group in the
+    // config list sort before items matching a later one; items matching no group keep their
+    // existing relative order after all of the matched ones (stable sort).
+
+    private static boolean priorityOrderEnabled = false;
+    private static final List<PriorityGroup> priorityGroups = new ArrayList<>();
+
+    private static class PriorityGroup {
+        final Set<Material> materials = new HashSet<>();
+        String enchantmentName; // raw config string, e.g. "SILK_TOUCH" - resolved lazily below
+        boolean edible;
+
+        private org.bukkit.enchantments.Enchantment resolvedEnchantment;
+        private boolean enchantmentResolveAttempted = false;
+
+        boolean matches(ItemStack item) {
+            if (item == null) return false;
+            if (edible && item.getType().isEdible()) return true;
+            if (enchantmentName != null) {
+                if (!enchantmentResolveAttempted) {
+                    enchantmentResolveAttempted = true;
+                    org.bukkit.NamespacedKey key = org.bukkit.NamespacedKey.minecraft(enchantmentName.toLowerCase());
+                    resolvedEnchantment = org.bukkit.Registry.ENCHANTMENT.get(key);
+                    if (resolvedEnchantment == null) {
+                        Bukkit.getLogger().warning("infinibundle-priority-order: unknown enchantment '" + enchantmentName + "'.");
+                    }
+                }
+                if (resolvedEnchantment != null && item.containsEnchantment(resolvedEnchantment)) return true;
+            }
+            return materials.contains(item.getType());
+        }
+    }
+
+    /** Loads infinibundle-priority-order from config.yml. The order groups appear in that list is
+     * the sort priority - this reads them with getMapList(), which preserves file order. */
+    public static void loadPriorityOrder(org.bukkit.configuration.file.FileConfiguration config) {
+        priorityGroups.clear();
+        priorityOrderEnabled = config.getBoolean("infinibundle-priority-order.enabled", false);
+
+        for (Map<?, ?> entry : config.getMapList("infinibundle-priority-order.groups")) {
+            try {
+                PriorityGroup group = new PriorityGroup();
+
+                Object materialsRaw = entry.get("materials");
+                if (materialsRaw instanceof List<?> list) {
+                    for (Object m : list) {
+                        try {
+                            group.materials.add(Material.valueOf(String.valueOf(m).toUpperCase()));
+                        } catch (IllegalArgumentException ex) {
+                            Bukkit.getLogger().warning("infinibundle-priority-order: unknown material '" + m + "' - skipped.");
+                        }
+                    }
+                }
+
+                Object enchantRaw = entry.get("enchantment");
+                if (enchantRaw != null) {
+                    group.enchantmentName = String.valueOf(enchantRaw);
+                }
+
+                group.edible = Boolean.TRUE.equals(entry.get("edible"));
+
+                if (!group.materials.isEmpty() || group.enchantmentName != null || group.edible) {
+                    priorityGroups.add(group);
+                }
+            } catch (Exception ex) {
+                Bukkit.getLogger().warning("infinibundle-priority-order: bad entry " + entry + " (" + ex.getMessage() + ") - skipped.");
+            }
+        }
+
+        if (priorityOrderEnabled) {
+            Bukkit.getLogger().info("infinibundle-priority-order: loaded " + priorityGroups.size() + " group(s), in priority order: "
+                    + priorityGroups.stream().map(g -> g.enchantmentName != null ? "enchantment:" + g.enchantmentName
+                    : g.edible ? "edible" : "materials:" + g.materials).collect(Collectors.joining(" > ")));
+        }
+    }
+
+    /** Sorts this storage list in place so items matching an earlier priority group come first.
+     * Safe/cheap to call every time the Inventory tab is displayed - a no-op if the feature is
+     * off or nothing in the list matches any group. */
+    public static void applyPriorityOrder(List<ItemStack> storage) {
+        if (!priorityOrderEnabled || priorityGroups.isEmpty() || storage.size() < 2) return;
+        storage.sort(Comparator.comparingInt(InfinibundleListener::priorityRank));
+    }
+
+    private static int priorityRank(ItemStack item) {
+        for (int i = 0; i < priorityGroups.size(); i++) {
+            if (priorityGroups.get(i).matches(item)) return i;
+        }
+        return Integer.MAX_VALUE;
+    }
+
     private boolean isInfinibundle(ItemStack item) {
         if (item == null) return false;
         ItemMeta meta = item.getItemMeta();
@@ -83,9 +202,120 @@ public class InfinibundleListener implements Listener {
     }
 
     private String getTeamName(Player player) {
-        return player.getScoreboard().getEntryTeam(player.getName()) != null
-                ? player.getScoreboard().getEntryTeam(player.getName()).getName()
-                : "(Solo) " + player.getName();
+        return getStorageKey(player);
+    }
+
+    /** The storage key for this player's infinibundle - their own name during Lootrun (each
+     * player gets an individual infinibundle/collection score, so runners/hunters can't use a
+     * shared bundle to pass items across distance), their real team otherwise. Public so
+     * LootHunt#giveInfinibundle can seed the right storage with starting items. */
+    public static String getStorageKey(Player player) {
+        if (ZappierGames.gameMode == ZappierGames.LOOTRUN) {
+            return player.getName();
+        }
+        return getRealTeamName(player);
+    }
+
+    /** Always the player's actual scoreboard team, regardless of game mode - used anywhere that
+     * needs the real team (Shop balance/purchases), never the Lootrun-individualized storage key
+     * that getTeamName() returns above. */
+    private static String getRealTeamName(Player player) {
+        // Main scoreboard explicitly - see the comment on LootHunt#getPlayerTeamName for why
+        // player.getScoreboard() isn't safe here (it can be swapped to an isolated per-viewer
+        // board by the live score display feature).
+        org.bukkit.scoreboard.Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName());
+        return team != null ? team.getName() : "(Solo) " + player.getName();
+    }
+
+    /**
+     * True if this player holds the read-write "lock" on a team's storage (the first person to
+     * open the Inventory tab, until they close it). Anyone else who opens the Inventory tab while
+     * it's held sees a placeholder instead of the real contents/pagination, so two people can
+     * never edit the same underlying list at once. Bukkit only ever runs one event handler at a
+     * time on the main thread, so claiming the lock via Map#putIfAbsent inside a single
+     * synchronous event handler (see openTeamInventory) is atomic - there's no real race even
+     * when two players click to open in the same tick.
+     */
+    private boolean isPrimaryViewer(String team, Player player) {
+        return viewingPlayer.get(team) == player;
+    }
+
+    /**
+     * In Lootrun, every player has their own individual infinibundle (see getTeamName()), so the
+     * GUI titles say "<Name>'s Inventory" instead of "<Team> Team Inventory" - this is the one
+     * place that difference lives, so every bit of code that builds or parses a GUI title goes
+     * through these two helpers instead of hardcoding " Team ".
+     */
+    private static String titleSeparator() {
+        return ZappierGames.gameMode == ZappierGames.LOOTRUN ? "'s " : " Team ";
+    }
+
+    private static boolean titleIsMode(String title, String modeLabel) {
+        return title.contains(modeLabel);
+    }
+
+    private static String extractTeamFromTitle(String title) {
+        int idx = title.indexOf(titleSeparator());
+        return idx >= 0 ? title.substring(0, idx) : title;
+    }
+
+    private static String fmtBalance(double d) {
+        return d == Math.floor(d) ? String.valueOf((int) d) : String.format("%.1f", d);
+    }
+
+    /** Extracts just the page number after "Page " - stops at the first non-digit so trailing
+     * text (like the Shop's " | Balance: X" suffix) doesn't break the parse. */
+    private static int extractPageFromTitle(String title) {
+        String after = title.split("Page ")[1];
+        int end = 0;
+        while (end < after.length() && Character.isDigit(after.charAt(end))) end++;
+        return Integer.parseInt(after.substring(0, end));
+    }
+
+    // ===== Click rules for views that aren't an editable storage page =====
+    //
+    // The locked "someone else is in it" placeholder (and the Collections / Quests / Shop tabs)
+    // aren't real storage for the person looking at them: anything put into the GUI's own slots
+    // would just vanish when it closes. But that must NOT stop them using their own inventory, or
+    // the tab buttons. So the rule is narrow - block only what moves items into/out of the GUI.
+
+    /** The bottom-row navigation and tab buttons (see openTeamInventory). */
+    static boolean isNavOrModeSlot(int slot) {
+        return slot == 45 || slot == 46 || slot == 48 || slot == 49 || slot == 50
+                || slot == 51 || slot == 52 || slot == 53;
+    }
+
+    enum LockedViewAction { CANCEL, ALLOW_NAV, ALLOW_OWN_INVENTORY }
+
+    /**
+     * What to do with a click while the player is looking at the locked placeholder. A click on
+     * the GUI's own slots is cancelled unless it's a nav/tab button (safe to run - for a locked
+     * viewer it never saves anything). A click in the player's own inventory is left completely
+     * alone, except a shift-click, which vanilla would shove into the fake GUI's empty slots.
+     */
+    static LockedViewAction classifyLockedViewClick(int rawSlot, int topSize, boolean movesToOtherInventory) {
+        boolean clickedGui = rawSlot >= 0 && rawSlot < topSize;
+        if (clickedGui) return isNavOrModeSlot(rawSlot) ? LockedViewAction.ALLOW_NAV : LockedViewAction.CANCEL;
+        return movesToOtherInventory ? LockedViewAction.CANCEL : LockedViewAction.ALLOW_OWN_INVENTORY;
+    }
+
+    /**
+     * Whether a drag should be cancelled. A drag staying entirely inside the player's own
+     * inventory is always fine. One touching the GUI is cancelled unless it's the player's real,
+     * editable Inventory page - and even then only the storage area counts, because anything
+     * dragged onto the bottom button row would never be saved.
+     */
+    static boolean shouldCancelDrag(java.util.Collection<Integer> rawSlots, int topSize, boolean editable, int storageSlots) {
+        boolean touchesGui = false;
+        boolean touchesNonStorage = false;
+        for (int s : rawSlots) {
+            if (s >= 0 && s < topSize) {
+                touchesGui = true;
+                if (s >= storageSlots) touchesNonStorage = true;
+            }
+        }
+        if (!touchesGui) return false;
+        return !editable || touchesNonStorage;
     }
 
     @EventHandler
@@ -97,6 +327,12 @@ public class InfinibundleListener implements Listener {
 
         event.setCancelled(true);
         Player player = event.getPlayer();
+
+        if (ZappierGames.gameMode == ZappierGames.LOOTHUNT && LootHunt.inClosingWindow()) {
+            player.sendMessage(Component.text("Loothunt is ending - the infinibundle is locked for the last moment.", NamedTextColor.RED));
+            return;
+        }
+
         String team = getTeamName(player);
 
 
@@ -121,21 +357,36 @@ public class InfinibundleListener implements Listener {
             return;
         }
 
-        if (viewingPlayer.containsKey(team)) {
-            player.sendMessage(Component.text("Team inventory is already in use!", NamedTextColor.RED));
-            return;
+        // No hard block here anymore - if someone else is currently using the team's storage,
+        // openTeamInventory() below still opens a GUI for this player, but shows a locked
+        // placeholder in the Inventory tab (see isPrimaryViewer) rather than the real contents,
+        // so two people can never edit the same storage list at once. Collections/Quests/Shop
+        // stay fully usable either way since they're read-only.
+        if (viewingPlayer.containsKey(team) && viewingPlayer.get(team) != player) {
+            player.sendMessage(Component.text(viewingPlayer.get(team).getName() + " is currently in the team inventory - you can still view Collections/Quests/Shop.", NamedTextColor.YELLOW));
         }
 
-        // Open to the last page with items
         List<ItemStack> storage = getTeamStorage(team);
-        int lastOccupiedPage = Math.max(0, (storage.size() - 1) / SLOTS_PER_PAGE);
+        // Never re-sort the shared list while someone has it open: their GUI holds copies of the
+        // current page, and when they close, savePage splices that page back in BY POSITION - so a
+        // re-sort in between would make it overwrite the wrong range (losing some items and
+        // duplicating others). Whoever opens it next with nobody inside sorts it then.
+        if (!viewingPlayer.containsKey(team)) {
+            applyPriorityOrder(storage);
+        }
 
+        // Reopen on the page this player last closed the Infinibundle on (recorded by savePage),
+        // clamped to the last page that actually has items; first-time openers land on the last
+        // occupied page. Sorting doesn't need to override this: priority items are sorted to the
+        // front of the list on every open, so they're always on the earliest pages regardless of
+        // which page the player resumes on.
+        int lastOccupiedPage = Math.max(0, (storage.size() - 1) / SLOTS_PER_PAGE);
         int lastPageToGo = LootHunt.lastPages.getOrDefault(player.getName().toLowerCase(), -1);
         if (lastPageToGo == -1 || lastPageToGo > lastOccupiedPage) {
             lastPageToGo = lastOccupiedPage;
             LootHunt.lastPages.put(player.getName().toLowerCase(), lastPageToGo);
         }
-        openTeamInventory(player, team, lastPageToGo, ViewMode.INVENTORY);
+        openTeamInventory(player, lastPageToGo, ViewMode.INVENTORY);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -160,7 +411,9 @@ public class InfinibundleListener implements Listener {
                 if (viewingPlayer.containsKey(team)) {
                     mergeIntoStorage(depositBuffers.computeIfAbsent(team, k -> new ArrayList<>()), cursor.clone());
                 } else {
-                    mergeIntoStorage(getTeamStorage(team), cursor.clone());
+                    List<ItemStack> directStorage = getTeamStorage(team);
+                    mergeIntoStorage(directStorage, cursor.clone());
+                    applyPriorityOrder(directStorage);
                 }
                 player.setItemOnCursor(null);
                 return;
@@ -173,17 +426,34 @@ public class InfinibundleListener implements Listener {
 
         Component titleComp = view.title();
         String title = PlainTextComponentSerializer.plainText().serialize(titleComp);
-        if (title.contains(" Team Collections") || title.contains(" Team Quests")) {
-            if (event.getClickedInventory() == view.getBottomInventory() ||
-                    event.getClickedInventory() != view.getBottomInventory() &&
-                            event.getSlot() != 45 && event.getSlot() != 46 && event.getSlot() != 49
-                            && event.getSlot() != 52 && event.getSlot() != 53) {
+        if (titleIsMode(title, "Collections") || titleIsMode(title, "Quests") || titleIsMode(title, "Shop")) {
+            boolean isShopTopClick = titleIsMode(title, "Shop") && event.getClickedInventory() == view.getTopInventory();
+            boolean isNavSlot = event.getSlot() == 45 || event.getSlot() == 46 || event.getSlot() == 48
+                    || event.getSlot() == 49 || event.getSlot() == 50 || event.getSlot() == 51
+                    || event.getSlot() == 52 || event.getSlot() == 53;
+            boolean allowed = isShopTopClick || (event.getClickedInventory() != view.getBottomInventory() && isNavSlot);
+            if (!allowed) {
                 event.setCancelled(true);
                 player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_FAIL, 1.0f, 0.5f);
                 return;
             }
         }
-        if (!title.contains(" Team Inventory") && !title.contains(" Team Collections") && !title.contains(" Team Quests")) return;
+        if (!titleIsMode(title, "Inventory") && !titleIsMode(title, "Collections") && !titleIsMode(title, "Quests") && !titleIsMode(title, "Shop")) return;
+
+        // Someone viewing the locked placeholder (not the primary storage-lock holder) has nothing
+        // real to interact with in the GUI - but they must still be able to use their own inventory
+        // and the tab buttons (Collections / Quests / Shop). So only cancel what would move items
+        // into or out of the GUI's own slots (see classifyLockedViewClick). Everything else falls
+        // through to the normal handling below: nav buttons run, and clicks in their own inventory
+        // are left uncancelled so vanilla handles them.
+        if (titleIsMode(title, "Inventory") && !isPrimaryViewer(extractTeamFromTitle(title), player)) {
+            LockedViewAction action = classifyLockedViewClick(event.getRawSlot(), view.getTopInventory().getSize(),
+                    event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY);
+            if (action == LockedViewAction.CANCEL) {
+                event.setCancelled(true);
+                return;
+            }
+        }
 
         if (event.getClickedInventory() == view.getBottomInventory() && involvesBundle) {
             event.setCancelled(true);
@@ -195,32 +465,42 @@ public class InfinibundleListener implements Listener {
 
         int slot = event.getSlot();
 
-        // === NAVIGATION AND SWITCH LOGIC (NO FLICKER) ===
-        if (slot == 45 || slot == 46 || slot == 52 || slot == 53 || slot == 49) {
+        // === NAVIGATION AND MODE-SWITCH LOGIC (NO FLICKER) ===
+        if (slot == 45 || slot == 46 || slot == 48 || slot == 49 || slot == 50 || slot == 51 || slot == 52 || slot == 53) {
             if (current == null) return;
             if ((slot == 45 || slot == 53) && current.getType() != Material.SPECTRAL_ARROW) return;
             if ((slot == 46 || slot == 52) && current.getType() != Material.ARROW) return;
-            if (slot == 49 && current.getType() != Material.BARRIER) return;
+            if (slot == 48 && current.getType() != Material.BOOK) return;
+            if (slot == 49 && current.getType() != Material.CHEST) return;
+            if (slot == 50 && current.getType() != Material.FILLED_MAP) return;
+            if (slot == 51 && current.getType() != Material.EMERALD) return;
 
-            String team = title.split(" Team ")[0];
-            int currentPage = Integer.parseInt(title.split("Page ")[1]) - 1;
+            String team = extractTeamFromTitle(title);
+            int currentPage = extractPageFromTitle(title) - 1;
             ViewMode mode = ViewMode.fromTitle(title);
 
-            // 1. Save current page items manually if in storage mode
-            if (mode == ViewMode.INVENTORY) {
+            // Only the player who actually holds the storage lock has anything real to save -
+            // someone viewing the locked placeholder never has real content to write back.
+            if (mode == ViewMode.INVENTORY && isPrimaryViewer(team, player)) {
                 savePage(player, event.getInventory(), title);
             }
 
-            // 2. Set flag to ignore the next InventoryCloseEvent
             switchingPages.add(player.getUniqueId());
 
-            // 3. Determine new page and mode
             int newPage;
             ViewMode newMode;
-            if (slot == 49) {
+            if (slot == 48) {
                 newPage = 0;
-                newMode = mode.next();
-                player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
+                newMode = ViewMode.COLLECTIONS;
+            } else if (slot == 49) {
+                newPage = 0;
+                newMode = ViewMode.INVENTORY;
+            } else if (slot == 50) {
+                newPage = 0;
+                newMode = ViewMode.QUESTS;
+            } else if (slot == 51) {
+                newPage = 0;
+                newMode = ViewMode.SHOP;
             } else {
                 newMode = mode;
                 if (slot == 45) {
@@ -230,18 +510,32 @@ public class InfinibundleListener implements Listener {
                 } else {
                     newPage = slot == 46 ? currentPage - 1 : currentPage + 1;
                 }
-                player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
             }
+            player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
 
-            // 4. Open new page immediately (replaces current inventory)
-            openTeamInventory(player, team, newPage, newMode);
+            openTeamInventory(player, newPage, newMode);
 
-            // 5. Clean up flag
             switchingPages.remove(player.getUniqueId());
             return;
         }
 
-        if (title.contains("Collections") || title.contains("Quests")) return; // No item interactions in read-only views
+        String currentTeam = extractTeamFromTitle(title);
+        ViewMode currentMode = ViewMode.fromTitle(title);
+
+        if (currentMode == ViewMode.SHOP) {
+            if (slot < SLOTS_PER_PAGE) {
+                LootrunShop.handlePurchaseClick(player, getRealTeamName(player), current);
+                int currentPage = extractPageFromTitle(title) - 1;
+                switchingPages.add(player.getUniqueId());
+                openTeamInventory(player, currentPage, ViewMode.SHOP);
+                switchingPages.remove(player.getUniqueId());
+            }
+            return;
+        }
+
+        if (currentMode == ViewMode.COLLECTIONS || currentMode == ViewMode.QUESTS) return; // No item interactions in read-only views
+
+        if (currentMode == ViewMode.INVENTORY && !isPrimaryViewer(currentTeam, player)) return; // Locked placeholder - nothing to interact with
 
         if (slot >= SLOTS_PER_PAGE) return;
 
@@ -249,12 +543,62 @@ public class InfinibundleListener implements Listener {
         handleItemInteractions(event, player, slot, current, cursor);
     }
 
+    /**
+     * The order shift-clicking an item out of the Infinibundle fills the player's inventory:
+     * the highest hotbar slot first (8 down to 0), then the main inventory from its lower-right
+     * corner backwards (35 down to 9). This is the same direction vanilla uses when shift-clicking
+     * out of a chest. (Bukkit's own PlayerInventory#addItem fills 0 upward instead - lowest hotbar
+     * slot, then the upper-left of the main inventory - which is what this replaces.)
+     */
+    private static final int[] SHIFT_CLICK_FILL_ORDER = buildShiftClickFillOrder();
+
+    private static int[] buildShiftClickFillOrder() {
+        int[] order = new int[36];
+        int i = 0;
+        for (int slot = 8; slot >= 0; slot--) order[i++] = slot;
+        for (int slot = 35; slot >= 9; slot--) order[i++] = slot;
+        return order;
+    }
+
+    /**
+     * Moves as much of the stack as fits into the player's inventory, in SHIFT_CLICK_FILL_ORDER.
+     * Like vanilla, tops up existing partial stacks of the same item first (in that same order),
+     * then fills empty slots. Returns whatever didn't fit, or null if it all did.
+     */
+    private static ItemStack giveToPlayerReverse(Player player, ItemStack stack) {
+        org.bukkit.inventory.PlayerInventory inv = player.getInventory();
+        ItemStack remaining = stack.clone();
+
+        for (int slot : SHIFT_CLICK_FILL_ORDER) {
+            if (remaining.getAmount() <= 0) break;
+            ItemStack existing = inv.getItem(slot);
+            if (existing == null || existing.getType() == Material.AIR || !existing.isSimilar(remaining)) continue;
+            int space = existing.getMaxStackSize() - existing.getAmount();
+            if (space <= 0) continue;
+            int move = Math.min(space, remaining.getAmount());
+            existing.setAmount(existing.getAmount() + move);
+            inv.setItem(slot, existing);
+            remaining.setAmount(remaining.getAmount() - move);
+        }
+
+        for (int slot : SHIFT_CLICK_FILL_ORDER) {
+            if (remaining.getAmount() <= 0) break;
+            ItemStack existing = inv.getItem(slot);
+            if (existing != null && existing.getType() != Material.AIR) continue;
+            ItemStack placed = remaining.clone();
+            placed.setAmount(Math.min(remaining.getMaxStackSize(), remaining.getAmount()));
+            inv.setItem(slot, placed);
+            remaining.setAmount(remaining.getAmount() - placed.getAmount());
+        }
+
+        return remaining.getAmount() > 0 ? remaining : null;
+    }
+
     private void handleItemInteractions(InventoryClickEvent event, Player player, int slot, ItemStack current, ItemStack cursor) {
         if (event.isShiftClick()) {
             if (current == null || current.getType() == Material.AIR) return;
-            ItemStack toMove = current.clone();
-            HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(toMove);
-            event.getInventory().setItem(slot, leftover.isEmpty() ? null : leftover.get(0));
+            // Whatever doesn't fit stays in the bundle slot (null = everything moved out)
+            event.getInventory().setItem(slot, giveToPlayerReverse(player, current));
         } else if (event.getClick() == ClickType.NUMBER_KEY) {
             int hotbarSlot = event.getHotbarButton();
             ItemStack hotbarItem = player.getInventory().getItem(hotbarSlot);
@@ -262,8 +606,25 @@ public class InfinibundleListener implements Listener {
             event.getInventory().setItem(slot, hotbarItem != null ? hotbarItem.clone() : null);
         } else {
             if (cursor == null || cursor.getType() == Material.AIR) {
-                player.setItemOnCursor(current != null ? current.clone() : null);
-                event.getInventory().setItem(slot, null);
+                if (event.getClick() == ClickType.RIGHT && current != null && current.getType() != Material.AIR) {
+                    // Right-click picks up HALF the stack, rounded up (13 -> take 7, leave 6), like
+                    // vanilla; a stack of 1 is taken whole.
+                    int total = current.getAmount();
+                    int take = (total + 1) / 2;
+                    ItemStack held = current.clone();
+                    held.setAmount(take);
+                    player.setItemOnCursor(held);
+                    if (total - take > 0) {
+                        ItemStack rest = current.clone();
+                        rest.setAmount(total - take);
+                        event.getInventory().setItem(slot, rest);
+                    } else {
+                        event.getInventory().setItem(slot, null);
+                    }
+                } else {
+                    player.setItemOnCursor(current != null ? current.clone() : null);
+                    event.getInventory().setItem(slot, null);
+                }
             } else {
                 if (current == null || current.getType() == Material.AIR) {
                     event.getInventory().setItem(slot, cursor.clone());
@@ -290,19 +651,44 @@ public class InfinibundleListener implements Listener {
         }
     }
 
-    private void openTeamInventory(Player player, String team, int page, ViewMode mode) {
+    private void openTeamInventory(Player player, int page, ViewMode mode) {
         if (page < 0) page = 0;
 
-        int maxPage = 0;
-        List<ItemStack> displayItems = null; // only used in collections/quests mode
+        // Shop always keys off the player's real scoreboard team (so purchases hit the shared
+        // Runners/Hunters balance pool); every other tab uses getTeamName()'s storage key, which
+        // is the player's own name during Lootrun (individual infinibundle) or the real team
+        // otherwise. Computed fresh here rather than trusting a caller-supplied value, since the
+        // Shop title intentionally has no team/player name in it (see titleText below) and so
+        // can't be parsed back out when navigating away from it.
+        String team = (mode == ViewMode.SHOP) ? getRealTeamName(player) : getTeamName(player);
 
-        if (mode == ViewMode.COLLECTIONS || mode == ViewMode.QUESTS) {
+        // Claim the lock if nobody holds it yet; leave it alone if someone else already does.
+        // Bukkit event handlers run one at a time on the main thread, so this putIfAbsent is the
+        // atomic "first one in wins" check - there's no window for two players to both succeed.
+        // Only the Inventory tab actually mutates shared storage, so only it claims the lock -
+        // opening Collections/Quests/Shop must never incidentally lock out a teammate's Inventory tab.
+        if (mode == ViewMode.INVENTORY) {
+            viewingPlayer.putIfAbsent(team, player);
+        }
+        boolean isPrimary = isPrimaryViewer(team, player);
+        boolean showLockedPlaceholder = mode == ViewMode.INVENTORY && !isPrimary;
+
+        int maxPage = 0;
+        List<ItemStack> displayItems = null; // used for collections/quests/shop mode
+
+        if (showLockedPlaceholder) {
+            maxPage = 0;
+        } else if (mode == ViewMode.COLLECTIONS || mode == ViewMode.QUESTS) {
             // Collections tab shows only non-quest collections; Quests tab shows only quest
-            // collections (always, regardless of completion, so progress can be tracked there).
+            // collections (always, regardless of completion, so progress can be tracked here).
             displayItems = buildCollectionDisplayItems(team, mode == ViewMode.QUESTS);
+            maxPage = displayItems.isEmpty() ? 0 : (displayItems.size() - 1) / SLOTS_PER_PAGE;
+        } else if (mode == ViewMode.SHOP) {
+            displayItems = LootrunShop.buildShopDisplayItems(team);
             maxPage = displayItems.isEmpty() ? 0 : (displayItems.size() - 1) / SLOTS_PER_PAGE;
         } else {
             List<ItemStack> storage = getTeamStorage(team);
+            applyPriorityOrder(storage);
             maxPage = storage.isEmpty() ? 0 : (storage.size() / SLOTS_PER_PAGE) + 1;
         }
 
@@ -312,8 +698,11 @@ public class InfinibundleListener implements Listener {
         // click would misnavigate since it re-parses the current page from that broken title.
         if (page > maxPage) page = maxPage;
 
-        Inventory inv = Bukkit.createInventory(null, 54,
-                Component.text(team + " Team " + mode.label + " - Page " + (page + 1)));
+        String titleText = mode == ViewMode.SHOP
+                ? "Shop - Page " + (page + 1) + "  |  Balance: " + fmtBalance(Lootrun.getBalance(team))
+                : team + titleSeparator() + mode.label + " - Page " + (page + 1);
+
+        Inventory inv = Bukkit.createInventory(null, 54, Component.text(titleText));
 
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta fm = filler.getItemMeta();
@@ -322,7 +711,19 @@ public class InfinibundleListener implements Listener {
         for (int i = SLOTS_PER_PAGE; i < 54; i++) inv.setItem(i, filler);
 
         // Fill items
-        if ((mode == ViewMode.COLLECTIONS || mode == ViewMode.QUESTS) && displayItems != null) {
+        if (showLockedPlaceholder) {
+            Player holder = viewingPlayer.get(team);
+            String holderName = holder != null ? holder.getName() : "Someone";
+            ItemStack lockedItem = new ItemStack(Material.PLAYER_HEAD);
+            SkullMeta lm = (SkullMeta) lockedItem.getItemMeta();
+            if (holder != null) lm.setOwningPlayer(holder);
+            lm.displayName(Component.text(holderName + " is currently in the infinibundle", NamedTextColor.RED)
+                    .decoration(TextDecoration.ITALIC, false));
+            lm.lore(List.of(Component.text("Try again once they've closed it.", NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false)));
+            lockedItem.setItemMeta(lm);
+            inv.setItem(22, lockedItem); // roughly centered
+        } else if ((mode == ViewMode.COLLECTIONS || mode == ViewMode.QUESTS || mode == ViewMode.SHOP) && displayItems != null) {
             int start = page * SLOTS_PER_PAGE;
             int end = Math.min(start + SLOTS_PER_PAGE, displayItems.size());
             for (int i = start; i < end; i++) {
@@ -372,15 +773,27 @@ public class InfinibundleListener implements Listener {
             inv.setItem(53, last);
         }
 
-        // Switch view button - cycles Inventory -> Collections -> Quests -> Inventory
-        ItemStack switchView = new ItemStack(Material.BARRIER);
-        ItemMeta sm = switchView.getItemMeta();
-        sm.displayName(Component.text("Switch to " + mode.next().label, NamedTextColor.GREEN));
-        switchView.setItemMeta(sm);
-        inv.setItem(49, switchView);
+        // Mode-select buttons - Infinibundle dead-center at the bottom, Collections to its
+        // immediate left and Quests to its immediate right. Shop only shows up during Lootrun
+        // (it's a Lootrun-specific variation, not something that should appear in normal
+        // LootHunt games).
+        inv.setItem(48, modeButton(Material.BOOK, "Collections", mode == ViewMode.COLLECTIONS));
+        inv.setItem(49, modeButton(Material.CHEST, "Infinibundle", mode == ViewMode.INVENTORY));
+        inv.setItem(50, modeButton(Material.FILLED_MAP, "Quests", mode == ViewMode.QUESTS));
+        if (ZappierGames.gameMode == ZappierGames.LOOTRUN) {
+            inv.setItem(51, modeButton(Material.EMERALD, "Shop", mode == ViewMode.SHOP));
+        }
 
         player.openInventory(inv);
-        viewingPlayer.put(team, player);
+    }
+
+    private ItemStack modeButton(Material material, String label, boolean active) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Component.text((active ? "\u25b6 " : "") + label, active ? NamedTextColor.GOLD : NamedTextColor.GREEN)
+                .decoration(TextDecoration.ITALIC, false));
+        item.setItemMeta(meta);
+        return item;
     }
 
     /**
@@ -579,24 +992,32 @@ public class InfinibundleListener implements Listener {
 
         Component titleComp = event.getView().title();
         String title = PlainTextComponentSerializer.plainText().serialize(titleComp);
-        if (!title.contains(" Team Inventory") && !title.contains(" Team Collections") && !title.contains(" Team Quests")) return;
+        if (!titleIsMode(title, "Inventory") && !titleIsMode(title, "Collections") && !titleIsMode(title, "Quests") && !titleIsMode(title, "Shop")) return;
 
-        String team = title.split(" Team ")[0];
-        viewingPlayer.remove(team);
+        String team = extractTeamFromTitle(title);
+        boolean wasPrimaryViewer = isPrimaryViewer(team, player);
+        List<String> released = releaseLocksHeldBy(player);
 
-        if (title.contains("Collections") || title.contains("Quests")) return; // No saving for read-only views
+        boolean readOnlyTab = title.contains("Collections") || title.contains("Quests") || title.contains("Shop");
+        if (!readOnlyTab && wasPrimaryViewer) {
+            // Only the lock holder has anything real to save (a locked viewer only ever saw the
+            // placeholder). This also merges any deposits made while they had it open.
+            savePage(player, event.getInventory(), title);
+        }
 
-        savePage(player, event.getInventory(), title);
+        // Closing from a read-only tab never saves a page, so merge pending deposits here too -
+        // otherwise they'd sit in the buffer, unscored and invisible, until the next save.
+        for (String key : released) flushDepositBuffer(key);
     }
 
     /**
      * Extracted logic to save items from the current inventory view into the team storage list.
      */
     private void savePage(Player player, Inventory inv, String title) {
-        String team = title.split(" Team ")[0];
+        String team = extractTeamFromTitle(title);
         List<ItemStack> storage = getTeamStorage(team);
 
-        int page = Integer.parseInt(title.split("Page ")[1]) - 1;
+        int page = extractPageFromTitle(title) - 1;
         LootHunt.lastPages.put(player.getName().toLowerCase(), page);
         int start = page * SLOTS_PER_PAGE;
 
@@ -630,13 +1051,42 @@ public class InfinibundleListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         switchingPages.remove(player.getUniqueId());
-        String team = getTeamName(player);
-        if (viewingPlayer.getOrDefault(team, null) == player) {
-            viewingPlayer.remove(team);
+        for (String key : releaseLocksHeldBy(player)) flushDepositBuffer(key);
+    }
+
+    /**
+     * Cancels drags that would put items into the read-only parts of the GUI. Without this, a
+     * drag across the locked placeholder's (or the Collections/Quests/Shop tabs') empty slots
+     * would drop the dragged items into the fake GUI, where they'd vanish when it closes.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        InventoryView view = event.getView();
+        Inventory top = view.getTopInventory();
+        if (top.getSize() != 54 || top.getHolder(false) != null) return; // ours are plain 54-slot custom inventories
+
+        String title = PlainTextComponentSerializer.plainText().serialize(view.title());
+        if (!titleIsMode(title, "Inventory") && !titleIsMode(title, "Collections")
+                && !titleIsMode(title, "Quests") && !titleIsMode(title, "Shop")) return;
+
+        boolean editable = ViewMode.fromTitle(title) == ViewMode.INVENTORY
+                && isPrimaryViewer(extractTeamFromTitle(title), player);
+        if (shouldCancelDrag(event.getRawSlots(), top.getSize(), editable, SLOTS_PER_PAGE)) {
+            event.setCancelled(true);
         }
     }
 
-    private void mergeIntoStorage(List<ItemStack> storage, ItemStack item) {
+    /** Adds an item to a storage key's Infinibundle contents (merging into existing stacks where
+     * possible), then re-applies the configured priority ordering. Used by the loadout system to
+     * put starting-kit items inside the bundle at game start. */
+    public static void addToStorage(String storageKey, ItemStack item) {
+        List<ItemStack> storage = getTeamStorage(storageKey);
+        mergeIntoStorage(storage, item.clone());
+        applyPriorityOrder(storage);
+    }
+
+    private static void mergeIntoStorage(List<ItemStack> storage, ItemStack item) {
         for (ItemStack existing : storage) {
             if (existing.isSimilar(item)) {
                 int space = existing.getMaxStackSize() - existing.getAmount();
@@ -651,11 +1101,61 @@ public class InfinibundleListener implements Listener {
         if (item.getAmount() > 0) storage.add(item);
     }
 
-    private void compressStorage(List<ItemStack> storage) {
+    /**
+     * Where a deposit for this storage key should go right now: straight into storage when nobody
+     * has the bundle open, otherwise into a pending buffer that gets merged into storage when the
+     * viewer closes it. (Writing into the live list under an open GUI would just be overwritten
+     * when that GUI saves its page.) Applies whether the viewer is someone else or the depositor.
+     */
+    private static List<ItemStack> depositTarget(String team) {
+        return viewingPlayer.containsKey(team)
+                ? depositBuffers.computeIfAbsent(team, k -> new ArrayList<>())
+                : getTeamStorage(team);
+    }
+
+    /** Merges any pending deposits for this key into its storage (then re-sorts). */
+    private static void flushDepositBuffer(String team) {
+        List<ItemStack> pending = depositBuffers.remove(team);
+        if (pending == null || pending.isEmpty()) return;
+        List<ItemStack> storage = getTeamStorage(team);
+        storage.addAll(pending);
+        compressStorage(storage);
+    }
+
+    /** Merges every pending deposit buffer - used at shutdown so buffered items aren't lost. */
+    public static void flushAllDepositBuffers() {
+        for (String team : new ArrayList<>(depositBuffers.keySet())) flushDepositBuffer(team);
+    }
+
+    /**
+     * Releases every storage lock this player holds and returns the keys released. Done by value
+     * rather than by a key parsed out of the GUI title: the Shop tab's title has no team in it, so
+     * closing from there used to leave the lock behind - which made every later deposit buffer
+     * forever instead of landing in storage.
+     */
+    private static List<String> releaseLocksHeldBy(Player player) {
+        List<String> released = new ArrayList<>();
+        viewingPlayer.entrySet().removeIf(en -> {
+            if (en.getValue() == player) {
+                released.add(en.getKey());
+                return true;
+            }
+            return false;
+        });
+        return released;
+    }
+
+    private static void compressStorage(List<ItemStack> storage) {
         List<ItemStack> compressed = new ArrayList<>();
         for (ItemStack item : storage) mergeIntoStorage(compressed, item.clone());
         storage.clear();
         storage.addAll(compressed);
+        // Re-sort here, not just at display time - this is THE central point every save path
+        // (close, page-switch, bulk shift-deposit) rebuilds the list through, so this is what
+        // makes priority order an actual property of the stored list itself rather than
+        // something that only looked right on whichever page happened to be open when it was
+        // last computed.
+        applyPriorityOrder(storage);
     }
 
 
@@ -673,22 +1173,11 @@ public class InfinibundleListener implements Listener {
         Player p = event.getPlayer();
         String team = getTeamName(p);
 
-        if (viewingPlayer.containsKey(team) && viewingPlayer.get(team) != p) {
-            p.sendMessage(Component.text("Team storage is currently in use by another player!", NamedTextColor.RED));
-            return;
-        }
-
-        // ──────────────────────────────────────────────
-        // Decide target — same logic as normal deposit (cursor → bundle)
-        // ──────────────────────────────────────────────
-        final List<ItemStack> target;
-        final boolean usingBuffer = viewingPlayer.containsKey(team);
-
-        if (usingBuffer) {
-            target = depositBuffers.computeIfAbsent(team, k -> new ArrayList<>());
-        } else {
-            target = getTeamStorage(team);
-        }
+        // Deposits are always allowed, even while someone else has the bundle open: the items go
+        // into a pending buffer that's merged in when they close it (see depositTarget).
+        final Player viewer = viewingPlayer.get(team);
+        final boolean buffered = viewer != null;
+        final List<ItemStack> target = depositTarget(team);
 
         int count = 0;
 
@@ -722,7 +1211,8 @@ public class InfinibundleListener implements Listener {
         p.sendActionBar(Component.text()
                 .append(Component.text("Deposited ", NamedTextColor.GREEN))
                 .append(Component.text(count, NamedTextColor.YELLOW))
-                .append(Component.text(" stacks → Team Storage", NamedTextColor.GREEN)));
+                .append(Component.text(" stacks → Team Storage", NamedTextColor.GREEN))
+                .append(Component.text(buffered && viewer != p ? " (appears once " + viewer.getName() + " closes it)" : "", NamedTextColor.GRAY)));
 
         // If someone is viewing (including possibly self), they will see update on next page change / reopen
         // But when no one views → change is immediately visible on next open (which is what you want)

@@ -2,7 +2,7 @@
 start-timer: 240.0
 
 # Printed on the results webpage (both optional - leave blank to omit either line)
-game-version: "1.26.5.1"
+game-version: "1.28"
 loothunt-season: "Season 5.5"
 
 # Collections – flexible system
@@ -47,8 +47,9 @@ collections:
       - BAMBOO_DOOR
       - IRON_DOOR
       - CHERRY_DOOR
-      - "COPPER_DOOR|WAXED_COPPER_DOOR|EXPOSED_COPPER_DOOR|WAXEDEXPOSED_COPPER_DOOR|WEATHERED_COPPER_DOOR|WAXEDWEATHERED_COPPER_DOOR|OXIDIZED_COPPER_DOOR|WAXED_OXIDIZED_COPPER_DOOR"
+      - "COPPER_DOOR|WAXED_COPPER_DOOR|EXPOSED_COPPER_DOOR|WAXED_EXPOSED_COPPER_DOOR|WEATHERED_COPPER_DOOR|WAXED_WEATHERED_COPPER_DOOR|OXIDIZED_COPPER_DOOR|WAXED_OXIDIZED_COPPER_DOOR"
       - PALE_OAK_DOOR
+      - POPLAR_DOOR
     scores:
       - 5
       - 10
@@ -61,25 +62,31 @@ collections:
       - 300
       - 500
       - 700
-      - 1300
-      - 2100
-      - 3000  # Still 14 slots total (scores match item count)
+      - 1100
+      - 1800
+      - 2500
+      - 3200
 
-  nether:
-    name: "Nether"
+  bastion:
+    name: "Bastion"
     type: complete
     items:
-      - MAGMA_CREAM
-      - BLAZE_ROD
+      - LANTERN
+      - IRON_CHAIN
       - GILDED_BLACKSTONE
-      - DRIED_GHAST
-      - GLOWSTONE
-      - WARPED_FUNGUS_ON_A_STICK
-      - MUSIC_DISC_TEARS
-      - QUARTZ
-      - RED_NETHER_BRICKS
+      - CROSSBOW
+      - GOLDEN_AXE
+      - GOLDEN_BOOTS
+      - GOLDEN_CHESTPLATE
+      - GOLDEN_HELMET
+      - GOLDEN_HOE
+      - GOLDEN_LEGGINGS
+      - GOLDEN_PICKAXE
+      - GOLDEN_SHOVEL
+      - GOLDEN_SPEAR
+      - GOLDEN_SWORD
       - "ANCIENT_DEBRIS|NETHERITE_SCRAP|NETHERITE_INGOT|NETHERITE_HOE|NETHERITE_SWORD|NETHERITE_SHOVEL|NETHERITE_PICKAXE|NETHERITE_AXE|NETHERITE_CHESTPLATE|NETHERITE_LEGGINGS|NETHERITE_BOOTS|NETHERITE_HELMET|NETHERITE_BLOCK|NETHERITE_SPEAR|NETHERITE_HORSE_ARMOR|NETHERITE_NAUTILUS_ARMOR"
-    bonus: 500
+    bonus: 300
 
   dirt:
     name: "Dirt"
@@ -180,7 +187,7 @@ collections:
       - AXOLOTL_BUCKET
       - POWDER_SNOW_BUCKET
       - TADPOLE_BUCKET
-      #- SULFUR_CUBE_BUCKET
+      - SULFUR_CUBE_BUCKET
 
     scores:
       - 5
@@ -194,17 +201,21 @@ collections:
       - 900
       - 1500
       - 2300
-      #- 3500
+      - 3200
 
   soups:
     name: "Soups"
-    type: complete
+    type: progressive
     items:
       - MUSHROOM_STEW
       - RABBIT_STEW
       - SUSPICIOUS_STEW
       - BEETROOT_SOUP
-    bonus: 300
+    scores:
+      - 0
+      - 0
+      - 100
+      - 600
 
   brewing-ingredients:
     name: "Brewing Ingredients"
@@ -272,8 +283,8 @@ collections:
       - "WHITE_DYE|GRAY_DYE|LIGHT_GRAY_DYE|BLACK_DYE|BROWN_DYE|RED_DYE|YELLOW_DYE|ORANGE_DYE|PINK_DYE|MAGENTA_DYE|PURPLE_DYE|BLUE_DYE|LIGHT_BLUE_DYE|GREEN_DYE|LIME_DYE|CYAN_DYE"
     bonus: 400
 
-  totem:
-    name: "Totem Quest"
+  pillager:
+    name: "Pillager"
     type: complete
     quest: true
     items:
@@ -298,7 +309,7 @@ special-items:
   # Ominous Bottle tiers (I-V, based on its Bad Omen amplifier). Falls back to the flat
   # OMINOUS_BOTTLE value below if tier detection isn't available on this server's API version.
   OMINOUS_BOTTLE_TIER_1: 10
-  OMINOUS_BOTTLE_TIER_2: 40
+  OMINOUS_BOTTLE_TIER_2: 10
   OMINOUS_BOTTLE_TIER_3: 40
   OMINOUS_BOTTLE_TIER_4: 40
   OMINOUS_BOTTLE_TIER_5: 40
@@ -317,10 +328,10 @@ item-values:
   ARROW: 0.5
   AXOLOTL_BUCKET: 6
   BAMBOO_HANGING_SIGN: 0.8
-  BEACON: 1502.4
+  BEACON: 1803
   BEEHIVE: 3
-  BEE_NEST: 70
-  BELL: 75
+  BEE_NEST: 80
+  BELL: 30
   BIRCH_HANGING_SIGN: 0.8
   BLACK_HARNESS: 3
   BLADE_POTTERY_SHERD: 70
@@ -332,7 +343,7 @@ item-values:
   BOOK: 0.7
   BOOKSHELF: 2.1
   BORDURE_INDENTED_BANNER_PATTERN: 0.5
-  BREEZE_ROD: 24
+  BREEZE_ROD: 20
   BREWER_POTTERY_SHERD: 90
   BREWING_STAND: 8
   BROWN_HARNESS: 3
@@ -341,23 +352,23 @@ item-values:
   # Bundles (grouped here rather than split across the alphabetical list for visibility) -
   # placeholder/test values, tune as needed. These apply to any bundle a player finds/crafts;
   # the special per-team Infinibundle is excluded from scoring regardless of these values.
-  BUNDLE: 3
-  WHITE_BUNDLE: 3
-  ORANGE_BUNDLE: 3
-  MAGENTA_BUNDLE: 3
-  LIGHT_BLUE_BUNDLE: 3
-  YELLOW_BUNDLE: 3
-  LIME_BUNDLE: 3
-  PINK_BUNDLE: 3
-  GRAY_BUNDLE: 3
-  LIGHT_GRAY_BUNDLE: 3
-  CYAN_BUNDLE: 3
-  PURPLE_BUNDLE: 3
-  BLUE_BUNDLE: 3
-  BROWN_BUNDLE: 3
-  GREEN_BUNDLE: 3
-  RED_BUNDLE: 3
-  BLACK_BUNDLE: 3
+  BUNDLE: 1
+  WHITE_BUNDLE: 1
+  ORANGE_BUNDLE: 1
+  MAGENTA_BUNDLE: 1
+  LIGHT_BLUE_BUNDLE: 1
+  YELLOW_BUNDLE: 1
+  LIME_BUNDLE: 1.5
+  PINK_BUNDLE: 1
+  GRAY_BUNDLE: 1
+  LIGHT_GRAY_BUNDLE: 1
+  CYAN_BUNDLE: 1.5
+  PURPLE_BUNDLE: 1
+  BLUE_BUNDLE: 1
+  BROWN_BUNDLE: 1
+  GREEN_BUNDLE: 2
+  RED_BUNDLE: 1
+  BLACK_BUNDLE: 1
   BURN_POTTERY_SHERD: 90
   CACTUS: 1
   CAKE: 10
@@ -381,7 +392,7 @@ item-values:
   COD_BUCKET: 6
   COMPARATOR: 2.6
   COMPASS: 8.7
-  CONDUIT: 335
+  CONDUIT: 1000
   # Copper Crafts (grouped here rather than split across the alphabetical list for visibility)
   # Copper Ingot (Base Item)
   COPPER_INGOT: 0.1
@@ -541,11 +552,11 @@ item-values:
   COPPER_ORE: 2
   CRAFTER: 12.1
   CREAKING_HEART: 20
-  CREEPER_BANNER_PATTERN: 300.5
+  CREEPER_BANNER_PATTERN: 400.5
   CREEPER_HEAD: 400
   CRIMSON_HANGING_SIGN: 0.8
   CROSSBOW: 3
-  CRYING_OBSIDIAN: 0.8
+  CRYING_OBSIDIAN: 1
   CYAN_DYE: 0.5
   CYAN_HARNESS: 3.5
   DAMAGED_ANVIL: 62
@@ -591,9 +602,10 @@ item-values:
   EMERALD_ORE: 60
   ENCHANTED_BOOK: 1
   ENCHANTED_GOLDEN_APPLE: 50
-  ENCHANTING_TABLE: 23.9
+  ENCHANTING_TABLE: 24.7
+  END_CRYSTAL: 25
   END_ROD: 2
-  ENDER_CHEST: 15.4
+  ENDER_CHEST: 17
   ENDER_EYE: 9
   ENDER_PEARL: 5
   EXPERIENCE_BOTTLE: 5
@@ -601,7 +613,6 @@ item-values:
   EYE_ARMOR_TRIM_SMITHING_TEMPLATE: 160
   FEATHER: 2
   FIELD_MASONED_BANNER_PATTERN: 0.5
-  FILLED_MAP: 12.7
   FIRE_CHARGE: 1.7
   FIREWORK_ROCKET: 1
   FLINT_AND_STEEL: 2
@@ -611,9 +622,11 @@ item-values:
   FLOWER_BANNER_PATTERN: 0.5
   FRIEND_POTTERY_SHERD: 90
   FURNACE_MINECART: 10
+  GHAST_TEAR: 5
   GILDED_BLACKSTONE: 1
   GLISTERING_MELON_SLICE: 1.6
   GLOBE_BANNER_PATTERN: 60
+  GLOW_ITEM_FRAME: 1
   GLOWSTONE: 3.2
   GLOWSTONE_DUST: 0.8
   GOAT_HORN: 100
@@ -626,7 +639,7 @@ item-values:
   GOLDEN_BOOTS: 8
   GOLDEN_CARROT: 1.6
   GOLDEN_CHESTPLATE: 16
-  #GOLDEN_DANDELION: 1.6
+  GOLDEN_DANDELION: 1.6
   GOLDEN_HELMET: 10
   GOLDEN_HOE: 4
   GOLDEN_HORSE_ARMOR: 25
@@ -675,11 +688,12 @@ item-values:
   IRON_SPEAR: 2
   IRON_SWORD: 4
   IRON_TRAPDOOR: 8
+  ITEM_FRAME: 1
   JUKEBOX: 10
   JUNGLE_HANGING_SIGN: 0.8
   LANTERN: 1.6
-  LAPIS_BLOCK: 4.5
-  LAPIS_LAZULI: 0.5
+  LAPIS_BLOCK: 9
+  LAPIS_LAZULI: 1
   LAPIS_ORE: 7
   LARGE_AMETHYST_BUD: 15
   LARGE_FERN: 125
@@ -696,12 +710,31 @@ item-values:
   LIGHT_WEIGHTED_PRESSURE_PLATE: 4
   LIME_DYE: 0.5
   LIME_HARNESS: 3.5
-  LODESTONE: 15
-  MACE: 262
+  LODESTONE: 16
+  MACE: 270
   MAGENTA_HARNESS: 3
   MAGMA_CREAM: 0
   MANGROVE_HANGING_SIGN: 0.8
+  # Maps
+  FILLED_MAP: 12.7
   MAP: 12.7
+  ABANDONED_CAMP_MAP: 12.7
+  BURIED_ANCIENT_CITY_MAP: 12.7
+  BURIED_MINESHAFT_MAP: 12.7
+  BURIED_TREASURE_MAP: 12.7
+  BURIED_TRIAL_CHAMBERS_MAP: 12.7
+  DESERT_PYRAMID_MAP: 12.7
+  DESERT_VILLAGE_MAP: 12.7
+  JUNGLE_PYRAMID_MAP: 12.7
+  OCEAN_MONUMENT_MAP: 12.7
+  PLAINS_VILLAGE_MAP: 12.7
+  SAVANNA_VILLAGE_MAP: 12.7
+  SNOWY_VILLAGE_MAP: 12.7
+  SWAMP_HUT_MAP: 12.7
+  TAIGA_VILLAGE_MAP: 12.7
+  WARM_OCEAN_RUINS_MAP: 12.7
+  WOODLAND_MANSION_MAP: 12.7
+  # End Maps
   MEDIUM_AMETHYST_BUD: 12.5
   MILK_BUCKET: 6
   MINECART: 10
@@ -712,51 +745,51 @@ item-values:
   MUSIC_DISC_13: 10
   MUSIC_DISC_5: 9
   MUSIC_DISC_BLOCKS: 25
-  #MUSIC_DISC_BOUNCE: 150
+  MUSIC_DISC_BOUNCE: 150
   MUSIC_DISC_CAT: 10
-  MUSIC_DISC_CHIRP: 25
+  MUSIC_DISC_CHIRP: 35
   MUSIC_DISC_CREATOR: 200
   MUSIC_DISC_CREATOR_MUSIC_BOX: 30
-  MUSIC_DISC_FAR: 25
+  MUSIC_DISC_FAR: 35
   MUSIC_DISC_LAVA_CHICKEN: 200
-  MUSIC_DISC_MALL: 25
-  MUSIC_DISC_MELLOHI: 25
+  MUSIC_DISC_MALL: 35
+  MUSIC_DISC_MELLOHI: 35
   MUSIC_DISC_OTHERSIDE: 10
   MUSIC_DISC_PIGSTEP: 30
-  MUSIC_DISC_PRECIPICE: 35
+  MUSIC_DISC_PRECIPICE: 40
   MUSIC_DISC_RELIC: 250
-  MUSIC_DISC_STAL: 25
-  MUSIC_DISC_STRAD: 25
+  MUSIC_DISC_STAL: 35
+  MUSIC_DISC_STRAD: 35
   MUSIC_DISC_TEARS: 25
-  MUSIC_DISC_WAIT: 25
-  MUSIC_DISC_WARD: 25
+  MUSIC_DISC_WAIT: 35
+  MUSIC_DISC_WARD: 35
   NAME_TAG: 0.7
   NAUTILUS_SHELL: 40
   NETHER_GOLD_ORE: 1
   NETHER_QUARTZ_ORE: 1
-  NETHER_STAR: 1500
+  NETHER_STAR: 1800
   NETHER_WART: 8
-  NETHERITE_AXE: 118
-  NETHERITE_BLOCK: 612
-  NETHERITE_BOOTS: 128
-  NETHERITE_CHESTPLATE: 178
-  NETHERITE_HELMET: 138
-  NETHERITE_HOE: 108
-  NETHERITE_HORSE_ARMOR: 113
-  NETHERITE_INGOT: 68
-  NETHERITE_LEGGINGS: 158
-  NETHERITE_NAUTILUS_ARMOR: 188
-  NETHERITE_PICKAXE: 118
+  NETHERITE_AXE: 150
+  NETHERITE_BLOCK: 900
+  NETHERITE_BOOTS: 160
+  NETHERITE_CHESTPLATE: 200
+  NETHERITE_HELMET: 170
+  NETHERITE_HOE: 140
+  NETHERITE_HORSE_ARMOR: 145
+  NETHERITE_INGOT: 100
+  NETHERITE_LEGGINGS: 190
+  NETHERITE_NAUTILUS_ARMOR: 220
+  NETHERITE_PICKAXE: 150
   NETHERITE_SCRAP: 15
-  NETHERITE_SHOVEL: 98
-  NETHERITE_SPEAR: 98
-  NETHERITE_SWORD: 108
+  NETHERITE_SHOVEL: 130
+  NETHERITE_SPEAR: 130
+  NETHERITE_SWORD: 140
   NETHERITE_UPGRADE_SMITHING_TEMPLATE: 20
   NOTE_BLOCK: 0.7
   OAK_HANGING_SIGN: 0.8
   OBSERVER: 1.9
-  OBSIDIAN: 0.8
-  OMINOUS_BOTTLE: 10 #NOTE: This is ONLY a fallback value. Go to special-items or CTRL+F "ominous_bottle"
+  OBSIDIAN: 1
+  OMINOUS_BOTTLE: 10
   OMINOUS_TRIAL_KEY: 75
   ORANGE_HARNESS: 3
   PALE_OAK_HANGING_SIGN: 0.8
@@ -773,6 +806,7 @@ item-values:
   PRISMARINE_SHARD: 0
   PRIZE_POTTERY_SHERD: 90
   PUFFERFISH_BUCKET: 6
+  PUMPKIN_PIE: 3
   PURPLE_HARNESS: 3
   # Quartz Crafts (grouped here rather than split across the alphabetical list for visibility)
   QUARTZ: 0.5
@@ -816,12 +850,12 @@ item-values:
   RESIN_BRICK_STAIRS: 1.2
   RESIN_BRICK_WALL: 1.2
   # End of Resin Crafts
-  RESPAWN_ANCHOR: 14.4
+  RESPAWN_ANCHOR: 15.6
   RIB_ARMOR_TRIM_SMITHING_TEMPLATE: 90
   SADDLE: 5
   SALMON_BUCKET: 6
   SCRAPE_POTTERY_SHERD: 5
-  SEA_LANTERN: 20
+  SEA_LANTERN: 18
   SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE: 70
   SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE: 110
   SHEAF_POTTERY_SHERD: 90
@@ -851,7 +885,7 @@ item-values:
   SHULKER_SHELL: 5
   SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE: 90
   SKELETON_SKULL: 0
-  SKULL_BANNER_PATTERN: 300.5
+  SKULL_BANNER_PATTERN: 400.5
   SKULL_POTTERY_SHERD: 90
   SMALL_AMETHYST_BUD: 10
   SMITHING_TABLE: 4
@@ -867,7 +901,7 @@ item-values:
   SPYGLASS: 0.2
   STICKY_PISTON: 2.7
   STONECUTTER: 2
-  #SULFUR_CUBE_BUCKET: 6
+  SULFUR_CUBE_BUCKET: 6
   SUSPICIOUS_GRAVEL: 20
   SUSPICIOUS_SAND: 20
   TADPOLE_BUCKET: 6
@@ -885,7 +919,7 @@ item-values:
   TRIDENT: 250
   TRIPWIRE_HOOK: 1
   TROPICAL_FISH_BUCKET: 6
-  TURTLE_EGG: 40
+  TURTLE_EGG: 70
   VEX_ARMOR_TRIM_SMITHING_TEMPLATE: 70
   WARD_ARMOR_TRIM_SMITHING_TEMPLATE: 20
   WARPED_HANGING_SIGN: 0.8
@@ -935,8 +969,8 @@ custom-pearls:
 enchantments:
   points-per-tier: 2
   special-enchantments:
-    MENDING: 7.5
-    FROST_WALKER: 7.5
+    MENDING: 2
+    FROST_WALKER: 2
     WIND_BURST: 249
     SWIFT_SNEAK: 2
 
@@ -1107,6 +1141,7 @@ potion-values:
 # names used above (no SPLASH_/LINGERING_ prefix - tipped arrows don't have those variants).
 arrow-values:
   ARROW_WATER: 4
+  ARROW_AWKWARD: 4
   ARROW_REGENERATION: 4
   ARROW_STRONG_REGENERATION: 4
   ARROW_LONG_REGENERATION: 4
@@ -1128,8 +1163,8 @@ arrow-values:
   ARROW_LEAPING: 4
   ARROW_LONG_LEAPING: 4
   ARROW_STRONG_LEAPING: 4
-  ARROW_SLOWNESS: 4
-  ARROW_LONG_SLOWNESS: 8
+  ARROW_SLOWNESS: 6
+  ARROW_LONG_SLOWNESS: 4
   ARROW_STRONG_SLOWNESS: 10
   ARROW_HARMING: 4
   ARROW_STRONG_HARMING: 4
@@ -1149,3 +1184,143 @@ arrow-values:
   ARROW_INFESTED: 4
   ARROW_WEAKNESS: 4
   ARROW_LONG_WEAKNESS: 4
+
+lootrun:
+  shop:
+    # Buffs (self - applied to your own team)
+    EXTRA_HEARTS: [750, 750, 750, 750, 750]
+    ACHIEVEMENTS_OFF: [500, 500, 500, 500, 500]           # Not Implemented
+    FIRE_RESISTANCE: [500, 500, 500, 500, 500]
+    WATER_BREATHING: [500, 500, 500, 500, 500]
+    HASTE: [500, 500, 500, 500, 500]
+    REDUCE_FALL_DAMAGE: [500, 500, 500, 500, 500]
+    SHRINK_SOMEONE: [500, 500, 500, 500, 500]             # Not Implemented
+    KEEP_INVENTORY_BUFF: [2000, 4000, 6000, 8000, 10000]
+
+    # Runner Buffs (self - Runners/Runner_Suppliers only)
+    RUNNER_COMPASS: [500, 500, 500, 500, 500]
+    EXTRA_LIFE: [5000, 5000, 5000, 5000, 5000]
+
+    # Hunter Buffs (self - Hunters/Hunter_Suppliers only)
+    HUNTER_INSURANCE: [250, 500, 750, 1000, 1250]
+    CURSE_OF_VANISHING_ITEMS: [500, 1000, 1500, 2000, 2500]  # Not Implemented
+
+    # Nerfs (opponent-targeted - buy to apply to the other side, or pay the same price to remove
+    # one currently active against you)
+    NO_OFFHAND: [500, 1000, 1500, 2000, 2500]
+    TNT_SPAWNING: [2000, 4000, 6000, 8000, 10000]
+    HUNGER: [750, 1500, 2250, 3000, 3750]
+    SLOWNESS_1: [500, 1000, 1500, 2000, 2500]
+    INFESTATION: [500, 1000, 1500, 2000, 2500]            # Not Implemented
+    INCREASE_FALL_DAMAGE: [1000, 2000, 3000, 4000, 5000]
+    PERMANENT_FROST_WALKER: [212, 424, 636, 848, 1060]
+    MINUS_ONE_HOTBAR_SLOT: [500, 1000, 1500, 2000, 2500]
+    CURSE_OF_BINDING_PUMPKIN: [5000, 10000, 15000, 20000, 25000]  # Not Implemented
+    NEUTRAL_MOBS_AGGRO: [500, 1000, 1500, 2000, 2500]     # Not Implemented (no price given in the doc; placeholder)
+    ETERNAL_FIRE: [500, 1000, 1500, 2000, 2500]           # Not Implemented (no price given in the doc; placeholder)
+    GLOWING: [500, 1000, 1500, 2000, 2500]
+
+    # Hunter Nerfs (opponent-targeted, always against Hunters/Hunter_Suppliers)
+    RESPAWN_COOLDOWN: [500, 500, 500, 500, 500]
+
+# Biome colors for the Lootrun/LootHunt world map, matching Chunkbase's Seed Map palette
+# (sourced from the amidst biome-color table Chunkbase itself credits; newer 1.18+/26.x
+# biomes not in that original table have been given a thematically-consistent color).
+biome-colors:
+  badlands: "#D94515"
+  bamboo_jungle: "#768E14"
+  basalt_deltas: "#403636"
+  beach: "#FADE55"
+  birch_forest: "#307444"
+  cherry_grove: "#E993B4"
+  cold_ocean: "#202070"
+  crimson_forest: "#DD0808"
+  dappled_forest: "#6B8E4E"
+  dark_forest: "#40511A"
+  deep_cold_ocean: "#202038"
+  deep_dark: "#1C2321"
+  deep_frozen_ocean: "#404090"
+  deep_lukewarm_ocean: "#000040"
+  deep_ocean: "#000030"
+  desert: "#FA9418"
+  dripstone_caves: "#7A6A53"
+  end_barrens: "#8080FF"
+  end_highlands: "#8080FF"
+  end_midlands: "#8080FF"
+  eroded_badlands: "#FF6D3D"
+  flower_forest: "#2D8E49"
+  forest: "#056621"
+  frozen_ocean: "#7070D6"
+  frozen_peaks: "#9AC3D1"
+  frozen_river: "#A0A0FF"
+  grove: "#86B783"
+  ice_spikes: "#B4DCDC"
+  jagged_peaks: "#8A8A8A"
+  jungle: "#537B09"
+  lukewarm_ocean: "#000090"
+  lush_caves: "#5FA050"
+  mangrove_swamp: "#8A9A5B"
+  meadow: "#83C446"
+  mushroom_fields: "#FF00FF"
+  nether_wastes: "#BF3B3B"
+  ocean: "#000070"
+  old_growth_birch_forest: "#589C6C"
+  old_growth_pine_taiga: "#596651"
+  old_growth_spruce_taiga: "#818E79"
+  pale_garden: "#A8A8A0"
+  plains: "#8DB360"
+  river: "#0000FF"
+  savanna: "#BDB25F"
+  savanna_plateau: "#A79D64"
+  small_end_islands: "#8080FF"
+  snowy_beach: "#FAF0C0"
+  snowy_plains: "#FFFFFF"
+  snowy_slopes: "#E0E0E0"
+  snowy_taiga: "#31554A"
+  soul_sand_valley: "#5E3830"
+  sparse_jungle: "#628B17"
+  stony_peaks: "#928E85"
+  stony_shore: "#A2A284"
+  sulfur_caves: "#B8A33D"
+  sunflower_plains: "#B5DB88"
+  swamp: "#07F9B2"
+  taiga: "#0B6659"
+  the_end: "#8080FF"
+  the_void: "#000000"
+  warm_ocean: "#0000AC"
+  warped_forest: "#49907B"
+  windswept_forest: "#507050"
+  windswept_gravelly_hills: "#789878"
+  windswept_hills: "#606060"
+  windswept_savanna: "#E5DA87"
+  wooded_badlands: "#B09765"
+
+# Sorts whatever's ALREADY in the infinibundle so strategic items float to the front (earliest
+# pages) instead of needing to page through everything to find them - this does NOT add or give
+# any items. A stored item is matched against these groups in order; the first group it matches
+# decides its sort position (earlier group = earlier page). Items matching no group keep their
+# existing relative order, after all matched items. Each group can match by exact material
+# (materials: [...]), by having a specific enchantment regardless of the base item (enchantment:
+# NAME - e.g. any tool with Silk Touch, not just a specific pickaxe), or by being food
+# (edible: true, using Minecraft's own edibility rather than a hardcoded food list).
+infinibundle-priority-order:
+  enabled: true
+  groups:
+    - name: "Silk Touch Tools"
+      enchantment: SILK_TOUCH
+    - name: "Fortune Tools"
+      enchantment: FORTUNE
+    - name: "Crafting Tables"
+      materials: [CRAFTING_TABLE]
+    - name: "Furnaces"
+      materials: [FURNACE]
+    - name: "Food"
+      edible: true
+    - name: "Buckets"
+      materials: [BUCKET, WATER_BUCKET, LAVA_BUCKET, MILK_BUCKET, POWDER_SNOW_BUCKET,
+                  PUFFERFISH_BUCKET, SALMON_BUCKET, COD_BUCKET, TROPICAL_FISH_BUCKET,
+                  AXOLOTL_BUCKET, TADPOLE_BUCKET]
+    - name: "Iron Ore"
+      materials: [IRON_ORE, DEEPSLATE_IRON_ORE, RAW_IRON]
+    - name: "Iron Ingots"
+      materials: [IRON_INGOT]

@@ -54,6 +54,8 @@ public class GUI {
                 "§7Fastest parkourer wins!", "§aClick to configure."));
         inv.setItem(16, createGuiItem(Material.IRON_BARS, 1, "§eDungeon Rush",
                 "§7Survive a roguelike dungeon!", "§aClick to configure."));
+        inv.setItem(17, createGuiItem(Material.ECHO_SHARD, 1, "§dLootrun",
+                "§7Manhunt teams, LootHunt scoring, and a buff/nerf shop!", "§aClick to configure."));
 
         ItemStack filler = createFillerItem();
         for (int i = 0; i < 27; i++) {
@@ -67,6 +69,20 @@ public class GUI {
         if (submenuType.equals("Dungeon Rush")) {
             inv.setItem(13, createGuiItem(Material.EMERALD, 1, "§2Start Dungeon Rush",
                     "§7Start the game with current settings!", "§aClick to begin."));
+        } else if (submenuType.equals("Lootrun")) {
+            inv.setItem(11, createGuiItem(Material.GREEN_BANNER, 1, "§aJoin Team",
+                    "§7Join Runners, Hunters, or a supplier team.", "§aClick to select."));
+            inv.setItem(13, createGuiItem(Material.EMERALD, 1, "§2Start Lootrun",
+                    "§7Start the game with current settings!", "§aClick to begin."));
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to the main menu."));
+        } else if (submenuType.equals("Lootrun Team Selection")) {
+            for (int i = 0; i < ZappierGames.teamList.length; i++) {
+                inv.setItem(10 + i, createGuiItem(Material.GREEN_BANNER, 1, "§a" + ZappierGames.teamList[i],
+                        "§7Join this team.", "§aClick to join."));
+            }
+            inv.setItem(26, createGuiItem(Material.BARRIER, 1, "§cBack",
+                    "§7Return to Lootrun menu."));
         } else if (submenuType.equals("Manhunt")) {
             inv.setItem(10, createGuiItem(Material.BOOK, 1, "§eSet Game Mode",
                     "§7Current: " + getGameModeName(), "§aClick to select mode."));
@@ -216,6 +232,13 @@ public class GUI {
                     "§7View scores from the last game.", "§aClick to view."));
             inv.setItem(15, createGuiItem(LootHunt.noPvP ? Material.POPPY : Material.IRON_SWORD, 1, "§eToggle PvP",
                     "§7PvP (Currently " + (LootHunt.noPvP ? "Off" : "On") + ")", "§aClick to toggle."));
+            inv.setItem(16, createGuiItem(LootHunt.showLiveScoreToPlayers ? Material.GLOWSTONE : Material.REDSTONE_LAMP, 1, "§eToggle Live Score (Players)",
+                    "§7Live sidebar/tab score for players (Currently " + (LootHunt.showLiveScoreToPlayers ? "On" : "Off") + ")",
+                    "§7Spectators always see it regardless.", "§aClick to toggle."));
+            inv.setItem(17, createGuiItem(Material.CHEST, 1, "§eCustomize Starting Loadout",
+                    "§7Choose where your starting kit goes:",
+                    "§7any inventory slot, offhand, or the Infinibundle.",
+                    "§7Saved between games and server restarts.", "§aClick to edit."));
             if (!LootHunt.paused) {
                 inv.setItem(14, createGuiItem(Material.CAMPFIRE, 1, "§ePause Game",
                         "§7Pause loothunt.", "§aClick to pause."));

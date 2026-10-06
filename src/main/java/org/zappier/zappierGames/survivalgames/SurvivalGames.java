@@ -252,7 +252,7 @@ public class SurvivalGames {
             }
         }
         BlockData ladderData = Bukkit.createBlockData(Material.LADDER);
-        BlockData chainData = Bukkit.createBlockData(Material.CHAIN);
+        BlockData chainData = Bukkit.createBlockData(Material.IRON_CHAIN);
 
         if (ladderData instanceof org.bukkit.block.data.Directional) {
             ((org.bukkit.block.data.Directional) ladderData).setFacing(org.bukkit.block.BlockFace.EAST);

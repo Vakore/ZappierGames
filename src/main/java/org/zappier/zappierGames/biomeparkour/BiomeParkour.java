@@ -85,7 +85,11 @@ public class BiomeParkour {
         World world = Bukkit.getWorlds().get(0); // adjust if using custom world
         world.getWorldBorder().setCenter(borderX, borderZ);
         world.getWorldBorder().setSize(borderSize);
-        world.setTime(6000);
+        try {
+            world.setTime(6000);
+        } catch (IllegalArgumentException e) {
+            Bukkit.getLogger().info("Skipping setTime() for world '" + world.getName() + "' - it has no world clock.");
+        }
         world.setStorm(false);
 
         for (Player p : Bukkit.getOnlinePlayers()) {

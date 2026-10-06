@@ -14,6 +14,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.zappier.zappierGames.ZappierGames;
 import org.bukkit.entity.EntityType;
+import org.zappier.zappierGames.loothunt.InfinibundleListener;
 
 import java.util.*;
 
@@ -204,6 +205,7 @@ public class Manhunt {
 
         ZappierGames.globalBossBar.setVisible(false);
         ZappierGames.resetPlayers(true, true);
+        InfinibundleListener.clearAll();
 
         for (World world : Bukkit.getWorlds()) {
             WorldBorder border = world.getWorldBorder();
@@ -214,7 +216,7 @@ public class Manhunt {
                 border.setCenter(0, 0);
                 border.setSize(30000000);
             }
-            world.setGameRule(GameRule.KEEP_INVENTORY, false);
+            world.setGameRule(GameRules.KEEP_INVENTORY, false);
         }
 
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -252,7 +254,11 @@ public class Manhunt {
             p.setSaturation(20.0f);
             p.setExperienceLevelAndProgress(0);
             p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.5f);
-            p.getWorld().setTime(0);
+            try {
+                p.getWorld().setTime(0);
+            } catch (IllegalArgumentException e) {
+                Bukkit.getLogger().info("Skipping setTime() for world '" + p.getWorld().getName() + "' - it has no world clock.");
+            }
             if (getPlayerTeam(p).equals("Bodyguard")) {
                 p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(20.0 + Manhunt.bodyguardHpBonus);
                 p.setHealth(20.0 + Manhunt.bodyguardHpBonus);
@@ -282,7 +288,7 @@ public class Manhunt {
         completedSideQuests.clear();
 
         if (twists.get("Side Quest")) {
-        // Parallel lists: IDs must match display names in order
+            // Parallel lists: IDs must match display names in order
             List<String> possibleIds = Arrays.asList(
                     "minecraft:story/upgrade_tools",                    // Getting an Upgrade
                     "minecraft:story/smelt_iron",                       // Acquire Hardware
@@ -469,13 +475,13 @@ public class Manhunt {
 
         if (twists.get("UHC Manhunt")) {
             for (World world : Bukkit.getWorlds()) {
-                world.setGameRule(GameRule.NATURAL_REGENERATION, false);
+                world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, false);
             }
         }
 
         if (twists.get("Keep Inventory")) {
             for (World world : Bukkit.getWorlds()) {
-                world.setGameRule(GameRule.KEEP_INVENTORY, true);
+                world.setGameRule(GameRules.KEEP_INVENTORY, true);
             }
         }
 
@@ -570,7 +576,7 @@ public class Manhunt {
             }
         }
         for (World world : Bukkit.getWorlds()) {
-            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, !twists.get("Hidden Advancements"));
+            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, !twists.get("Hidden Advancements"));
         }
     }
 
@@ -620,8 +626,12 @@ public class Manhunt {
 
         if (twists.get("Always Night")) {
             for (World world : Bukkit.getWorlds()) {
-                world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-                world.setTime(114000);
+                world.setGameRule(GameRules.ADVANCE_TIME, false);
+                try {
+                    world.setTime(114000);
+                } catch (IllegalArgumentException e) {
+                    Bukkit.getLogger().info("Skipping setTime() for world '" + world.getName() + "' - it has no world clock.");
+                }
             }
         }
 
